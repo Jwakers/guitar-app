@@ -16,7 +16,8 @@ export const listSkills = query({
     }),
   ),
   handler: async (ctx) => {
-    return await ctx.db.query("skills").order("asc").collect();
+    const skills = await ctx.db.query("skills").collect();
+    return skills.sort((a, b) => a.sortOrder - b.sortOrder);
   },
 });
 

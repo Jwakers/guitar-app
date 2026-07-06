@@ -16,7 +16,13 @@ export const createOrUpdateUser = mutation({
       )
       .unique();
 
-    if (existing) return existing._id;
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        email: identity.email ?? undefined,
+        displayName: identity.name ?? identity.email ?? existing.displayName,
+      });
+      return existing._id;
+    }
 
     return await ctx.db.insert("users", {
       authProviderId: identity.subject,

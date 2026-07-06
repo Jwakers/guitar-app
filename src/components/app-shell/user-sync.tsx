@@ -12,7 +12,10 @@ export function UserSync() {
   useEffect(() => {
     if (isAuthenticated && !hasSynced.current) {
       hasSynced.current = true;
-      createOrUpdateUser().catch(console.error);
+      createOrUpdateUser().catch((err) => {
+        hasSynced.current = false;
+        console.error(err);
+      });
     }
   }, [isAuthenticated, createOrUpdateUser]);
 
