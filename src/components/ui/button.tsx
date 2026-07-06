@@ -1,3 +1,4 @@
+import * as React from "react"
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -44,14 +45,37 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  asChild = false,
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants> & { asChild?: boolean }) {
+  let renderProp: React.ReactElement | undefined
+  let content = children
+
+  if (asChild && React.isValidElement(children)) {
+    const { children: grandchildren, ...slotProps } = children.props as {
+      children?: React.ReactNode
+      [key: string]: unknown
+    }
+    renderProp = React.createElement(
+      children.type as React.ElementType,
+      slotProps,
+    )
+    content = grandchildren
+  }
+
+  const isNativeButton = !renderProp || renderProp.type === "button"
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      nativeButton={isNativeButton}
+      render={renderProp}
       {...props}
-    />
+    >
+      {content}
+    </ButtonPrimitive>
   )
 }
 
