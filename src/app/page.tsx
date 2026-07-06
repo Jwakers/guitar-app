@@ -1,63 +1,109 @@
-import Image from "next/image";
+import Link from "next/link";
+import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
+import { Button } from "@/components/ui/button";
+import { Activity, Target, TrendingUp } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/30">
+      {/* Navigation */}
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-border/50 bg-background/80 px-6 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <Activity className="h-5 w-5 text-primary" />
+          <span className="font-mono text-sm font-bold tracking-widest text-foreground">
+            GTPL //
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <nav className="flex items-center gap-4">
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="font-mono text-xs font-semibold tracking-widest text-muted-foreground transition-colors hover:text-foreground">
+                LOGIN
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <Button className="rounded-md font-mono text-xs font-bold tracking-widest" size="sm">
+                START TRAINING
+              </Button>
+            </SignUpButton>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+            <Button asChild className="rounded-md font-mono text-xs font-bold tracking-widest" size="sm">
+              <Link href="/today">DASHBOARD</Link>
+            </Button>
+          </Show>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-24 text-center md:py-32">
+        <div className="flex max-w-[800px] flex-col items-center gap-8">
+          <div className="inline-flex items-center rounded-full border border-border/50 bg-secondary/50 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground backdrop-blur-sm">
+            <span className="mr-2 flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+            System Online
+          </div>
+
+          <h1 className="font-sans text-5xl font-bold tracking-tighter text-foreground sm:text-7xl">
+            Train Guitar Like An <br className="hidden sm:block" />
+            <span className="text-primary">Athlete.</span>
+          </h1>
+
+          <p className="max-w-[600px] text-lg text-muted-foreground sm:text-xl">
+            Structured sessions, progressive overload, measurable performance,
+            and adaptive programming for intermediate electric guitarists.
+          </p>
+
+          <div className="flex flex-col gap-4 sm:flex-row mt-4">
+            <Show when="signed-out">
+              <SignUpButton mode="modal">
+                <Button size="lg" className="rounded-md h-14 px-8 font-mono text-sm font-bold tracking-widest">
+                  INITIATE PROGRAM
+                </Button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Button asChild size="lg" className="rounded-md h-14 px-8 font-mono text-sm font-bold tracking-widest">
+                <Link href="/today">RESUME TRAINING</Link>
+              </Button>
+            </Show>
+            <Button asChild size="lg" variant="outline" className="rounded-md h-14 px-8 font-mono text-sm font-bold tracking-widest border-border hover:bg-secondary">
+              <Link href="/about">SYSTEM SPECS</Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* Feature Grid */}
+        <div className="grid w-full max-w-5xl gap-6 pt-32 sm:grid-cols-3">
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 text-left shadow-sm transition-all hover:border-primary/50">
+            <Activity className="h-6 w-6 text-primary" />
+            <h3 className="font-mono text-sm font-bold tracking-widest text-foreground">
+              MEASURABLE DATA
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Track BPM, cleanliness scores, and endurance duration. No vanity metrics, just pure performance data.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 text-left shadow-sm transition-all hover:border-primary/50">
+            <Target className="h-6 w-6 text-primary" />
+            <h3 className="font-mono text-sm font-bold tracking-widest text-foreground">
+              ADAPTIVE ENGINE
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              The engine dictates your daily session based on your weakest skills, recent performance, and goals.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 text-left shadow-sm transition-all hover:border-primary/50">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            <h3 className="font-mono text-sm font-bold tracking-widest text-foreground">
+              PROGRESSIVE OVERLOAD
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Scale rhythmic complexity, strings, and tempo over multi-week training blocks to ensure linear progression.
+            </p>
+          </div>
         </div>
       </main>
     </div>
