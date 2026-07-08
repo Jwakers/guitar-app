@@ -1,4 +1,5 @@
 import { Nav } from "@/components/app-shell/nav";
+import { OnboardingGuard } from "@/components/app-shell/onboarding-guard";
 import { UserSync } from "@/components/app-shell/user-sync";
 
 export default function AppLayout({
@@ -9,6 +10,7 @@ export default function AppLayout({
   return (
     <div className="flex min-h-screen flex-col pb-16">
       <UserSync />
+      <OnboardingGuard />
       {children}
       <Nav />
     </div>
