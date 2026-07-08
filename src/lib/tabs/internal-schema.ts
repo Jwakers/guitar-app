@@ -30,8 +30,7 @@ export type TabBeatDuration =
   | "half"
   | "quarter"
   | "eighth"
-  | "sixteenth"
-  | "triplet";
+  | "sixteenth";
 
 export type TabBeatPicking =
   | "down"
@@ -43,6 +42,7 @@ export type TabBeatPicking =
 export type TabBeat = {
   duration: TabBeatDuration;
   notes: TabNote[];
+  tuplet?: number;
   picking?: TabBeatPicking;
   accent?: boolean;
   rest?: boolean;

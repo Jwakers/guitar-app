@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TabData } from "@/lib/tabs/internal-schema";
 import { tabDataToAlphaTex } from "@/lib/tabs/alphatab-adapter";
 import { cn } from "@/lib/utils";
@@ -29,12 +29,14 @@ type AlphaTabInstance = {
  */
 export function TabRenderer({ tabData, className }: TabRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
     let mounted = true;
     let api: AlphaTabInstance | null = null;
+    setLoadError(false);
 
     import("@coderline/alphatab")
       .then((alphaTab) => {
@@ -59,6 +61,7 @@ export function TabRenderer({ tabData, className }: TabRendererProps) {
       .catch((err: unknown) => {
         if (!mounted) return;
         console.error("TabRenderer: failed to initialise AlphaTab", err);
+        setLoadError(true);
       });
 
     return () => {
@@ -69,6 +72,21 @@ export function TabRenderer({ tabData, className }: TabRendererProps) {
       }
     };
   }, [tabData]);
+
+  if (loadError) {
+    return (
+      <div
+        className={cn(
+          "flex min-h-40 w-full items-center justify-center rounded border border-destructive/30 bg-destructive/5 px-4 py-6",
+          className,
+        )}
+      >
+        <p className="text-center font-mono text-sm text-destructive">
+          Unable to load tab notation. Please refresh and try again.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div

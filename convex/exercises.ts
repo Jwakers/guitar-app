@@ -126,8 +126,8 @@ export const getExercise = query({
                   v.literal("quarter"),
                   v.literal("eighth"),
                   v.literal("sixteenth"),
-                  v.literal("triplet"),
                 ),
+                tuplet: v.optional(v.number()),
                 notes: v.array(
                   v.object({
                     string: v.union(

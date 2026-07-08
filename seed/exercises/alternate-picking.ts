@@ -234,8 +234,8 @@ export const singleStringAlternatePickingControl: ExerciseSeed = {
     displayHints: {
       showPicking: true,
       showFingering: true,
-      loopStartBar: 1,
-      loopEndBar: 2,
+      loopStartBar: 0,
+      loopEndBar: 1,
     },
   },
 

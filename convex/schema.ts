@@ -72,9 +72,9 @@ const tabBeat = v.object({
     v.literal("quarter"),
     v.literal("eighth"),
     v.literal("sixteenth"),
-    v.literal("triplet"),
   ),
   notes: v.array(tabNote),
+  tuplet: v.optional(v.number()),
   picking: v.optional(
     v.union(
       v.literal("down"),
@@ -291,7 +291,12 @@ export default defineSchema({
     title: v.string(),
     goal: v.string(),
     estimatedMinutes: v.number(),
-    status: v.string(), // "planned" | "active" | "completed" | "skipped"
+    status: v.union(
+      v.literal("planned"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("skipped"),
+    ),
     sessionType: v.union(
       v.literal("standard"),
       v.literal("light"),

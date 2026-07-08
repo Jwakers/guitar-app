@@ -16,7 +16,6 @@ const VALID_DURATIONS = new Set<TabBeatDuration>([
   "quarter",
   "eighth",
   "sixteenth",
-  "triplet",
 ]);
 
 const VALID_PICKINGS = new Set<TabBeatPicking>([
@@ -61,9 +60,9 @@ function validateNote(note: unknown, path: string): TabNote {
     );
   }
 
-  if (typeof fret !== "number" || fret < 0 || fret > MAX_FRET) {
+  if (typeof fret !== "number" || !Number.isInteger(fret) || fret < 0 || fret > MAX_FRET) {
     throw new Error(
-      `${path}.fret: must be a number 0–${MAX_FRET}, got ${JSON.stringify(fret)}`,
+      `${path}.fret: must be an integer 0–${MAX_FRET}, got ${JSON.stringify(fret)}`,
     );
   }
 
@@ -94,12 +93,24 @@ function validateBeat(beat: unknown, path: string): TabBeat {
     throw new Error(`${path}: expected an object`);
   }
 
-  const { duration, notes, picking, accent, rest } = beat;
+  const { duration, notes, tuplet, picking, accent, rest } = beat;
 
   if (!VALID_DURATIONS.has(duration as TabBeatDuration)) {
     throw new Error(
       `${path}.duration: unrecognised value ${JSON.stringify(duration)}`,
     );
+  }
+
+  if (tuplet !== undefined) {
+    if (
+      typeof tuplet !== "number" ||
+      !Number.isInteger(tuplet) ||
+      tuplet < 2
+    ) {
+      throw new Error(
+        `${path}.tuplet: must be an integer >= 2 if set, got ${JSON.stringify(tuplet)}`,
+      );
+    }
   }
 
   if (!Array.isArray(notes)) {
@@ -215,6 +226,48 @@ export function validateTabData(data: unknown): TabData {
       ) {
         throw new Error(`tabData.displayHints.${field}: must be a number if set`);
       }
+    }
+
+    const barCount = validatedBars.length;
+    const loopStartBar =
+      displayHints.loopStartBar !== undefined
+        ? (displayHints.loopStartBar as number)
+        : undefined;
+    const loopEndBar =
+      displayHints.loopEndBar !== undefined
+        ? (displayHints.loopEndBar as number)
+        : undefined;
+
+    if (loopStartBar !== undefined) {
+      if (
+        !Number.isInteger(loopStartBar) ||
+        loopStartBar < 0 ||
+        loopStartBar >= barCount
+      ) {
+        throw new Error(
+          `tabData.displayHints.loopStartBar: must be an integer between 0 and ${barCount - 1}, got ${JSON.stringify(loopStartBar)}`,
+        );
+      }
+    }
+    if (loopEndBar !== undefined) {
+      if (
+        !Number.isInteger(loopEndBar) ||
+        loopEndBar < 0 ||
+        loopEndBar >= barCount
+      ) {
+        throw new Error(
+          `tabData.displayHints.loopEndBar: must be an integer between 0 and ${barCount - 1}, got ${JSON.stringify(loopEndBar)}`,
+        );
+      }
+    }
+    if (
+      loopStartBar !== undefined &&
+      loopEndBar !== undefined &&
+      loopStartBar > loopEndBar
+    ) {
+      throw new Error(
+        "tabData.displayHints: loopStartBar must be less than or equal to loopEndBar",
+      );
     }
   }
 

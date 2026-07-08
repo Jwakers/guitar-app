@@ -144,13 +144,7 @@ export function validateExercise(data: unknown): ExerciseSeed {
 
   // Skill linkage
   requireNonEmptyString(data.primarySkillId, "primarySkillId");
-  requireStringArray(
-    Array.isArray(data.secondarySkillIds) ? data.secondarySkillIds : [],
-    "secondarySkillIds",
-  );
-  if (!Array.isArray(data.secondarySkillIds)) {
-    throw new Error('validateExercise: "secondarySkillIds" must be an array');
-  }
+  requireStringArray(data.secondarySkillIds, "secondarySkillIds");
 
   // Difficulty & type
   if (
@@ -221,7 +215,11 @@ export function validateExercise(data: unknown): ExerciseSeed {
   }
 
   // Versioning
-  if (typeof data.version !== "number" || data.version < 1) {
+  if (
+    typeof data.version !== "number" ||
+    !Number.isInteger(data.version) ||
+    data.version < 1
+  ) {
     throw new Error('validateExercise: "version" must be a positive integer');
   }
 
