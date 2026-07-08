@@ -1,0 +1,231 @@
+import type {
+  TabBar,
+  TabBeat,
+  TabBeatDuration,
+  TabBeatPicking,
+  TabData,
+  TabNote,
+  TabNoteFinger,
+  TabNoteString,
+  TabNoteTechnique,
+} from "./internal-schema";
+
+const VALID_DURATIONS = new Set<TabBeatDuration>([
+  "whole",
+  "half",
+  "quarter",
+  "eighth",
+  "sixteenth",
+  "triplet",
+]);
+
+const VALID_PICKINGS = new Set<TabBeatPicking>([
+  "down",
+  "up",
+  "alternate",
+  "economy",
+  "sweep",
+]);
+
+const VALID_TECHNIQUES = new Set<TabNoteTechnique>([
+  "picked",
+  "hammer_on",
+  "pull_off",
+  "slide",
+  "bend",
+  "release",
+  "vibrato",
+  "mute",
+  "harmonic",
+]);
+
+const VALID_STRINGS = new Set<TabNoteString>([1, 2, 3, 4, 5, 6]);
+const VALID_FINGERS = new Set<TabNoteFinger>([1, 2, 3, 4]);
+
+const MAX_FRET = 24;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateNote(note: unknown, path: string): TabNote {
+  if (!isRecord(note)) {
+    throw new Error(`${path}: expected an object`);
+  }
+
+  const { string, fret, finger, technique, targetPitch } = note;
+
+  if (!VALID_STRINGS.has(string as TabNoteString)) {
+    throw new Error(
+      `${path}.string: must be 1–6, got ${JSON.stringify(string)}`,
+    );
+  }
+
+  if (typeof fret !== "number" || fret < 0 || fret > MAX_FRET) {
+    throw new Error(
+      `${path}.fret: must be a number 0–${MAX_FRET}, got ${JSON.stringify(fret)}`,
+    );
+  }
+
+  if (finger !== undefined && !VALID_FINGERS.has(finger as TabNoteFinger)) {
+    throw new Error(
+      `${path}.finger: must be 1–4 if set, got ${JSON.stringify(finger)}`,
+    );
+  }
+
+  if (
+    technique !== undefined &&
+    !VALID_TECHNIQUES.has(technique as TabNoteTechnique)
+  ) {
+    throw new Error(
+      `${path}.technique: unrecognised value ${JSON.stringify(technique)}`,
+    );
+  }
+
+  if (targetPitch !== undefined && typeof targetPitch !== "string") {
+    throw new Error(`${path}.targetPitch: must be a string if set`);
+  }
+
+  return note as TabNote;
+}
+
+function validateBeat(beat: unknown, path: string): TabBeat {
+  if (!isRecord(beat)) {
+    throw new Error(`${path}: expected an object`);
+  }
+
+  const { duration, notes, picking, accent, rest } = beat;
+
+  if (!VALID_DURATIONS.has(duration as TabBeatDuration)) {
+    throw new Error(
+      `${path}.duration: unrecognised value ${JSON.stringify(duration)}`,
+    );
+  }
+
+  if (!Array.isArray(notes)) {
+    throw new Error(`${path}.notes: must be an array`);
+  }
+
+  const validatedNotes = notes.map((n, i) =>
+    validateNote(n, `${path}.notes[${i}]`),
+  );
+
+  if (picking !== undefined && !VALID_PICKINGS.has(picking as TabBeatPicking)) {
+    throw new Error(
+      `${path}.picking: unrecognised value ${JSON.stringify(picking)}`,
+    );
+  }
+
+  if (accent !== undefined && typeof accent !== "boolean") {
+    throw new Error(`${path}.accent: must be a boolean if set`);
+  }
+
+  if (rest !== undefined && typeof rest !== "boolean") {
+    throw new Error(`${path}.rest: must be a boolean if set`);
+  }
+
+  return { ...beat, notes: validatedNotes } as TabBeat;
+}
+
+function validateBar(bar: unknown, path: string): TabBar {
+  if (!isRecord(bar)) {
+    throw new Error(`${path}: expected an object`);
+  }
+
+  const { beats } = bar;
+
+  if (!Array.isArray(beats)) {
+    throw new Error(`${path}.beats: must be an array`);
+  }
+
+  return {
+    beats: beats.map((b, i) => validateBeat(b, `${path}.beats[${i}]`)),
+  };
+}
+
+/**
+ * Validates unknown data as TabData, throwing a descriptive error on failure.
+ * Returns the typed TabData on success.
+ */
+export function validateTabData(data: unknown): TabData {
+  if (!isRecord(data)) {
+    throw new Error("tabData: expected an object");
+  }
+
+  const { tuning, capo, tempo, timeSignature, bars, displayHints } = data;
+
+  // tuning — must be an array of exactly 6 strings
+  if (
+    !Array.isArray(tuning) ||
+    tuning.length !== 6 ||
+    !tuning.every((s) => typeof s === "string")
+  ) {
+    throw new Error("tabData.tuning: must be an array of exactly 6 strings");
+  }
+
+  if (capo !== undefined && typeof capo !== "number") {
+    throw new Error("tabData.capo: must be a number if set");
+  }
+
+  if (typeof tempo !== "number" || tempo <= 0) {
+    throw new Error("tabData.tempo: must be a positive number");
+  }
+
+  if (!isRecord(timeSignature)) {
+    throw new Error("tabData.timeSignature: expected an object");
+  }
+  if (
+    typeof timeSignature.beats !== "number" ||
+    typeof timeSignature.beatValue !== "number"
+  ) {
+    throw new Error(
+      "tabData.timeSignature: beats and beatValue must both be numbers",
+    );
+  }
+
+  if (!Array.isArray(bars) || bars.length === 0) {
+    throw new Error("tabData.bars: must be a non-empty array");
+  }
+
+  const validatedBars = bars.map((b, i) => validateBar(b, `tabData.bars[${i}]`));
+
+  // displayHints is optional; validate its fields if present
+  if (displayHints !== undefined) {
+    if (!isRecord(displayHints)) {
+      throw new Error("tabData.displayHints: must be an object if set");
+    }
+    const boolFields = [
+      "showPicking",
+      "showAccents",
+      "showFingering",
+    ] as const;
+    for (const field of boolFields) {
+      if (
+        displayHints[field] !== undefined &&
+        typeof displayHints[field] !== "boolean"
+      ) {
+        throw new Error(`tabData.displayHints.${field}: must be a boolean if set`);
+      }
+    }
+    const numFields = ["loopStartBar", "loopEndBar"] as const;
+    for (const field of numFields) {
+      if (
+        displayHints[field] !== undefined &&
+        typeof displayHints[field] !== "number"
+      ) {
+        throw new Error(`tabData.displayHints.${field}: must be a number if set`);
+      }
+    }
+  }
+
+  return {
+    tuning: tuning as string[],
+    ...(capo !== undefined ? { capo: capo as number } : {}),
+    tempo: tempo as number,
+    timeSignature: timeSignature as { beats: number; beatValue: number },
+    bars: validatedBars,
+    ...(displayHints !== undefined
+      ? { displayHints: displayHints as TabData["displayHints"] }
+      : {}),
+  };
+}

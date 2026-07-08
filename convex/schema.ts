@@ -234,7 +234,7 @@ export default defineSchema({
     ),
     replacedBySlug: v.optional(v.string()),
     updatedAt: v.number(),
-  }),
+  }).index("by_slug", ["slug"]),
 
   exerciseProgressions: defineTable({
     skillId: v.id("skills"),
