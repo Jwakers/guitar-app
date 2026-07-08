@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
 
-function deriveStatus(rating: number): string {
+type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
+
+function deriveStatus(rating: 1 | 2 | 3 | 4 | 5): SkillRatingStatus {
   if (rating <= 2) return "weak";
   if (rating === 3) return "developing";
   if (rating === 4) return "stable";
@@ -30,7 +32,16 @@ export const saveOnboardingAnswers = mutation({
       dataTonePreference: v.string(),
     }),
     skillRatings: v.array(
-      v.object({ skillId: v.id("skills"), rating: v.number() }), // rating 1–5
+      v.object({
+        skillId: v.id("skills"),
+        rating: v.union(
+          v.literal(1),
+          v.literal(2),
+          v.literal(3),
+          v.literal(4),
+          v.literal(5),
+        ),
+      }),
     ),
   },
   returns: v.id("users"),

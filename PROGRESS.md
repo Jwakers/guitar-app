@@ -29,13 +29,13 @@ Track what is built and what remains. Update this file as features land.
 
 ## Phase 2: Onboarding
 
-- [ ] Onboarding questionnaire (experience level, guitar type, goals)
-- [ ] Practice schedule selection (available days, session length, intensity)
-- [ ] Initial skill self-assessment (rate 1–5 per skill)
-- [ ] Initial skill ratings written to Convex (`userSkillRatings`)
-- [ ] Onboarding completion flag set (`onboardingCompleted: true`)
+- [x] Onboarding questionnaire (experience level, guitar type, goals)
+- [x] Practice schedule selection (available days, session length, intensity)
+- [x] Initial skill self-assessment (rate 1–5 per skill)
+- [x] Initial skill ratings written to Convex (`userSkillRatings`)
+- [x] Onboarding completion flag set (`onboardingCompleted: true`)
 - [ ] Generate initial training block from profile + skill ratings
-- [ ] Redirect new users to onboarding before Today screen
+- [x] Redirect new users to onboarding before Today screen
 
 ---
 
@@ -111,4 +111,4 @@ Track what is built and what remains. Update this file as features land.
 | Achievements | `/achievements` | Not built |
 | Profile | `/profile` | Not built |
 | Settings | `/settings` | Not built |
-| Onboarding | `/onboarding` | Not built |
+| Onboarding | `/onboarding` | Done |

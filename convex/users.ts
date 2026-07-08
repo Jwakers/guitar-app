@@ -18,7 +18,7 @@ export const createOrUpdateUser = mutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        email: identity.email ?? undefined,
+        email: identity.email ?? existing.email,
         displayName: identity.name ?? identity.email ?? existing.displayName,
       });
       return existing._id;
@@ -45,7 +45,7 @@ export const getCurrentUser = query({
       email: v.optional(v.string()),
       displayName: v.optional(v.string()),
       onboardingCompleted: v.boolean(),
-      subscriptionTier: v.string(),
+      subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
       timezone: v.string(),
     }),
     v.null(),

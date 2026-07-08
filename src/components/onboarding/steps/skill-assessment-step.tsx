@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 import type { Doc } from "@/convex/_generated/dataModel";
 import type { WizardData } from "../onboarding-wizard";
-import { StepNav } from "./about-you-step";
+import { StepNav } from "./step-nav";
 
 interface SkillAssessmentStepProps {
   data: WizardData;
   skills: Doc<"skills">[];
+  skillsLoading: boolean;
   onUpdate: (updates: Partial<WizardData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -30,11 +31,12 @@ const CATEGORY_ORDER = [
 export function SkillAssessmentStep({
   data,
   skills,
+  skillsLoading,
   onUpdate,
   onNext,
   onBack,
 }: SkillAssessmentStepProps) {
-  function setRating(skillId: string, rating: number) {
+  function setRating(skillId: string, rating: 1 | 2 | 3 | 4 | 5) {
     onUpdate({
       skillRatings: { ...data.skillRatings, [skillId]: rating },
     });
@@ -55,6 +57,16 @@ export function SkillAssessmentStep({
   const orderedCategories = CATEGORY_ORDER.filter(
     (c) => skillsByCategory[c],
   );
+
+  if (skillsLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
+          LOADING SKILLS...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-10">
@@ -122,17 +134,20 @@ export function SkillAssessmentStep({
   );
 }
 
+const RATINGS = [1, 2, 3, 4, 5] as const;
+
 function RatingPicker({
   value,
   onChange,
 }: {
-  value: number | undefined;
-  onChange: (rating: number) => void;
+  value: 1 | 2 | 3 | 4 | 5 | undefined;
+  onChange: (rating: 1 | 2 | 3 | 4 | 5) => void;
 }) {
   return (
     <div className="flex gap-2">
-      {[1, 2, 3, 4, 5].map((n) => (
+      {RATINGS.map((n) => (
         <button
+          type="button"
           key={n}
           onClick={() => onChange(n)}
           className={cn(

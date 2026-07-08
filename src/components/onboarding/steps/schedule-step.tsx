@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { WizardData } from "../onboarding-wizard";
-import { StepNav } from "./about-you-step";
+import { StepNav } from "./step-nav";
 
 interface ScheduleStepProps {
   data: WizardData;
@@ -84,6 +84,7 @@ export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepPro
             const selected = data.availableDays.includes(day);
             return (
               <button
+                type="button"
                 key={day}
                 onClick={() => toggleDay(day)}
                 className={cn(
@@ -110,6 +111,7 @@ export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepPro
             const selected = data.defaultSessionLengthMinutes === mins;
             return (
               <button
+                type="button"
                 key={mins}
                 onClick={() => onUpdate({ defaultSessionLengthMinutes: mins })}
                 className={cn(
@@ -146,6 +148,7 @@ export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepPro
             const selected = data.preferredIntensity === opt.value;
             return (
               <button
+                type="button"
                 key={opt.value}
                 onClick={() => onUpdate({ preferredIntensity: opt.value })}
                 className={cn(

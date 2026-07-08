@@ -23,6 +23,7 @@ export function Nav() {
           <Link
             key={href}
             href={href}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex flex-1 flex-col items-center justify-center gap-1 transition-colors",
               isActive

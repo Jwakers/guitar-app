@@ -14,17 +14,17 @@ import { CompletingStep } from "./steps/completing-step";
 export type WizardData = {
   dataTonePreference: string;
   primaryGoals: string[];
-  focusSkillNames: string[];
+  focusSkillIds: string[]; // stable skill IDs, not display names
   availableDays: string[];
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
-  skillRatings: Record<string, number>; // skillId → 1–5
+  skillRatings: Record<string, 1 | 2 | 3 | 4 | 5>; // skillId → 1–5
 };
 
 const DEFAULT_DATA: WizardData = {
   dataTonePreference: "factual",
   primaryGoals: [],
-  focusSkillNames: [],
+  focusSkillIds: [],
   availableDays: ["Monday", "Wednesday", "Friday"],
   defaultSessionLengthMinutes: 45,
   preferredIntensity: "moderate",
@@ -46,7 +46,9 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const [data, setData] = useState<WizardData>(DEFAULT_DATA);
 
-  const skills = useQuery(api.skills.listSkills) ?? [];
+  const skillsResult = useQuery(api.skills.listSkills);
+  const skillsLoading = skillsResult === undefined;
+  const skills = skillsResult ?? [];
 
   function update(updates: Partial<WizardData>) {
     setData((prev) => ({ ...prev, ...updates }));
@@ -96,6 +98,7 @@ export function OnboardingWizard() {
           <GoalsStep
             data={data}
             skills={skills as Doc<"skills">[]}
+            skillsLoading={skillsLoading}
             onUpdate={update}
             onNext={next}
             onBack={back}
@@ -108,6 +111,7 @@ export function OnboardingWizard() {
           <SkillAssessmentStep
             data={data}
             skills={skills as Doc<"skills">[]}
+            skillsLoading={skillsLoading}
             onUpdate={update}
             onNext={next}
             onBack={back}

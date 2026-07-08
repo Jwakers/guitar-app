@@ -2,12 +2,16 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 export function OnboardingGuard() {
   const router = useRouter();
-  const user = useQuery(api.users.getCurrentUser);
+  const { isAuthenticated } = useConvexAuth();
+  const user = useQuery(
+    api.users.getCurrentUser,
+    isAuthenticated ? {} : "skip",
+  );
 
   useEffect(() => {
     // user === undefined → still loading, do nothing

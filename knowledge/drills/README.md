@@ -44,7 +44,7 @@ Organised by primary skill:
 
 Each drill document must define the following sections:
 
-```
+```markdown
 # [Drill Title]
 
 ## Purpose

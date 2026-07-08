@@ -126,7 +126,7 @@ export default defineSchema({
     email: v.optional(v.string()),
     displayName: v.optional(v.string()),
     onboardingCompleted: v.boolean(),
-    subscriptionTier: v.string(), // "free" | "pro"
+    subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
     timezone: v.string(),
   }).index("by_authProviderId", ["authProviderId"]),
 
@@ -200,6 +200,40 @@ export default defineSchema({
     // Metadata
     estimatedMinutes: v.number(),
     isMvp: v.boolean(),
+
+    // Feedback schema — defines the dynamic questions shown after this exercise
+    feedbackSchema: v.array(
+      v.object({
+        id: v.string(),
+        label: v.string(),
+        type: v.union(
+          v.literal("segmented"),
+          v.literal("rating"),
+          v.literal("number"),
+          v.literal("boolean"),
+          v.literal("choice"),
+        ),
+        required: v.boolean(),
+        options: v.optional(
+          v.array(v.object({ id: v.string(), label: v.string() })),
+        ),
+        followUpRules: v.optional(
+          v.array(
+            v.object({ ifOptionId: v.string(), showQuestionId: v.string() }),
+          ),
+        ),
+      }),
+    ),
+
+    // Seed data versioning
+    version: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("deprecated"),
+      v.literal("replaced"),
+    ),
+    replacedBySlug: v.optional(v.string()),
+    updatedAt: v.number(),
   }),
 
   exerciseProgressions: defineTable({
@@ -223,7 +257,11 @@ export default defineSchema({
     primaryGoal: v.string(),
     focusSkillIds: v.array(v.id("skills")),
     supportSkillIds: v.array(v.id("skills")),
-    status: v.string(), // "active" | "completed" | "abandoned"
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("abandoned"),
+    ),
     currentWeek: v.number(),
     intensity: v.string(),
     deloadWeek: v.optional(v.number()),
@@ -410,7 +448,13 @@ export default defineSchema({
     lastTrainedAt: v.optional(v.number()),
     trend7Day: v.optional(v.number()),
     trend30Day: v.optional(v.number()),
-    status: v.string(), // "weak" | "developing" | "stable" | "strong" | "maintenance"
+    status: v.union(
+      v.literal("weak"),
+      v.literal("developing"),
+      v.literal("stable"),
+      v.literal("strong"),
+      v.literal("maintenance"),
+    ),
   })
     .index("by_userId", ["userId"])
     .index("by_userId_skillId", ["userId", "skillId"]),
@@ -444,7 +488,7 @@ export default defineSchema({
     category: v.string(),
     triggerType: v.string(),
     threshold: v.number(),
-    medalTier: v.string(), // "bronze" | "silver" | "gold"
+    medalTier: v.union(v.literal("bronze"), v.literal("silver"), v.literal("gold")),
     isMvp: v.boolean(),
   }).index("by_triggerType", ["triggerType"]),
 

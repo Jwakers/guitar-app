@@ -1145,8 +1145,15 @@ type Exercise = {
   progressionRule: string;
   regressionRule: string;
   tabData: TabData;
+  feedbackSchema: FeedbackQuestion[];
   estimatedMinutes: number;
   isMvp: boolean;
+
+  // Seed data versioning
+  version: number;
+  status: "active" | "deprecated" | "replaced";
+  replacedBySlug?: string;
+  updatedAt: number;
 };
 ```
 
@@ -1929,7 +1936,7 @@ The engine must evaluate whether to progress, hold, or regress each exercise bas
 ```txt
 Progress if:
 - target met at least twice recently
-- Training Verdict is "Nailed It"
+- Training Verdict is `nailed_it`
 - difficulty was Easy or Good
 - confidence/cleanliness signals are positive
 ```
@@ -1938,7 +1945,7 @@ Progress if:
 
 ```txt
 Hold if:
-- target was met but verdict was "Nearly There"
+- target was met but verdict was `nearly_there`
 - confidence is low
 - performance is inconsistent across recent attempts
 ```
@@ -1948,7 +1955,7 @@ Hold if:
 ```txt
 Regress if:
 - target missed repeatedly
-- verdict is "Needs Work"
+- verdict is `needs_work`
 - difficulty was Hard or Impossible
 - user reports pain, confusion, or major coordination failure
 ```
@@ -1966,7 +1973,7 @@ The engine must intentionally repeat exercises when repetition provides training
 * The exercise is part of an active progression path.
 * The user is near mastery and needs consolidation.
 * The skill requires consistency work.
-* The previous Training Verdict was "Nearly There".
+* The previous Training Verdict was `nearly_there`.
 * The session type is test or benchmark.
 
 **Avoid repeating when:**

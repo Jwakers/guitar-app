@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import type { WizardData } from "../onboarding-wizard";
+import { StepNav } from "./step-nav";
 
 interface AboutYouStepProps {
   data: WizardData;
@@ -52,32 +52,35 @@ export function AboutYouStep({ data, onUpdate, onNext, onBack }: AboutYouStepPro
           HOW SHOULD THE APP TALK TO YOU?
         </label>
         <div className="flex flex-col gap-2">
-          {TONE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onUpdate({ dataTonePreference: opt.value })}
-              className={cn(
-                "flex flex-col gap-0.5 rounded-lg border p-4 text-left transition-colors",
-                data.dataTonePreference === opt.value
-                  ? "border-primary bg-primary/10"
-                  : "border-border bg-card hover:border-border/80 hover:bg-muted/50",
-              )}
-            >
-              <span
+          {TONE_OPTIONS.map((opt) => {
+            const isSelected = data.dataTonePreference === opt.value;
+            return (
+              <button
+                type="button"
+                key={opt.value}
+                onClick={() => onUpdate({ dataTonePreference: opt.value })}
+                aria-pressed={isSelected}
                 className={cn(
-                  "font-mono text-xs font-bold tracking-widest",
-                  data.dataTonePreference === opt.value
-                    ? "text-primary"
-                    : "text-foreground",
+                  "flex flex-col gap-0.5 rounded-lg border p-4 text-left transition-colors",
+                  isSelected
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:border-border/80 hover:bg-muted/50",
                 )}
               >
-                {opt.label.toUpperCase()}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {opt.description}
-              </span>
-            </button>
-          ))}
+                <span
+                  className={cn(
+                    "font-mono text-xs font-bold tracking-widest",
+                    isSelected ? "text-primary" : "text-foreground",
+                  )}
+                >
+                  {opt.label.toUpperCase()}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {opt.description}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -96,36 +99,3 @@ function LockedField({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-function StepNav({
-  onBack,
-  onNext,
-  nextDisabled,
-  nextLabel = "CONTINUE",
-}: {
-  onBack: () => void;
-  onNext: () => void;
-  nextDisabled: boolean;
-  nextLabel?: string;
-}) {
-  return (
-    <div className="mt-auto flex gap-3 pt-4">
-      <Button
-        variant="outline"
-        onClick={onBack}
-        className="flex-1 rounded-lg font-mono text-xs font-bold tracking-widest"
-      >
-        BACK
-      </Button>
-      <Button
-        onClick={onNext}
-        disabled={nextDisabled}
-        className="flex-2 rounded-lg font-mono text-xs font-bold tracking-widest"
-      >
-        {nextLabel}
-      </Button>
-    </div>
-  );
-}
-
-export { StepNav };

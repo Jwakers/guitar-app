@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 import type { Doc } from "@/convex/_generated/dataModel";
 import type { WizardData } from "../onboarding-wizard";
-import { StepNav } from "./about-you-step";
+import { StepNav } from "./step-nav";
 
 interface GoalsStepProps {
   data: WizardData;
   skills: Doc<"skills">[];
+  skillsLoading: boolean;
   onUpdate: (updates: Partial<WizardData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -24,7 +25,7 @@ const MAX_GOALS = 3;
 const MIN_FOCUS_SKILLS = 2;
 const MAX_FOCUS_SKILLS = 4;
 
-export function GoalsStep({ data, skills, onUpdate, onNext, onBack }: GoalsStepProps) {
+export function GoalsStep({ data, skills, skillsLoading, onUpdate, onNext, onBack }: GoalsStepProps) {
   function toggleGoal(goal: string) {
     const current = data.primaryGoals;
     if (current.includes(goal)) {
@@ -34,18 +35,18 @@ export function GoalsStep({ data, skills, onUpdate, onNext, onBack }: GoalsStepP
     }
   }
 
-  function toggleSkill(skillName: string) {
-    const current = data.focusSkillNames;
-    if (current.includes(skillName)) {
-      onUpdate({ focusSkillNames: current.filter((s) => s !== skillName) });
+  function toggleSkill(skillId: string) {
+    const current = data.focusSkillIds;
+    if (current.includes(skillId)) {
+      onUpdate({ focusSkillIds: current.filter((id) => id !== skillId) });
     } else if (current.length < MAX_FOCUS_SKILLS) {
-      onUpdate({ focusSkillNames: [...current, skillName] });
+      onUpdate({ focusSkillIds: [...current, skillId] });
     }
   }
 
   const canProceed =
     data.primaryGoals.length >= 1 &&
-    data.focusSkillNames.length >= MIN_FOCUS_SKILLS;
+    data.focusSkillIds.length >= MIN_FOCUS_SKILLS;
 
   // Group skills by category for display
   const skillsByCategory = skills.reduce<Record<string, Doc<"skills">[]>>(
@@ -76,13 +77,14 @@ export function GoalsStep({ data, skills, onUpdate, onNext, onBack }: GoalsStepP
         <div className="flex flex-col gap-2">
           {PRIMARY_GOALS.map((goal) => {
             const selected = data.primaryGoals.includes(goal);
-            const maxed =
-              !selected && data.primaryGoals.length >= MAX_GOALS;
+            const maxed = !selected && data.primaryGoals.length >= MAX_GOALS;
             return (
               <button
+                type="button"
                 key={goal}
                 onClick={() => toggleGoal(goal)}
                 disabled={maxed}
+                aria-pressed={selected}
                 className={cn(
                   "rounded-lg border px-4 py-3 text-left text-sm transition-colors",
                   selected
@@ -103,28 +105,35 @@ export function GoalsStep({ data, skills, onUpdate, onNext, onBack }: GoalsStepP
       <div className="flex flex-col gap-2">
         <label className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           FOCUS SKILLS — pick {MIN_FOCUS_SKILLS}–{MAX_FOCUS_SKILLS} (
-          {data.focusSkillNames.length} selected)
+          {data.focusSkillIds.length} selected)
         </label>
         <p className="text-xs text-muted-foreground">
           These will receive the most training time.
         </p>
         <div className="flex flex-col gap-4 pt-1">
-          {Object.entries(skillsByCategory).map(([category, catSkills]) => (
+          {skillsLoading && (
+            <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
+              LOADING SKILLS...
+            </p>
+          )}
+          {!skillsLoading && Object.entries(skillsByCategory).map(([category, catSkills]) => (
             <div key={category} className="flex flex-col gap-2">
               <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
                 {category}
               </span>
               <div className="flex flex-wrap gap-2">
                 {catSkills.map((skill) => {
-                  const selected = data.focusSkillNames.includes(skill.name);
+                  const selected = data.focusSkillIds.includes(skill._id);
                   const maxed =
                     !selected &&
-                    data.focusSkillNames.length >= MAX_FOCUS_SKILLS;
+                    data.focusSkillIds.length >= MAX_FOCUS_SKILLS;
                   return (
                     <button
+                      type="button"
                       key={skill._id}
-                      onClick={() => toggleSkill(skill.name)}
+                      onClick={() => toggleSkill(skill._id)}
                       disabled={maxed}
+                      aria-pressed={selected}
                       className={cn(
                         "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
                         selected
@@ -144,7 +153,7 @@ export function GoalsStep({ data, skills, onUpdate, onNext, onBack }: GoalsStepP
         </div>
       </div>
 
-      <StepNav onBack={onBack} onNext={onNext} nextDisabled={!canProceed} />
+      <StepNav onBack={onBack} onNext={onNext} nextDisabled={skillsLoading || !canProceed} />
     </div>
   );
 }

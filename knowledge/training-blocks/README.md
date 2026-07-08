@@ -22,7 +22,7 @@ Training blocks are multi-week structured programmes. Each block type represents
 
 Each training block document must define the following sections:
 
-```
+```markdown
 # [Block Name]
 
 ## Block Objective

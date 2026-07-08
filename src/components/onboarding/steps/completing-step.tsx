@@ -37,7 +37,7 @@ export function CompletingStep({ data, skills }: CompletingStepProps) {
           experienceLevel: "intermediate",
           guitarType: "electric",
           primaryGoals: data.primaryGoals,
-          focusSkills: data.focusSkillNames,
+          focusSkills: data.focusSkillIds,
           availableDays: data.availableDays,
           defaultSessionLengthMinutes: data.defaultSessionLengthMinutes,
           preferredIntensity: data.preferredIntensity,

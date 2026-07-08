@@ -28,7 +28,7 @@ Each skill document is the authoritative source of expertise for that skill area
 
 Each skill document must define the following sections:
 
-```
+```markdown
 # [Skill Name]
 
 ## Definition
