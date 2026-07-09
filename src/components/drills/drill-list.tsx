@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@/convex/_generated/api";
 
 const EXERCISE_TYPE_LABEL: Record<string, string> = {
@@ -14,19 +15,9 @@ const EXERCISE_TYPE_LABEL: Record<string, string> = {
   test: "Test",
 };
 
-type ExerciseListItem = {
-  _id: string;
-  title: string;
-  description: string;
-  difficultyLevel: number;
-  exerciseType: string;
-  supportsBpm: boolean;
-  defaultTargetBpm?: number;
-  estimatedMinutes: number;
-  primarySkillName: string;
-  primarySkillSlug: string;
-  skillSortOrder: number;
-};
+type ExerciseListItem = FunctionReturnType<
+  typeof api.exercises.listExercises
+>[number];
 
 type SkillGroup = {
   slug: string;
@@ -101,9 +92,14 @@ export function DrillList() {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap gap-2">
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-label="Filter drills by skill"
+      >
         <button
           type="button"
+          aria-pressed={selectedSkill === "all"}
           onClick={() => setSelectedSkill("all")}
           className={`font-mono text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-md border transition-colors ${
             selectedSkill === "all"
@@ -117,6 +113,7 @@ export function DrillList() {
           <button
             key={group.slug}
             type="button"
+            aria-pressed={selectedSkill === group.slug}
             onClick={() => setSelectedSkill(group.slug)}
             className={`font-mono text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-md border transition-colors ${
               selectedSkill === group.slug

@@ -17,6 +17,18 @@ describe("skillSlugToKnowledgeFilename", () => {
       "alternate-picking.md",
     );
   });
+
+  it("rejects slugs that could traverse directories", () => {
+    expect(() => skillSlugToKnowledgeFilename("../secrets")).toThrow(
+      /Invalid skill slug/,
+    );
+    expect(() => skillSlugToKnowledgeFilename("foo/bar")).toThrow(
+      /Invalid skill slug/,
+    );
+    expect(() => skillSlugToKnowledgeFilename("..")).toThrow(
+      /Invalid skill slug/,
+    );
+  });
 });
 
 describe("loadSkillKnowledge", () => {
@@ -31,6 +43,12 @@ describe("loadSkillKnowledge", () => {
 
   it("returns null for skills without docs yet", () => {
     expect(loadSkillKnowledge("alternate_picking")).toBeNull();
+  });
+
+  it("returns null for traversal / invalid slugs without reading outside knowledge/skills", () => {
+    expect(loadSkillKnowledge("../package")).toBeNull();
+    expect(loadSkillKnowledge("../../package.json")).toBeNull();
+    expect(loadSkillKnowledge("foo/../../README")).toBeNull();
   });
 });
 

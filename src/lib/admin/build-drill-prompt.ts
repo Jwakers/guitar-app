@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 export type ExerciseSummaryForPrompt = {
   title: string;
@@ -37,9 +37,35 @@ export type BuildDrillPromptInput = {
 let cachedKnowledgeDoc: string | null = null;
 const skillDocCache = new Map<string, string | null>();
 
-/** Map skill slug `string_crossing` → knowledge file `string-crossing.md`. */
+/** Snake_case skill slugs only — rejects path segments and traversal. */
+const SKILL_SLUG_RE = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Map skill slug `string_crossing` → knowledge file `string-crossing.md`.
+ * Throws if the slug is not a safe taxonomy-style identifier.
+ */
 export function skillSlugToKnowledgeFilename(slug: string): string {
+  if (!SKILL_SLUG_RE.test(slug)) {
+    throw new Error(`Invalid skill slug for knowledge lookup: "${slug}"`);
+  }
   return `${slug.replace(/_/g, "-")}.md`;
+}
+
+function resolveSkillKnowledgePath(slug: string): string | null {
+  let filename: string;
+  try {
+    filename = skillSlugToKnowledgeFilename(slug);
+  } catch {
+    return null;
+  }
+
+  const skillsDir = resolve(process.cwd(), "knowledge/skills");
+  const candidate = resolve(skillsDir, filename);
+  const prefix = skillsDir.endsWith(sep) ? skillsDir : `${skillsDir}${sep}`;
+  if (candidate !== skillsDir && !candidate.startsWith(prefix)) {
+    return null;
+  }
+  return candidate;
 }
 
 export function loadDrillGenerationKnowledge(): string {
@@ -54,18 +80,15 @@ export function loadDrillGenerationKnowledge(): string {
 
 /**
  * Load a skill knowledge document if present.
- * Returns null when the file has not been authored yet.
+ * Returns null when the slug is invalid, escapes knowledge/skills, or the file
+ * has not been authored yet.
  */
 export function loadSkillKnowledge(slug: string): string | null {
   if (skillDocCache.has(slug)) {
     return skillDocCache.get(slug) ?? null;
   }
-  const path = join(
-    process.cwd(),
-    "knowledge/skills",
-    skillSlugToKnowledgeFilename(slug),
-  );
-  if (!existsSync(path)) {
+  const path = resolveSkillKnowledgePath(slug);
+  if (path === null || !existsSync(path)) {
     skillDocCache.set(slug, null);
     return null;
   }

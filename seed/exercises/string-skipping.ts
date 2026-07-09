@@ -47,7 +47,7 @@ export const everyOtherStringSkip: ExerciseSeed = {
     "Rushing the note after each jump and losing the downbeat",
   ],
   progressionRule:
-    "Progress to +5 BPM when the user logs 3 consecutive sessions at the current target BPM with Training Verdict 'Nailed It' or 'Nearly There', cleanliness rating 'clean' or 'mostly_clean', and difficulty rating 'easy' or 'good'. Confidence must be medium or high.",
+    "Progress to +5 BPM when the user logs 3 consecutive sessions at the current target BPM with Training Verdict 'Nailed It' or 'Nearly There', cleanliness rating 'clean' or 'mostly_clean', and difficulty rating 'easy' or 'good'.",
   regressionRule:
     "Regress by −5 BPM if the user logs 2 consecutive sessions with Training Verdict 'Needs Work', difficulty rating 'impossible', or cleanliness 'struggled'. If regression would go below 60 BPM, hold at 60 BPM and suggest reviewing basic alternate picking before retrying skips.",
   tabData: {
@@ -395,7 +395,7 @@ export const everyOtherStringSkip: ExerciseSeed = {
   ],
   estimatedMinutes: 3,
   isMvp: true,
-  version: 1,
+  version: 2,
   status: "active",
 };
 
