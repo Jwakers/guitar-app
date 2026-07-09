@@ -1,5 +1,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
+import {
+  CORE_SKILL_DEFINITIONS,
+  CORE_SKILLS,
+  SUB_SKILL_DEFINITIONS,
+  TRAINING_ATTRIBUTES,
+  coreSkillLabel,
+  isSubSkill,
+  skillKnowledgeFilename,
+  subSkillLabel,
+  trainingAttributeLabel,
+  type CoreSkill,
+  type SubSkill,
+  type TrainingAttribute,
+} from "@/lib/skills/taxonomy";
 
 export type ExerciseSummaryForPrompt = {
   title: string;
@@ -7,20 +21,19 @@ export type ExerciseSummaryForPrompt = {
   purpose: string;
   difficultyLevel: number;
   exerciseType: string;
-  primarySkillSlug: string;
-  primarySkillName: string;
-};
-
-export type SkillForPrompt = {
-  name: string;
-  slug: string;
-  description: string;
-  category: string;
+  coreSkillId: CoreSkill;
+  coreSkillName: string;
+  subSkillIds: SubSkill[];
+  subSkillNames: string[];
+  trainingAttributes?: TrainingAttribute[];
 };
 
 export type BuildDrillPromptInput = {
-  primarySkillSlug: string;
-  secondarySkillSlugs: string[];
+  coreSkillId: CoreSkill;
+  subSkillIds: SubSkill[];
+  trainingAttributes: TrainingAttribute[];
+  trainingAttributesInferred?: boolean;
+  trainingAttributeDistribution?: string;
   /** Explicit difficulty, or omit when the server inferred one. */
   difficultyLevel: number;
   difficultyInferred: boolean;
@@ -29,7 +42,6 @@ export type BuildDrillPromptInput = {
   targetBpm?: number;
   direction?: string;
   existingDrills: ExerciseSummaryForPrompt[];
-  skills: SkillForPrompt[];
   priorExerciseJson?: string;
   refineInstruction?: string;
 };
@@ -37,18 +49,15 @@ export type BuildDrillPromptInput = {
 let cachedKnowledgeDoc: string | null = null;
 const skillDocCache = new Map<string, string | null>();
 
-/** Snake_case skill slugs only — rejects path segments and traversal. */
-const SKILL_SLUG_RE = /^[a-z][a-z0-9_]*$/;
-
 /**
  * Map skill slug `string_crossing` → knowledge file `string-crossing.md`.
- * Throws if the slug is not a safe taxonomy-style identifier.
+ * Throws if the slug is not a known sub-skill identifier.
  */
 export function skillSlugToKnowledgeFilename(slug: string): string {
-  if (!SKILL_SLUG_RE.test(slug)) {
+  if (!isSubSkill(slug)) {
     throw new Error(`Invalid skill slug for knowledge lookup: "${slug}"`);
   }
-  return `${slug.replace(/_/g, "-")}.md`;
+  return skillKnowledgeFilename(slug);
 }
 
 function resolveSkillKnowledgePath(slug: string): string | null {
@@ -101,7 +110,11 @@ const SCHEMA_CONSTRAINTS = `
 ## Runtime schema constraints (must obey)
 
 ExerciseSeed fields:
-- primarySkillId / secondarySkillIds are skill SLUGS (snake_case), not DB IDs
+- coreSkillId: ${CORE_SKILLS.map((id) => `\`${id}\``).join(" | ")}
+- subSkillIds: known sub-skill IDs compatible with coreSkillId
+- trainingAttributes: one or more of ${TRAINING_ATTRIBUTES.map((id) => `\`${id}\``).join(" | ")}
+- patternType: micro_drill | standard_loop | musical_sequence | benchmark
+- microDrillJustification: required when patternType is micro_drill
 - difficultyLevel: integer 1–10
 - exerciseType: warmup | primary | secondary | accessory | isolation | test
 - primaryProgressMetric: clean_bpm | accuracy_score | timing_consistency | control_score | clean_reps | endurance_duration | noise_control | comfort_score
@@ -129,27 +142,23 @@ const FEW_SHOT_STRUCTURE = `
 ## Few-shot structure reference (do NOT copy content)
 
 Example shape from Single String Alternate Picking Control:
-- primarySkillId: "alternate_picking"
-- secondarySkillIds: ["rhythm", "synchronisation"]
+- coreSkillId: "picking"
+- subSkillIds: ["alternate_picking"]
+- trainingAttributes: ["speed", "consistency"]
 - exerciseType: "primary"
 - primaryProgressMetric: "clean_bpm"
 - supportsBpm: true, defaultTargetBpm: 90
 - tabData: 2 bars of eighth notes on string 6, frets 5–8, alternating down/up picking
 - feedbackSchema includes actual_bpm, training_verdict, difficulty, cleanliness (+ optional follow-up)
+- patternType: "standard_loop"
 - isMvp: true, version: 1, status: "active"
 `.trim();
 
-function formatSkillDocSection(
-  label: string,
-  slug: string,
-  skills: SkillForPrompt[],
-): string {
-  const meta = skills.find((s) => s.slug === slug);
+function formatSkillDocSection(label: string, slug: SubSkill): string {
+  const meta = SUB_SKILL_DEFINITIONS[slug];
   const doc = loadSkillKnowledge(slug);
   const header = `### ${label}: \`${slug}\``;
-  const blurb = meta
-    ? `${meta.name} [${meta.category}] — ${meta.description}`
-    : "(skill not found in taxonomy list)";
+  const blurb = `${meta.label} [${coreSkillLabel(meta.coreSkillId)}] — ${meta.description}`;
 
   if (doc) {
     return [
@@ -181,12 +190,15 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
       : input.existingDrills
           .map(
             (d) =>
-              `- ${d.title} (${d.slug}) | skill=${d.primarySkillSlug} | difficulty=${d.difficultyLevel} | type=${d.exerciseType} | purpose: ${d.purpose}`,
+              `- ${d.title} (${d.slug}) | core=${d.coreSkillId} | subSkills=${d.subSkillIds.join(", ") || "(none)"} | difficulty=${d.difficultyLevel} | type=${d.exerciseType} | purpose: ${d.purpose}`,
           )
           .join("\n");
 
-  const skillsList = input.skills
-    .map((s) => `- ${s.slug}: ${s.name} [${s.category}] — ${s.description}`)
+  const taxonomyList = CORE_SKILLS
+    .map((id) => {
+      const core = CORE_SKILL_DEFINITIONS[id];
+      return `- ${id}: ${core.label} — ${core.description}`;
+    })
     .join("\n");
 
   const system = [
@@ -206,19 +218,38 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
 
   const parts: string[] = [
     "## Generation request",
-    `Primary skill slug: ${input.primarySkillSlug}`,
-    `Secondary skill slugs: ${input.secondarySkillSlugs.join(", ") || "(none)"}`,
+    `Core Skill: ${input.coreSkillId} (${coreSkillLabel(input.coreSkillId)})`,
+    `Sub-skills: ${
+      input.subSkillIds.map((id) => `${id} (${subSkillLabel(id)})`).join(", ") ||
+      "(none)"
+    }`,
+    `Training attributes: ${input.trainingAttributes
+      .map((id) => `${id} (${trainingAttributeLabel(id)})`)
+      .join(", ")}${
+      input.trainingAttributesInferred ? " (AUTO-INFERRED — do not change these)" : ""
+    }`,
     `Exercise type: ${input.exerciseType}`,
   ];
+
+  if (input.trainingAttributesInferred) {
+    parts.push(
+      "Training attributes were chosen to balance the library for this taxonomy slice.",
+      ...(input.trainingAttributeDistribution
+        ? [
+            `Current training attribute counts for this taxonomy slice: ${input.trainingAttributeDistribution}`,
+          ]
+        : []),
+    );
+  }
 
   if (input.difficultyInferred) {
     parts.push(
       `Difficulty level: ${input.difficultyLevel} (AUTO-INFERRED — do not change this)`,
-      "Difficulty was chosen because this skill's library is under-filled at this level.",
+      "Difficulty was chosen because this taxonomy slice is under-filled at this level.",
       "Library difficulty targets follow a mid-heavy bell curve focused on 4–8; extremes (1–2, 9–10) stay sparse.",
       ...(input.difficultyDistribution
         ? [
-            `Current difficulty counts for this skill: ${input.difficultyDistribution}`,
+            `Current difficulty counts for this taxonomy slice: ${input.difficultyDistribution}`,
           ]
         : []),
     );
@@ -235,19 +266,19 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
 
   parts.push(
     "",
-    "## Primary skill context (authoritative)",
-    formatSkillDocSection("Primary skill", input.primarySkillSlug, input.skills),
+    "## Core skill context",
+    `${coreSkillLabel(input.coreSkillId)} — ${CORE_SKILL_DEFINITIONS[input.coreSkillId].description}`,
   );
 
-  if (input.secondarySkillSlugs.length > 0) {
-    parts.push("", "## Secondary skill context");
-    for (const slug of input.secondarySkillSlugs) {
-      parts.push(formatSkillDocSection("Secondary skill", slug, input.skills));
+  if (input.subSkillIds.length > 0) {
+    parts.push("", "## Sub-skill context");
+    for (const slug of input.subSkillIds) {
+      parts.push(formatSkillDocSection("Sub-skill", slug));
       parts.push("");
     }
   }
 
-  parts.push("", "## Available skills (use these slugs only)", skillsList);
+  parts.push("", "## Available core skills (use these IDs only)", taxonomyList);
   parts.push(
     "",
     "## Existing drills — DO NOT DUPLICATE",
@@ -270,17 +301,18 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "",
     "## Output requirements",
     "Return a single structured object with:",
-    "- exercise: full ExerciseSeed (skill slugs, valid tabData, feedbackSchema with training_verdict)",
+    "- exercise: full ExerciseSeed (coreSkillId, subSkillIds, trainingAttributes, patternType, valid tabData, feedbackSchema with training_verdict)",
     "- briefMarkdown: human-readable brief using the sections from the knowledge doc §5",
     "- qualityScore: six category scores 0–5 plus total (must equal sum)",
-    "- patternType: one of micro_drill | standard_loop | musical_sequence | benchmark (see knowledge doc §3; default most MVP drills to standard_loop)",
+    "- patternType may also be returned at the top level for reviewer display, but exercise.patternType is the source of truth",
     "- redFlags: list any red-flag issues (empty array if none). If the tab has fewer than 8 notes, MUST include: \"Short pattern warning: this drill is very small. Confirm it is intentionally a micro-drill and not an underdeveloped standard drill.\"",
     "- missingFields: any gaps vs required fields (empty if complete)",
     "- reviewerChecklist: suggested human playability review questions for this drill",
     "- refinePrompt: a ready-to-use continuation prompt if the reviewer wants to iterate further",
     "",
-    "Tab patterns MUST obey the primary skill boundary (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
+    "Tab patterns MUST obey sub-skill boundaries (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
     "Prefer complete 1–2 bar loops (8–16+ notes for picking/sync) over tiny fragments unless patternType is micro_drill with a clear isolation justification.",
+    "Do not create full drills for techniques that are only useful in isolation. For lead articulation, prefer musical-context phrases such as pentatonic phrase → bend → hold → vibrato, or legato fragment → target note → controlled vibrato.",
   );
 
   return { system, prompt: parts.join("\n") };

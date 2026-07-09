@@ -4,6 +4,38 @@ import { requireCurrentUser } from "./lib/auth";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
 
+const coreSkillValidator = v.union(
+  v.literal("picking"),
+  v.literal("fretting_control"),
+  v.literal("synchronisation"),
+  v.literal("rhythm_timing"),
+  v.literal("muting_noise_control"),
+  v.literal("lead_articulation"),
+  v.literal("chord_changes"),
+);
+
+const subSkillValidator = v.union(
+  v.literal("alternate_picking"),
+  v.literal("string_crossing"),
+  v.literal("string_skipping"),
+  v.literal("finger_independence"),
+  v.literal("fretting_accuracy"),
+  v.literal("position_shifting"),
+  v.literal("legato"),
+  v.literal("bends"),
+  v.literal("vibrato"),
+  v.literal("slides"),
+  v.literal("palm_muting"),
+  v.literal("fret_hand_muting"),
+  v.literal("subdivision_control"),
+  v.literal("accent_control"),
+);
+
+const skillTargetValidator = v.union(
+  v.object({ kind: v.literal("core"), id: coreSkillValidator }),
+  v.object({ kind: v.literal("sub"), id: subSkillValidator }),
+);
+
 function deriveStatus(rating: 1 | 2 | 3 | 4 | 5): SkillRatingStatus {
   if (rating <= 2) return "weak";
   if (rating === 3) return "developing";
@@ -25,7 +57,8 @@ export const saveOnboardingAnswers = mutation({
       experienceLevel: v.string(),
       guitarType: v.string(),
       primaryGoals: v.array(v.string()),
-      focusSkills: v.array(v.string()),
+      focusCoreSkillIds: v.array(coreSkillValidator),
+      focusSubSkillIds: v.array(subSkillValidator),
       availableDays: v.array(v.string()),
       defaultSessionLengthMinutes: v.number(),
       preferredIntensity: v.string(),
@@ -33,7 +66,7 @@ export const saveOnboardingAnswers = mutation({
     }),
     skillRatings: v.array(
       v.object({
-        skillId: v.id("skills"),
+        skillTarget: skillTargetValidator,
         rating: v.union(
           v.literal(1),
           v.literal(2),
@@ -68,17 +101,19 @@ export const saveOnboardingAnswers = mutation({
     }
 
     // Upsert userSkillRatings
-    for (const { skillId, rating } of args.skillRatings) {
+    for (const { skillTarget, rating } of args.skillRatings) {
+      const skillTargetKey = `${skillTarget.kind}:${skillTarget.id}`;
       const existing = await ctx.db
         .query("userSkillRatings")
-        .withIndex("by_userId_skillId", (q) =>
-          q.eq("userId", user._id).eq("skillId", skillId),
+        .withIndex("by_userId_skillTargetKey", (q) =>
+          q.eq("userId", user._id).eq("skillTargetKey", skillTargetKey),
         )
         .unique();
 
       const ratingData = {
         userId: user._id,
-        skillId,
+        skillTargetKey,
+        skillTarget,
         rating: rating * 20, // 1–5 → 20–100
         confidence: 0.5,
         lastAssessedAt: now,

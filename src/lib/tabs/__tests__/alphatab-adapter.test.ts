@@ -1,7 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { halfStepBendAccuracy } from "../../../../seed/exercises/bends";
 import { tabDataToAlphaTex } from "../alphatab-adapter";
 import type { TabData } from "../internal-schema";
+
+const halfStepBendTab: TabData = {
+  tuning: ["E", "A", "D", "G", "B", "E"],
+  tempo: 60,
+  timeSignature: { beats: 4, beatValue: 4 },
+  bars: [
+    {
+      beats: [
+        {
+          duration: "quarter",
+          notes: [{ string: 2, fret: 7, finger: 3, targetPitch: "F#4" }],
+        },
+        {
+          duration: "quarter",
+          accent: true,
+          notes: [
+            {
+              string: 2,
+              fret: 7,
+              finger: 3,
+              technique: "bend",
+              targetPitch: "G4",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
 const baseTab = (overrides: Partial<TabData> = {}): TabData => ({
   tuning: ["E", "A", "D", "G", "B", "E"],
@@ -134,8 +162,8 @@ describe("tabDataToAlphaTex", () => {
     expect(tex).not.toContain("lf");
   });
 
-  it("emits half-step bends for the half-step bend accuracy seed", () => {
-    const tex = tabDataToAlphaTex(halfStepBendAccuracy.tabData);
+  it("emits half-step bends for a half-step bend accuracy pattern", () => {
+    const tex = tabDataToAlphaTex(halfStepBendTab);
     expect(tex).toContain("b (0 2)");
     expect(tex).not.toContain("b (0 4)");
     expect(tex).toContain("7.2{b (0 2) ac}.4");

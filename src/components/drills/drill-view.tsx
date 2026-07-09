@@ -5,6 +5,11 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { TabRenderer } from "@/components/tab-renderer/tab-renderer";
+import {
+  coreSkillLabel,
+  subSkillLabel,
+  trainingAttributeLabel,
+} from "@/lib/skills/taxonomy";
 
 interface DrillViewProps {
   id: string;
@@ -65,6 +70,27 @@ export function DrillView({ id }: DrillViewProps) {
                 {exercise.defaultTargetBpm} BPM
               </span>
             )}
+          </div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="rounded border border-border px-2 py-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+              CORE SKILL: {coreSkillLabel(exercise.coreSkillId).toUpperCase()}
+            </span>
+            {exercise.subSkillIds.map((id) => (
+              <span
+                key={id}
+                className="rounded border border-border px-2 py-1 font-mono text-[10px] tracking-widest text-muted-foreground"
+              >
+                SUB-SKILL: {subSkillLabel(id).toUpperCase()}
+              </span>
+            ))}
+            {exercise.trainingAttributes.map((id) => (
+              <span
+                key={id}
+                className="rounded border border-border px-2 py-1 font-mono text-[10px] tracking-widest text-muted-foreground"
+              >
+                {trainingAttributeLabel(id).toUpperCase()}
+              </span>
+            ))}
           </div>
           <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
             {exercise.title}

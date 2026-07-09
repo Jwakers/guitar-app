@@ -1,12 +1,18 @@
-# Skill Taxonomy
+# Skill Knowledge Docs
 
-This directory contains one document per trainable guitar skill.
+This directory contains one document per sub-skill where extra mechanical guidance is useful.
 
-Each skill document is the authoritative source of expertise for that skill area. The training engine should eventually consume structured data derived from these documents.
+The canonical taxonomy is:
+
+```txt
+Core Skill -> Sub-skill -> Drill
+```
+
+Core skills live in code at `src/lib/skills/taxonomy.ts`. These markdown files add deeper authoring guidance for sub-skills, especially boundaries like “string crossing” vs “string skipping”.
 
 ---
 
-## Skill Documents
+## Sub-skill Documents
 
 ### Written
 
@@ -16,18 +22,19 @@ Each skill document is the authoritative source of expertise for that skill area
 ### Planned
 
 - `alternate-picking.md`
-- `synchronisation.md`
-- `rhythm.md`
-- `legato.md`
-- `vibrato.md`
-- `bends.md`
-- `muting.md`
-- `chord-changes.md`
-- `endurance.md`
-- `speed.md`
+- `finger-independence.md`
 - `fretting-accuracy.md`
+- `position-shifting.md`
+- `legato.md`
+- `bends.md`
+- `vibrato.md`
+- `slides.md`
+- `palm-muting.md`
+- `fret-hand-muting.md`
+- `subdivision-control.md`
+- `accent-control.md`
 
-The drill generator loads `knowledge/skills/{slug-with-hyphens}.md` for the selected primary skill (and any secondary skills that have docs). Missing docs fall back to the short Convex skill description only.
+The drill generator loads `knowledge/skills/{sub-skill-with-hyphens}.md` for selected sub-skills that have docs. Missing docs fall back to the taxonomy description.
 
 ---
 
@@ -36,13 +43,13 @@ The drill generator loads `knowledge/skills/{slug-with-hyphens}.md` for the sele
 Each skill document must define the following sections:
 
 ```markdown
-# [Skill Name]
+# [Sub-skill Name]
 
 ## Definition
-What this skill is.
+What this sub-skill is.
 
 ## Why It Matters
-The practical importance of this skill in a guitarist's playing.
+The practical importance of this sub-skill in a guitarist's playing.
 
 ## Primary Purpose
 The core training goal.
@@ -79,7 +86,7 @@ How a player advances from beginner to mastery in this skill.
 The conditions under which a player should step back to an earlier level.
 
 ## Prerequisites
-Skills or techniques the player should have before prioritising this skill.
+Core skills, sub-skills, or techniques the player should have before prioritising this sub-skill.
 
 ## Advanced Techniques Unlocked
 What becomes available once this skill reaches a high level.

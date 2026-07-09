@@ -8,8 +8,11 @@
  * @module
  */
 
+import type * as devReset from "../devReset.js";
 import type * as exercises from "../exercises.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_exerciseValidators from "../lib/exerciseValidators.js";
+import type * as lib_upsertExercise from "../lib/upsertExercise.js";
 import type * as onboarding from "../onboarding.js";
 import type * as skills from "../skills.js";
 import type * as users from "../users.js";
@@ -21,8 +24,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  devReset: typeof devReset;
   exercises: typeof exercises;
   "lib/auth": typeof lib_auth;
+  "lib/exerciseValidators": typeof lib_exerciseValidators;
+  "lib/upsertExercise": typeof lib_upsertExercise;
   onboarding: typeof onboarding;
   skills: typeof skills;
   users: typeof users;

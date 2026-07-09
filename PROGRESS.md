@@ -18,12 +18,12 @@ Track what is built and what remains. Update this file as features land.
 ### Phase 1 features
 - [x] Convex user sync (`convex/users.ts` — createOrUpdateUser, getCurrentUser)
 - [x] Convex auth helper (`convex/lib/auth.ts` — requireCurrentUser)
-- [x] Skill taxonomy seed data (`seed/skills.ts` — 13 MVP skills)
-- [x] Skills Convex functions (`convex/skills.ts` — seedSkills, listSkills)
+- [x] Static skill taxonomy (`src/lib/skills/taxonomy.ts` — Core Skill → Sub-skill)
+- [x] Skills Convex functions (`convex/skills.ts` — taxonomy queries)
 - [x] App shell layout (`src/app/(app)/layout.tsx`)
 - [x] Bottom navigation (Today / Progress / Training / Profile)
 - [x] UserSync component (creates Convex user record on first auth)
-- [ ] Exercise seed data (MVP set)
+- [x] Exercise authoring workflow (dev Convex + `pnpm migrate:exercises` → prod)
 
 ---
 
@@ -66,7 +66,7 @@ Track what is built and what remains. Update this file as features land.
 
 - [ ] Skill rating update logic (`convex/progression.ts`)
 - [ ] Progress dashboard (`/progress`)
-- [ ] Skill detail page (`/progress/skills/[skillId]`)
+- [ ] Skill target detail page (`/progress/targets/[skillTarget]`)
 - [ ] Exercise history view
 - [ ] Personal best tracking
 - [ ] Trend indicators (7-day, 30-day)
@@ -103,7 +103,7 @@ Track what is built and what remains. Update this file as features land.
 | Today (stub) | `/today` | Stub |
 | Practice player | `/train/[sessionId]` | Not built |
 | Progress | `/progress` | Not built |
-| Skill detail | `/progress/skills/[skillId]` | Not built |
+| Skill target detail | `/progress/targets/[skillTarget]` | Not built |
 | Training blocks | `/training` | Not built |
 | Exercise library | `/exercises` | Not built |
 | Exercise detail | `/exercises/[exerciseId]` | Not built |

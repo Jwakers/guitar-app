@@ -1,173 +1,33 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
-import { ALL_EXERCISES } from "../seed/exercises/index";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { requireSuperUser } from "./lib/auth";
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Normalise a skill name to the slug format used in seed files. */
-function nameToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, "_");
-}
-
-const exerciseTypeValidator = v.union(
-  v.literal("warmup"),
-  v.literal("primary"),
-  v.literal("secondary"),
-  v.literal("accessory"),
-  v.literal("isolation"),
-  v.literal("test"),
-);
-
-const primaryProgressMetricValidator = v.union(
-  v.literal("clean_bpm"),
-  v.literal("accuracy_score"),
-  v.literal("timing_consistency"),
-  v.literal("control_score"),
-  v.literal("clean_reps"),
-  v.literal("endurance_duration"),
-  v.literal("noise_control"),
-  v.literal("comfort_score"),
-);
-
-const exerciseStatusValidator = v.union(
-  v.literal("active"),
-  v.literal("deprecated"),
-  v.literal("replaced"),
-);
-
-const tabDataValidator = v.object({
-  tuning: v.array(v.string()),
-  capo: v.optional(v.number()),
-  tempo: v.number(),
-  timeSignature: v.object({ beats: v.number(), beatValue: v.number() }),
-  bars: v.array(
-    v.object({
-      beats: v.array(
-        v.object({
-          duration: v.union(
-            v.literal("whole"),
-            v.literal("half"),
-            v.literal("quarter"),
-            v.literal("eighth"),
-            v.literal("sixteenth"),
-          ),
-          tuplet: v.optional(v.number()),
-          notes: v.array(
-            v.object({
-              string: v.union(
-                v.literal(1),
-                v.literal(2),
-                v.literal(3),
-                v.literal(4),
-                v.literal(5),
-                v.literal(6),
-              ),
-              fret: v.number(),
-              finger: v.optional(
-                v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
-              ),
-              technique: v.optional(
-                v.union(
-                  v.literal("picked"),
-                  v.literal("hammer_on"),
-                  v.literal("pull_off"),
-                  v.literal("slide"),
-                  v.literal("bend"),
-                  v.literal("release"),
-                  v.literal("vibrato"),
-                  v.literal("mute"),
-                  v.literal("harmonic"),
-                ),
-              ),
-              targetPitch: v.optional(v.string()),
-            }),
-          ),
-          picking: v.optional(
-            v.union(
-              v.literal("down"),
-              v.literal("up"),
-              v.literal("alternate"),
-              v.literal("economy"),
-              v.literal("sweep"),
-            ),
-          ),
-          accent: v.optional(v.boolean()),
-          rest: v.optional(v.boolean()),
-        }),
-      ),
-    }),
-  ),
-  displayHints: v.optional(
-    v.object({
-      showPicking: v.optional(v.boolean()),
-      showAccents: v.optional(v.boolean()),
-      showFingering: v.optional(v.boolean()),
-      loopStartBar: v.optional(v.number()),
-      loopEndBar: v.optional(v.number()),
-    }),
-  ),
-});
-
-const feedbackSchemaValidator = v.array(
-  v.object({
-    id: v.string(),
-    label: v.string(),
-    type: v.union(
-      v.literal("segmented"),
-      v.literal("rating"),
-      v.literal("number"),
-      v.literal("boolean"),
-      v.literal("choice"),
-    ),
-    required: v.boolean(),
-    options: v.optional(
-      v.array(v.object({ id: v.string(), label: v.string() })),
-    ),
-    followUpRules: v.optional(
-      v.array(
-        v.object({ ifOptionId: v.string(), showQuestionId: v.string() }),
-      ),
-    ),
-  }),
-);
-
-async function resolveSkillSlugs(
-  ctx: MutationCtx,
-  primarySkillId: string,
-  secondarySkillIds: string[],
-): Promise<{
-  primarySkillId: Id<"skills">;
-  secondarySkillIds: Id<"skills">[];
-}> {
-  const skills = await ctx.db.query("skills").collect();
-  const skillBySlug = new Map<string, Id<"skills">>();
-  for (const skill of skills) {
-    skillBySlug.set(nameToSlug(skill.name), skill._id);
-  }
-
-  const primary = skillBySlug.get(primarySkillId);
-  if (!primary) {
-    throw new Error(
-      `No skill found for primarySkillId slug "${primarySkillId}". Run skills:seedSkills first.`,
-    );
-  }
-
-  const secondary: Id<"skills">[] = [];
-  for (const slug of secondarySkillIds) {
-    const id = skillBySlug.get(slug);
-    if (!id) {
-      throw new Error(`No skill found for secondarySkillId slug "${slug}".`);
-    }
-    secondary.push(id);
-  }
-
-  return { primarySkillId: primary, secondarySkillIds: secondary };
-}
+import {
+  coreSkillValidator,
+  exerciseSeedValidator,
+  exerciseStatusValidator,
+  exerciseTypeValidator,
+  feedbackSchemaValidator,
+  patternTypeValidator,
+  primaryProgressMetricValidator,
+  subSkillValidator,
+  tabDataValidator,
+  trainingAttributeValidator,
+} from "./lib/exerciseValidators";
+import {
+  exerciseDocToSeed,
+  upsertExerciseBySlug,
+} from "./lib/upsertExercise";
+import {
+  CORE_SKILL_DEFINITIONS,
+  coreSkillLabel,
+  subSkillLabel,
+  trainingAttributeLabel,
+} from "../src/lib/skills/taxonomy";
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -183,45 +43,26 @@ export const listExercises = query({
       slug: v.string(),
       description: v.string(),
       difficultyLevel: v.number(),
-      exerciseType: v.union(
-        v.literal("warmup"),
-        v.literal("primary"),
-        v.literal("secondary"),
-        v.literal("accessory"),
-        v.literal("isolation"),
-        v.literal("test"),
-      ),
-      primaryProgressMetric: v.union(
-        v.literal("clean_bpm"),
-        v.literal("accuracy_score"),
-        v.literal("timing_consistency"),
-        v.literal("control_score"),
-        v.literal("clean_reps"),
-        v.literal("endurance_duration"),
-        v.literal("noise_control"),
-        v.literal("comfort_score"),
-      ),
+      exerciseType: exerciseTypeValidator,
+      primaryProgressMetric: primaryProgressMetricValidator,
       supportsBpm: v.boolean(),
       defaultTargetBpm: v.optional(v.number()),
       estimatedMinutes: v.number(),
       isMvp: v.boolean(),
-      primarySkillId: v.id("skills"),
-      primarySkillName: v.string(),
-      primarySkillSlug: v.string(),
+      coreSkillId: coreSkillValidator,
+      coreSkillName: v.string(),
+      subSkillIds: v.array(subSkillValidator),
+      subSkillNames: v.array(v.string()),
+      trainingAttributes: v.array(trainingAttributeValidator),
+      trainingAttributeNames: v.array(v.string()),
       skillSortOrder: v.number(),
     }),
   ),
   handler: async (ctx) => {
-    const [exercises, skills] = await Promise.all([
-      ctx.db.query("exercises").collect(),
-      ctx.db.query("skills").collect(),
-    ]);
-
-    const skillById = new Map(skills.map((s) => [s._id, s]));
+    const exercises = await ctx.db.query("exercises").collect();
 
     return exercises
       .map((ex) => {
-        const skill = skillById.get(ex.primarySkillId);
         return {
           _id: ex._id,
           _creationTime: ex._creationTime,
@@ -235,10 +76,13 @@ export const listExercises = query({
           defaultTargetBpm: ex.defaultTargetBpm,
           estimatedMinutes: ex.estimatedMinutes,
           isMvp: ex.isMvp,
-          primarySkillId: ex.primarySkillId,
-          primarySkillName: skill?.name ?? "Unknown",
-          primarySkillSlug: skill ? nameToSlug(skill.name) : "unknown",
-          skillSortOrder: skill?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+          coreSkillId: ex.coreSkillId,
+          coreSkillName: coreSkillLabel(ex.coreSkillId),
+          subSkillIds: ex.subSkillIds,
+          subSkillNames: ex.subSkillIds.map(subSkillLabel),
+          trainingAttributes: ex.trainingAttributes,
+          trainingAttributeNames: ex.trainingAttributes.map(trainingAttributeLabel),
+          skillSortOrder: CORE_SKILL_DEFINITIONS[ex.coreSkillId].sortOrder,
         };
       })
       .sort((a, b) => {
@@ -267,135 +111,26 @@ export const getExercise = query({
       minimumCleanStandard: v.string(),
       measurementInstructions: v.string(),
       coachingNotes: v.array(v.string()),
-      primarySkillId: v.id("skills"),
-      secondarySkillIds: v.array(v.id("skills")),
+      coreSkillId: coreSkillValidator,
+      subSkillIds: v.array(subSkillValidator),
+      trainingAttributes: v.array(trainingAttributeValidator),
       difficultyLevel: v.number(),
-      exerciseType: v.union(
-        v.literal("warmup"),
-        v.literal("primary"),
-        v.literal("secondary"),
-        v.literal("accessory"),
-        v.literal("isolation"),
-        v.literal("test"),
-      ),
-      primaryProgressMetric: v.union(
-        v.literal("clean_bpm"),
-        v.literal("accuracy_score"),
-        v.literal("timing_consistency"),
-        v.literal("control_score"),
-        v.literal("clean_reps"),
-        v.literal("endurance_duration"),
-        v.literal("noise_control"),
-        v.literal("comfort_score"),
-      ),
+      exerciseType: exerciseTypeValidator,
+      primaryProgressMetric: primaryProgressMetricValidator,
       supportsBpm: v.boolean(),
       defaultTargetBpm: v.optional(v.number()),
       successCriteria: v.array(v.string()),
       commonMistakes: v.array(v.string()),
       progressionRule: v.string(),
       regressionRule: v.string(),
-      tabData: v.object({
-        tuning: v.array(v.string()),
-        capo: v.optional(v.number()),
-        tempo: v.number(),
-        timeSignature: v.object({ beats: v.number(), beatValue: v.number() }),
-        bars: v.array(
-          v.object({
-            beats: v.array(
-              v.object({
-                duration: v.union(
-                  v.literal("whole"),
-                  v.literal("half"),
-                  v.literal("quarter"),
-                  v.literal("eighth"),
-                  v.literal("sixteenth"),
-                ),
-                tuplet: v.optional(v.number()),
-                notes: v.array(
-                  v.object({
-                    string: v.union(
-                      v.literal(1),
-                      v.literal(2),
-                      v.literal(3),
-                      v.literal(4),
-                      v.literal(5),
-                      v.literal(6),
-                    ),
-                    fret: v.number(),
-                    finger: v.optional(
-                      v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
-                    ),
-                    technique: v.optional(
-                      v.union(
-                        v.literal("picked"),
-                        v.literal("hammer_on"),
-                        v.literal("pull_off"),
-                        v.literal("slide"),
-                        v.literal("bend"),
-                        v.literal("release"),
-                        v.literal("vibrato"),
-                        v.literal("mute"),
-                        v.literal("harmonic"),
-                      ),
-                    ),
-                    targetPitch: v.optional(v.string()),
-                  }),
-                ),
-                picking: v.optional(
-                  v.union(
-                    v.literal("down"),
-                    v.literal("up"),
-                    v.literal("alternate"),
-                    v.literal("economy"),
-                    v.literal("sweep"),
-                  ),
-                ),
-                accent: v.optional(v.boolean()),
-                rest: v.optional(v.boolean()),
-              }),
-            ),
-          }),
-        ),
-        displayHints: v.optional(
-          v.object({
-            showPicking: v.optional(v.boolean()),
-            showAccents: v.optional(v.boolean()),
-            showFingering: v.optional(v.boolean()),
-            loopStartBar: v.optional(v.number()),
-            loopEndBar: v.optional(v.number()),
-          }),
-        ),
-      }),
-      feedbackSchema: v.array(
-        v.object({
-          id: v.string(),
-          label: v.string(),
-          type: v.union(
-            v.literal("segmented"),
-            v.literal("rating"),
-            v.literal("number"),
-            v.literal("boolean"),
-            v.literal("choice"),
-          ),
-          required: v.boolean(),
-          options: v.optional(
-            v.array(v.object({ id: v.string(), label: v.string() })),
-          ),
-          followUpRules: v.optional(
-            v.array(
-              v.object({ ifOptionId: v.string(), showQuestionId: v.string() }),
-            ),
-          ),
-        }),
-      ),
+      tabData: tabDataValidator,
+      patternType: patternTypeValidator,
+      microDrillJustification: v.optional(v.string()),
+      feedbackSchema: feedbackSchemaValidator,
       estimatedMinutes: v.number(),
       isMvp: v.boolean(),
       version: v.number(),
-      status: v.union(
-        v.literal("active"),
-        v.literal("deprecated"),
-        v.literal("replaced"),
-      ),
+      status: exerciseStatusValidator,
       replacedBySlug: v.optional(v.string()),
       updatedAt: v.number(),
     }),
@@ -407,113 +142,67 @@ export const getExercise = query({
 });
 
 // ---------------------------------------------------------------------------
-// Seed mutation
+// Dev → prod migration (internal only)
 // ---------------------------------------------------------------------------
 
 /**
- * Idempotent exercise seed migration.
+ * Export active exercises from this deployment for migration.
+ * Identity: slug + version (not Convex _id).
  *
- * Resolution strategy for skill slugs:
- *   - Load all skills; build slug → Id map via normalising the skill name.
- *   - Throw if a required slug has no match (prevents silent data corruption).
- *
- * Idempotency strategy per exercise:
- *   - Same slug, same or higher version → skip.
- *   - Same slug, lower version → patch all fields + bump updatedAt.
- *   - Slug not found → insert.
- *
- * Run once: npx convex run exercises:seedExercises
+ * Run on dev: CONVEX_DEPLOY_KEY=dev:... npx convex run exercises:exportExerciseSeeds
  */
-export const seedExercises = internalMutation({
+export const exportExerciseSeeds = internalQuery({
   args: {},
+  returns: v.array(exerciseSeedValidator),
+  handler: async (ctx) => {
+    const exercises = await ctx.db.query("exercises").collect();
+    return exercises
+      .filter((ex) => ex.status === "active")
+      .map((ex) => exerciseDocToSeed(ex))
+      .sort((a, b) => a.slug.localeCompare(b.slug));
+  },
+});
+
+/**
+ * Idempotent import keyed on slug + version.
+ * Skips when target has same or newer version; patches when source is newer.
+ *
+ * Run on prod: CONVEX_DEPLOY_KEY=prod:... npx convex run exercises:importExerciseSeeds '{"exercises":[...]}'
+ */
+export const importExerciseSeeds = internalMutation({
+  args: {
+    exercises: v.array(exerciseSeedValidator),
+    dryRun: v.optional(v.boolean()),
+  },
   returns: v.object({
     inserted: v.number(),
     updated: v.number(),
     skipped: v.number(),
+    rejected: v.number(),
   }),
-  handler: async (ctx) => {
-    // Build slug → Id<"skills"> lookup
-    const skills = await ctx.db.query("skills").collect();
-    const skillBySlug = new Map<string, (typeof skills)[0]["_id"]>();
-    for (const skill of skills) {
-      skillBySlug.set(nameToSlug(skill.name), skill._id);
-    }
-
+  handler: async (ctx, args) => {
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
-    const now = Date.now();
+    let rejected = 0;
+    const dryRun = args.dryRun ?? false;
 
-    for (const exercise of ALL_EXERCISES) {
-      // Resolve skill slugs to DB IDs
-      const primarySkillId = skillBySlug.get(exercise.primarySkillId);
-      if (!primarySkillId) {
-        throw new Error(
-          `seedExercises: no skill found for primarySkillId slug "${exercise.primarySkillId}". ` +
-            `Run skills:seedSkills first.`,
-        );
-      }
-
-      const secondarySkillIds: (typeof skills)[0]["_id"][] = [];
-      for (const slug of exercise.secondarySkillIds) {
-        const id = skillBySlug.get(slug);
-        if (!id) {
-          throw new Error(
-            `seedExercises: no skill found for secondarySkillId slug "${slug}" ` +
-              `(exercise: "${exercise.slug}"). Run skills:seedSkills first.`,
-          );
-        }
-        secondarySkillIds.push(id);
-      }
-
-      // Check for existing record
-      const existing = await ctx.db
-        .query("exercises")
-        .withIndex("by_slug", (q) => q.eq("slug", exercise.slug))
-        .unique();
-
-      const payload = {
-        title: exercise.title,
-        slug: exercise.slug,
-        description: exercise.description,
-        purpose: exercise.purpose,
-        targetWeaknesses: exercise.targetWeaknesses,
-        minimumCleanStandard: exercise.minimumCleanStandard,
-        measurementInstructions: exercise.measurementInstructions,
-        coachingNotes: exercise.coachingNotes,
-        primarySkillId,
-        secondarySkillIds,
-        difficultyLevel: exercise.difficultyLevel,
-        exerciseType: exercise.exerciseType,
-        primaryProgressMetric: exercise.primaryProgressMetric,
-        supportsBpm: exercise.supportsBpm,
-        defaultTargetBpm: exercise.defaultTargetBpm,
-        successCriteria: exercise.successCriteria,
-        commonMistakes: exercise.commonMistakes,
-        progressionRule: exercise.progressionRule,
-        regressionRule: exercise.regressionRule,
-        tabData: exercise.tabData,
-        feedbackSchema: exercise.feedbackSchema,
-        estimatedMinutes: exercise.estimatedMinutes,
-        isMvp: exercise.isMvp,
-        version: exercise.version,
-        status: exercise.status,
-        replacedBySlug: exercise.replacedBySlug,
-        updatedAt: now,
-      };
-
-      if (!existing) {
-        await ctx.db.insert("exercises", payload);
-        inserted++;
-      } else if (existing.version < exercise.version) {
-        await ctx.db.patch(existing._id, payload);
-        updated++;
-      } else {
-        skipped++;
+    for (const exercise of args.exercises) {
+      try {
+        const result = await upsertExerciseBySlug(ctx, exercise, { dryRun });
+        if (result.action === "inserted") inserted++;
+        else if (result.action === "updated") updated++;
+        else skipped++;
+      } catch (error) {
+        rejected++;
+        console.error("importExerciseSeeds rejected exercise", {
+          slug: exercise.slug,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
-    return { inserted, updated, skipped };
+    return { inserted, updated, skipped, rejected };
   },
 });
 
@@ -531,24 +220,21 @@ export const listExerciseSummaries = query({
       purpose: v.string(),
       difficultyLevel: v.number(),
       exerciseType: exerciseTypeValidator,
-      primarySkillSlug: v.string(),
-      primarySkillName: v.string(),
+      coreSkillId: coreSkillValidator,
+      coreSkillName: v.string(),
+      subSkillIds: v.array(subSkillValidator),
+      subSkillNames: v.array(v.string()),
+      trainingAttributes: v.array(trainingAttributeValidator),
     }),
   ),
   handler: async (ctx) => {
     await requireSuperUser(ctx);
 
-    const [exercises, skills] = await Promise.all([
-      ctx.db.query("exercises").collect(),
-      ctx.db.query("skills").collect(),
-    ]);
-
-    const skillById = new Map(skills.map((s) => [s._id, s]));
+    const exercises = await ctx.db.query("exercises").collect();
 
     return exercises
       .sort((a, b) => a.title.localeCompare(b.title))
       .map((ex) => {
-        const skill = skillById.get(ex.primarySkillId);
         return {
           _id: ex._id,
           title: ex.title,
@@ -556,16 +242,19 @@ export const listExerciseSummaries = query({
           purpose: ex.purpose,
           difficultyLevel: ex.difficultyLevel,
           exerciseType: ex.exerciseType,
-          primarySkillSlug: skill ? nameToSlug(skill.name) : "unknown",
-          primarySkillName: skill?.name ?? "Unknown",
+          coreSkillId: ex.coreSkillId,
+          coreSkillName: coreSkillLabel(ex.coreSkillId),
+          subSkillIds: ex.subSkillIds,
+          subSkillNames: ex.subSkillIds.map(subSkillLabel),
+          trainingAttributes: ex.trainingAttributes,
         };
       });
   },
 });
 
 /**
- * Upserts a generated exercise candidate for DB testing.
- * Does not write to the git seed library — human paste + review still required.
+ * Upserts a generated exercise candidate in the dev authoring environment.
+ * Always overwrites by slug (version bump is the author's responsibility).
  */
 export const saveGeneratedExercise = mutation({
   args: {
@@ -577,8 +266,9 @@ export const saveGeneratedExercise = mutation({
     minimumCleanStandard: v.string(),
     measurementInstructions: v.string(),
     coachingNotes: v.array(v.string()),
-    primarySkillId: v.string(),
-    secondarySkillIds: v.array(v.string()),
+    coreSkillId: coreSkillValidator,
+    subSkillIds: v.array(subSkillValidator),
+    trainingAttributes: v.array(trainingAttributeValidator),
     difficultyLevel: v.number(),
     exerciseType: exerciseTypeValidator,
     primaryProgressMetric: primaryProgressMetricValidator,
@@ -589,6 +279,8 @@ export const saveGeneratedExercise = mutation({
     progressionRule: v.string(),
     regressionRule: v.string(),
     tabData: tabDataValidator,
+    patternType: patternTypeValidator,
+    microDrillJustification: v.optional(v.string()),
     feedbackSchema: feedbackSchemaValidator,
     estimatedMinutes: v.number(),
     isMvp: v.boolean(),
@@ -603,54 +295,22 @@ export const saveGeneratedExercise = mutation({
   handler: async (ctx, args) => {
     await requireSuperUser(ctx);
 
-    const { primarySkillId, secondarySkillIds } = await resolveSkillSlugs(
-      ctx,
-      args.primarySkillId,
-      args.secondarySkillIds,
-    );
+    const result = await upsertExerciseBySlug(ctx, args, {
+      forceOverwrite: true,
+    });
 
-    const now = Date.now();
-    const payload = {
-      title: args.title,
-      slug: args.slug,
-      description: args.description,
-      purpose: args.purpose,
-      targetWeaknesses: args.targetWeaknesses,
-      minimumCleanStandard: args.minimumCleanStandard,
-      measurementInstructions: args.measurementInstructions,
-      coachingNotes: args.coachingNotes,
-      primarySkillId,
-      secondarySkillIds,
-      difficultyLevel: args.difficultyLevel,
-      exerciseType: args.exerciseType,
-      primaryProgressMetric: args.primaryProgressMetric,
-      supportsBpm: args.supportsBpm,
-      defaultTargetBpm: args.defaultTargetBpm,
-      successCriteria: args.successCriteria,
-      commonMistakes: args.commonMistakes,
-      progressionRule: args.progressionRule,
-      regressionRule: args.regressionRule,
-      tabData: args.tabData,
-      feedbackSchema: args.feedbackSchema,
-      estimatedMinutes: args.estimatedMinutes,
-      isMvp: args.isMvp,
-      version: args.version,
-      status: args.status,
-      replacedBySlug: args.replacedBySlug,
-      updatedAt: now,
-    };
-
-    const existing = await ctx.db
-      .query("exercises")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-      .unique();
-
-    if (!existing) {
-      const id = await ctx.db.insert("exercises", payload);
-      return { id, action: "inserted" as const };
+    if (!result.id) {
+      throw new Error("Failed to save exercise");
     }
 
-    await ctx.db.patch(existing._id, payload);
-    return { id: existing._id, action: "updated" as const };
+    const action =
+      result.action === "inserted"
+        ? ("inserted" as const)
+        : ("updated" as const);
+
+    return {
+      id: result.id,
+      action,
+    };
   },
 });

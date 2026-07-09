@@ -69,12 +69,11 @@ function WorkingStatus({
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    setElapsed(0);
     const id = window.setInterval(() => {
       setElapsed((n) => n + 1);
     }, 1000);
     return () => window.clearInterval(id);
-  }, [mode]);
+  }, []);
 
   const stages = mode === "refine" ? REFINE_STAGES : GENERATE_STAGES;
   const stage = stageForElapsed(elapsed, stages);
@@ -108,7 +107,6 @@ function WorkingStatus({
 type GenerateResponse = {
   exercise: ExerciseSeed;
   briefMarkdown: string;
-  seedTs: string;
   qualityScore: QualityScore;
   patternType?:
     | "micro_drill"
@@ -126,7 +124,9 @@ type GenerateResponse = {
   difficultyLevel?: number;
   difficultyInferred?: boolean;
   difficultyDistribution?: string;
-  isFirstForSkill?: boolean;
+  trainingAttributes?: string[];
+  trainingAttributesInferred?: boolean;
+  trainingAttributeDistribution?: string;
 };
 
 const PATTERN_TYPE_LABELS: Record<
@@ -138,10 +138,6 @@ const PATTERN_TYPE_LABELS: Record<
   musical_sequence: "Musical sequence",
   benchmark: "Benchmark",
 };
-
-function nameToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, "_");
-}
 
 function CopyBlock({
   label,
@@ -191,10 +187,14 @@ export function DrillGenerator() {
     api.users.getCurrentUser,
     isAuthenticated ? {} : "skip",
   );
-  const skills = useQuery(api.skills.listSkills);
+  const coreSkills = useQuery(api.skills.listCoreSkills);
+  const allSubSkills = useQuery(api.skills.listSubSkills, {});
+  const trainingAttributeOptions = useQuery(api.skills.listTrainingAttributes);
   const saveExercise = useMutation(api.exercises.saveGeneratedExercise);
 
-  const [primarySkillSlug, setPrimarySkillSlug] = useState("");
+  const [coreSkillId, setCoreSkillId] = useState("");
+  const [subSkillIds, setSubSkillIds] = useState<string[]>([]);
+  const [trainingAttributes, setTrainingAttributes] = useState<string[]>([]);
   /** Empty string = auto-infer from library gaps (mid-heavy 4–8 curve). */
   const [difficultyLevel, setDifficultyLevel] = useState("");
   const [exerciseType, setExerciseType] =
@@ -238,7 +238,11 @@ export function DrillGenerator() {
     notFound();
   }
 
-  if (skills === undefined) {
+  if (
+    coreSkills === undefined ||
+    allSubSkills === undefined ||
+    trainingAttributeOptions === undefined
+  ) {
     return (
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
         <p className="font-mono text-sm text-muted-foreground">Loading…</p>
@@ -246,13 +250,30 @@ export function DrillGenerator() {
     );
   }
 
-  const skillOptions = skills.map((s) => ({
-    slug: nameToSlug(s.name),
-    name: s.name,
-  }));
+  const effectiveCore = coreSkillId || coreSkills[0]?.id || "picking";
+  const subSkillOptions = allSubSkills.filter(
+    (skill) => skill.coreSkillId === effectiveCore,
+  );
+  const effectiveSubSkillIds =
+    subSkillIds.filter((id) =>
+      subSkillOptions.some((skill) => skill.id === id),
+    ) || [];
 
-  const effectivePrimary =
-    primarySkillSlug || skillOptions[0]?.slug || "alternate_picking";
+  function toggleSubSkill(id: string) {
+    setSubSkillIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  }
+
+  function toggleTrainingAttribute(id: string) {
+    setTrainingAttributes((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  }
 
   async function runGenerate(mode: WorkingMode) {
     if (mode === "refine" && !refinePrompt.trim()) {
@@ -271,8 +292,9 @@ export function DrillGenerator() {
         : null;
 
       const payload = {
-        primarySkillSlug: effectivePrimary,
-        secondarySkillSlugs: [] as string[],
+        coreSkillId: effectiveCore,
+        subSkillIds: effectiveSubSkillIds,
+        trainingAttributes,
         difficultyLevel:
           parsedDifficulty != null &&
           Number.isInteger(parsedDifficulty) &&
@@ -345,8 +367,9 @@ export function DrillGenerator() {
         minimumCleanStandard: ex.minimumCleanStandard,
         measurementInstructions: ex.measurementInstructions,
         coachingNotes: ex.coachingNotes,
-        primarySkillId: ex.primarySkillId,
-        secondarySkillIds: ex.secondarySkillIds,
+        coreSkillId: ex.coreSkillId,
+        subSkillIds: ex.subSkillIds,
+        trainingAttributes: ex.trainingAttributes,
         difficultyLevel: ex.difficultyLevel,
         exerciseType: ex.exerciseType,
         primaryProgressMetric: ex.primaryProgressMetric,
@@ -357,6 +380,8 @@ export function DrillGenerator() {
         progressionRule: ex.progressionRule,
         regressionRule: ex.regressionRule,
         tabData: ex.tabData,
+        patternType: ex.patternType,
+        microDrillJustification: ex.microDrillJustification,
         feedbackSchema: ex.feedbackSchema,
         estimatedMinutes: ex.estimatedMinutes,
         isMvp: ex.isMvp,
@@ -367,7 +392,7 @@ export function DrillGenerator() {
 
       setSavedSlug(ex.slug);
       setSaveMessage(
-        `Saved to Convex (${saved.action}: ${saved.id}). Paste the seed TypeScript into /seed/exercises/ for git permanence — production acceptance still requires the knowledge-doc checklist.`,
+        `Saved to dev (${saved.action}: ${saved.id}). When reviewed and accepted, run \`pnpm migrate:exercises\` to promote active exercises to production.`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -386,7 +411,7 @@ export function DrillGenerator() {
           DRILL GENERATOR
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Super-user tool. Candidates only — never auto-seeds the git library.
+          Super-user tool. Candidates only — save to dev, then migrate to prod.
           Guided by{" "}
           <code className="font-mono text-xs">
             knowledge/drills/drill-generation-and-validation.md
@@ -403,20 +428,87 @@ export function DrillGenerator() {
         >
           <label className="block space-y-1">
             <span className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              PRIMARY SKILL
+              CORE SKILL
             </span>
             <select
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              value={effectivePrimary}
-              onChange={(e) => setPrimarySkillSlug(e.target.value)}
+              value={effectiveCore}
+              onChange={(e) => {
+                setCoreSkillId(e.target.value);
+                setSubSkillIds([]);
+              }}
             >
-              {skillOptions.map((s) => (
-                <option key={s.slug} value={s.slug}>
+              {coreSkills.map((s) => (
+                <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
             </select>
           </label>
+
+          <div className="space-y-2">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+              SUB-SKILLS
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {subSkillOptions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No sub-skill required for this core skill.
+                </p>
+              ) : (
+                subSkillOptions.map((skill) => {
+                  const selected = effectiveSubSkillIds.includes(skill.id);
+                  return (
+                    <button
+                      key={skill.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => toggleSubSkill(skill.id)}
+                      className={cn(
+                        "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
+                        selected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-card text-foreground hover:border-border/60 hover:bg-muted/50",
+                      )}
+                    >
+                      {skill.name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <span className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+              TRAINING ATTRIBUTES (OPTIONAL)
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {trainingAttributeOptions.map((attribute) => {
+                const selected = trainingAttributes.includes(attribute.id);
+                return (
+                  <button
+                    key={attribute.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleTrainingAttribute(attribute.id)}
+                    className={cn(
+                      "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
+                      selected
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-foreground hover:border-border/60 hover:bg-muted/50",
+                    )}
+                  >
+                    {attribute.name}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="block text-xs text-muted-foreground">
+              Leave all unselected to auto-infer from library gaps for this
+              core/sub-skill — weighted toward typical attributes for the skill.
+            </span>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="block space-y-1">
@@ -510,7 +602,11 @@ export function DrillGenerator() {
         </form>
 
         {workingMode && (
-          <WorkingStatus mode={workingMode} modelLabel={modelLabel} />
+          <WorkingStatus
+            key={workingMode}
+            mode={workingMode}
+            modelLabel={modelLabel}
+          />
         )}
 
         {error && (
@@ -533,12 +629,30 @@ export function DrillGenerator() {
                   ? " · AUTO-INFERRED FROM LIBRARY GAPS"
                   : ""}
               </p>
+              {result.trainingAttributes && (
+                <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+                  ATTRIBUTES{" "}
+                  {result.trainingAttributes
+                    .map((id) => id.replaceAll("_", " ").toUpperCase())
+                    .join(" · ")}
+                  {result.trainingAttributesInferred
+                    ? " · AUTO-INFERRED FROM LIBRARY GAPS"
+                    : ""}
+                </p>
+              )}
               {result.difficultyInferred && result.difficultyDistribution && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Skill distribution before this candidate:{" "}
                   {result.difficultyDistribution}
                 </p>
               )}
+              {result.trainingAttributesInferred &&
+                result.trainingAttributeDistribution && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Attribute distribution before this candidate:{" "}
+                    {result.trainingAttributeDistribution}
+                  </p>
+                )}
               <p className="mt-2 text-sm text-muted-foreground">
                 {result.exercise.description}
               </p>
@@ -644,14 +758,6 @@ export function DrillGenerator() {
 
           <div className="mx-auto mt-8 w-full max-w-2xl space-y-6 px-4">
             <CopyBlock label="DRILL BRIEF" value={result.briefMarkdown} />
-            <CopyBlock
-              label={
-                result.isFirstForSkill
-                  ? "SEED TYPESCRIPT (NEW FILE)"
-                  : "SEED TYPESCRIPT"
-              }
-              value={result.seedTs}
-            />
 
             <section className="space-y-2">
               <label className="block space-y-2">

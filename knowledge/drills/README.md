@@ -6,15 +6,27 @@ No drill should enter the production exercise library without a corresponding do
 
 The platform targets approximately 40–80 exceptional drills, not hundreds of mediocre ones.
 
-**Process & scoring authority:** [`drill-generation-and-validation.md`](./drill-generation-and-validation.md) — how drills are generated, scored, reviewed, validated, and accepted. The internal drill-generation tool must use this document as intelligence for drafting and quality checks. Generated drills are candidates only; they must not enter seed data without schema validation, training-value review, and human playability review.
+**Process & scoring authority:** [`drill-generation-and-validation.md`](./drill-generation-and-validation.md) — how drills are generated, scored, reviewed, validated, and accepted. The internal drill-generation tool must use this document as intelligence for drafting and quality checks. Generated drills are candidates only; they must not enter production without schema validation, training-value review, human playability review, and migration via [`docs/exercise-migration.md`](../../docs/exercise-migration.md).
+
+---
+
+## Exercise migration
+
+Exercises are authored in Convex **dev** and promoted to **production** with:
+
+```bash
+pnpm migrate:exercises
+```
+
+See [`docs/exercise-migration.md`](../../docs/exercise-migration.md) for deploy keys, idempotency rules, and workflow.
 
 ---
 
 ## Planned Drill Documents
 
-Organised by primary skill:
+Organised by core skill and sub-skill:
 
-**Alternate Picking**
+**Picking / Alternate Picking**
 - `alternate-picking-single-string-l1.md`
 - `alternate-picking-two-string-l2.md`
 - `alternate-picking-string-crossing-l3.md`
@@ -22,20 +34,20 @@ Organised by primary skill:
 **Synchronisation**
 - `chromatic-synchronisation-l1.md`
 
-**Rhythm**
+**Rhythm & Timing / Subdivision Control**
 - `rhythm-subdivision-quarter-l1.md`
 - `rhythm-subdivision-eighth-l2.md`
 
-**Legato**
+**Lead Articulation / Legato**
 - `hammer-on-pull-off-l1.md`
 
-**Bends**
+**Lead Articulation / Bends**
 - `whole-step-bend-l1.md`
 
-**Vibrato**
+**Lead Articulation / Vibrato**
 - `vibrato-control-l1.md`
 
-**Muting**
+**Muting & Noise Control / Palm Muting**
 - `palm-muting-control-l1.md`
 
 *(Remaining drills to be authored before exercise seed work begins.)*
@@ -52,8 +64,14 @@ Each drill document must define the following sections:
 ## Purpose
 The specific training goal this drill addresses.
 
-## Target Skill
-Primary skill trained (links to knowledge/skills/).
+## Core Skill
+Broad trainable area.
+
+## Sub-skills
+Specific technique IDs trained by the drill.
+
+## Training Attributes
+Modifiers such as speed, endurance, accuracy, control, and consistency.
 
 ## Target Weakness
 The specific gap or weakness this drill exposes and develops.
@@ -86,7 +104,7 @@ The conditions under which a player should step back to an easier variation.
 How the player quantifies their performance.
 
 ## Tab Reference
-Reference to the structured tab data for this drill (links to seed/exercises/).
+Reference to the structured tab data for this drill (stored in Convex dev/prod).
 
 ## Session Suitability
 Recommended session types and slot positions.
@@ -95,5 +113,5 @@ Recommended session types and slot positions.
 Links to drills that complement or follow from this one.
 
 ## Prerequisites
-Skills or drills the player should have before attempting this drill.
+Core skills, sub-skills, or drills the player should have before attempting this drill.
 ```

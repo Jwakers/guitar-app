@@ -32,6 +32,53 @@ const sessionSlotType = v.union(
   v.literal("maintenance"),
 );
 
+const coreSkill = v.union(
+  v.literal("picking"),
+  v.literal("fretting_control"),
+  v.literal("synchronisation"),
+  v.literal("rhythm_timing"),
+  v.literal("muting_noise_control"),
+  v.literal("lead_articulation"),
+  v.literal("chord_changes"),
+);
+
+const subSkill = v.union(
+  v.literal("alternate_picking"),
+  v.literal("string_crossing"),
+  v.literal("string_skipping"),
+  v.literal("finger_independence"),
+  v.literal("fretting_accuracy"),
+  v.literal("position_shifting"),
+  v.literal("legato"),
+  v.literal("bends"),
+  v.literal("vibrato"),
+  v.literal("slides"),
+  v.literal("palm_muting"),
+  v.literal("fret_hand_muting"),
+  v.literal("subdivision_control"),
+  v.literal("accent_control"),
+);
+
+const trainingAttribute = v.union(
+  v.literal("speed"),
+  v.literal("endurance"),
+  v.literal("accuracy"),
+  v.literal("control"),
+  v.literal("consistency"),
+);
+
+const skillTarget = v.union(
+  v.object({ kind: v.literal("core"), id: coreSkill }),
+  v.object({ kind: v.literal("sub"), id: subSkill }),
+);
+
+const patternType = v.union(
+  v.literal("micro_drill"),
+  v.literal("standard_loop"),
+  v.literal("musical_sequence"),
+  v.literal("benchmark"),
+);
+
 // ---------------------------------------------------------------------------
 // TabData validators — mirrors /lib/tabs/internal-schema.ts
 // ---------------------------------------------------------------------------
@@ -138,7 +185,8 @@ export default defineSchema({
     experienceLevel: v.string(),
     guitarType: v.string(),
     primaryGoals: v.array(v.string()),
-    focusSkills: v.array(v.string()),
+    focusCoreSkillIds: v.array(coreSkill),
+    focusSubSkillIds: v.array(subSkill),
     availableDays: v.array(v.string()),
     defaultSessionLengthMinutes: v.number(),
     preferredIntensity: v.string(),
@@ -149,14 +197,6 @@ export default defineSchema({
   // -------------------------------------------------------------------------
   // Domain seed data (global, read-only at runtime)
   // -------------------------------------------------------------------------
-
-  skills: defineTable({
-    name: v.string(),
-    description: v.string(),
-    category: v.string(),
-    isMvp: v.boolean(),
-    sortOrder: v.number(),
-  }),
 
   exercises: defineTable({
     // Identity
@@ -171,9 +211,10 @@ export default defineSchema({
     measurementInstructions: v.string(),
     coachingNotes: v.array(v.string()),
 
-    // Skill linkage
-    primarySkillId: v.id("skills"),
-    secondarySkillIds: v.array(v.id("skills")),
+    // Taxonomy
+    coreSkillId: coreSkill,
+    subSkillIds: v.array(subSkill),
+    trainingAttributes: v.array(trainingAttribute),
 
     // Difficulty & type
     difficultyLevel: v.number(), // 1–10
@@ -199,6 +240,8 @@ export default defineSchema({
 
     // Tab
     tabData,
+    patternType,
+    microDrillJustification: v.optional(v.string()),
 
     // Metadata
     estimatedMinutes: v.number(),
@@ -240,7 +283,7 @@ export default defineSchema({
   }).index("by_slug", ["slug"]),
 
   exerciseProgressions: defineTable({
-    skillId: v.id("skills"),
+    skillTarget,
     title: v.string(),
     description: v.string(),
     exerciseIds: v.array(v.id("exercises")),
@@ -258,8 +301,10 @@ export default defineSchema({
     endDate: v.number(),
     durationWeeks: v.number(),
     primaryGoal: v.string(),
-    focusSkillIds: v.array(v.id("skills")),
-    supportSkillIds: v.array(v.id("skills")),
+    focusCoreSkillIds: v.array(coreSkill),
+    focusSubSkillIds: v.array(subSkill),
+    supportCoreSkillIds: v.array(coreSkill),
+    supportSubSkillIds: v.array(subSkill),
     status: v.union(
       v.literal("active"),
       v.literal("completed"),
@@ -356,7 +401,9 @@ export default defineSchema({
     userId: v.id("users"),
     sessionId: v.id("practiceSessions"),
     exerciseId: v.id("exercises"),
-    skillId: v.id("skills"),
+    coreSkillId: coreSkill,
+    subSkillIds: v.array(subSkill),
+    trainingAttributes: v.array(trainingAttribute),
     date: v.number(), // Unix timestamp (ms)
 
     trainingVerdict,
@@ -388,7 +435,7 @@ export default defineSchema({
   })
     .index("by_userId_date", ["userId", "date"])
     .index("by_userId_exerciseId", ["userId", "exerciseId"])
-    .index("by_userId_skillId", ["userId", "skillId"]),
+    .index("by_userId_coreSkillId", ["userId", "coreSkillId"]),
 
   // -------------------------------------------------------------------------
   // Derived engine state
@@ -397,7 +444,8 @@ export default defineSchema({
   userExerciseState: defineTable({
     userId: v.id("users"),
     exerciseId: v.id("exercises"),
-    skillId: v.id("skills"),
+    coreSkillId: coreSkill,
+    subSkillIds: v.array(subSkill),
 
     currentLevel: v.number(),
     masteryStatus: v.union(
@@ -441,7 +489,7 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_userId_exerciseId", ["userId", "exerciseId"])
-    .index("by_userId_skillId", ["userId", "skillId"]),
+    .index("by_userId_coreSkillId", ["userId", "coreSkillId"]),
 
   // -------------------------------------------------------------------------
   // Skill ratings (onboarding assessment + ongoing updates)
@@ -449,7 +497,8 @@ export default defineSchema({
 
   userSkillRatings: defineTable({
     userId: v.id("users"),
-    skillId: v.id("skills"),
+    skillTargetKey: v.string(), // e.g. "core:picking" or "sub:string_crossing"
+    skillTarget,
     rating: v.number(), // 0–100
     confidence: v.number(), // 0–1
     lastAssessedAt: v.optional(v.number()),
@@ -465,7 +514,7 @@ export default defineSchema({
     ),
   })
     .index("by_userId", ["userId"])
-    .index("by_userId_skillId", ["userId", "skillId"]),
+    .index("by_userId_skillTargetKey", ["userId", "skillTargetKey"]),
 
   // -------------------------------------------------------------------------
   // Session summaries & achievements
@@ -478,7 +527,7 @@ export default defineSchema({
     completedExerciseCount: v.number(),
     skillRatingChanges: v.array(
       v.object({
-        skillId: v.id("skills"),
+        skillTarget,
         oldRating: v.number(),
         newRating: v.number(),
       }),
@@ -518,8 +567,8 @@ export default defineSchema({
     totalMinutes: v.number(),
     sessionsCompleted: v.number(),
     exercisesCompleted: v.number(),
-    mostImprovedSkillId: v.optional(v.id("skills")),
-    weakestSkillId: v.optional(v.id("skills")),
+    mostImprovedSkillTarget: v.optional(skillTarget),
+    weakestSkillTarget: v.optional(skillTarget),
     personalBestCount: v.number(),
     achievementsUnlocked: v.array(v.id("achievements")),
     consistencyPercent: v.number(),

@@ -12,21 +12,30 @@ import {
   drillGeneratorOutputSchema,
   normalizeExerciseSeed,
 } from "@/lib/admin/exercise-seed-zod";
-import { formatSeedTs } from "@/lib/admin/format-seed-ts";
 import { getConvexToken } from "@/lib/admin/get-convex-token";
 import {
   formatDifficultyDistribution,
   inferDifficultyLevel,
 } from "@/lib/admin/infer-difficulty";
+import {
+  formatTrainingAttributeDistribution,
+  inferTrainingAttributes,
+} from "@/lib/admin/infer-training-attributes";
 import type { ExerciseSeed } from "@/lib/exercises/exercise-schema";
 import { validateExercise } from "@/lib/exercises/validate-exercise";
+import {
+  CORE_SKILLS,
+  SUB_SKILLS,
+  TRAINING_ATTRIBUTES,
+} from "@/lib/skills/taxonomy";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const requestSchema = z.object({
-  primarySkillSlug: z.string().min(1),
-  secondarySkillSlugs: z.array(z.string()).default([]),
+  coreSkillId: z.enum(CORE_SKILLS),
+  subSkillIds: z.array(z.enum(SUB_SKILLS)).default([]),
+  trainingAttributes: z.array(z.enum(TRAINING_ATTRIBUTES)).default([]),
   /** Omit or null to auto-infer from library gaps (mid-heavy 4–8 curve). */
   difficultyLevel: z.number().int().min(1).max(10).nullable().optional(),
   exerciseType: z.enum([
@@ -44,10 +53,6 @@ const requestSchema = z.object({
   /** AI Gateway model id — typed as GatewayModelId in code; validated as string at the edge. */
   model: z.string().min(1).optional(),
 });
-
-function nameToSlug(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, "_");
-}
 
 function recomputeQualityTotal(
   score: z.infer<typeof drillGeneratorOutputSchema>["qualityScore"],
@@ -108,17 +113,11 @@ export async function POST(request: Request) {
 
     const body = requestSchema.parse(await request.json());
 
-    const [summaries, skills] = await Promise.all([
-      fetchQuery(api.exercises.listExerciseSummaries, {}, { token }),
-      fetchQuery(api.skills.listSkills, {}, { token }),
-    ]);
-
-    const skillsForPrompt = skills.map((s) => ({
-      name: s.name,
-      slug: nameToSlug(s.name),
-      description: s.description,
-      category: s.category,
-    }));
+    const summaries = await fetchQuery(
+      api.exercises.listExerciseSummaries,
+      {},
+      { token },
+    );
 
     let difficultyLevel: number;
     let difficultyInferred: boolean;
@@ -131,18 +130,42 @@ export async function POST(request: Request) {
     } else {
       difficultyLevel = inferDifficultyLevel(
         summaries,
-        body.primarySkillSlug,
+        body.coreSkillId,
+        body.subSkillIds[0],
       );
       difficultyInferred = true;
     }
     const difficultyDistribution = formatDifficultyDistribution(
       summaries,
-      body.primarySkillSlug,
+      body.coreSkillId,
+      body.subSkillIds[0],
+    );
+
+    let trainingAttributes: (typeof TRAINING_ATTRIBUTES)[number][];
+    let trainingAttributesInferred: boolean;
+    if (body.trainingAttributes.length > 0) {
+      trainingAttributes = body.trainingAttributes;
+      trainingAttributesInferred = false;
+    } else {
+      trainingAttributes = inferTrainingAttributes(
+        summaries,
+        body.coreSkillId,
+        body.subSkillIds[0],
+      );
+      trainingAttributesInferred = true;
+    }
+    const trainingAttributeDistribution = formatTrainingAttributeDistribution(
+      summaries,
+      body.coreSkillId,
+      body.subSkillIds[0],
     );
 
     const { system, prompt } = buildDrillPrompt({
-      primarySkillSlug: body.primarySkillSlug,
-      secondarySkillSlugs: body.secondarySkillSlugs,
+      coreSkillId: body.coreSkillId,
+      subSkillIds: body.subSkillIds,
+      trainingAttributes,
+      trainingAttributesInferred,
+      trainingAttributeDistribution,
       difficultyLevel,
       difficultyInferred,
       difficultyDistribution,
@@ -150,7 +173,6 @@ export async function POST(request: Request) {
       targetBpm: body.targetBpm,
       direction: body.direction,
       existingDrills: summaries,
-      skills: skillsForPrompt,
       priorExerciseJson: body.priorExercise
         ? JSON.stringify(body.priorExercise, null, 2)
         : undefined,
@@ -186,7 +208,7 @@ export async function POST(request: Request) {
             validationError,
             briefMarkdown: generated.briefMarkdown,
             qualityScore: recomputeQualityTotal(generated.qualityScore),
-            patternType: generated.patternType,
+            patternType: generated.patternType ?? generated.exercise.patternType,
             redFlags: generated.redFlags,
             missingFields: generated.missingFields,
             reviewerChecklist: generated.reviewerChecklist,
@@ -214,7 +236,7 @@ export async function POST(request: Request) {
             validationError: pinError,
             briefMarkdown: generated.briefMarkdown,
             qualityScore: recomputeQualityTotal(generated.qualityScore),
-            patternType: generated.patternType,
+            patternType: generated.patternType ?? exercise.patternType,
             redFlags: generated.redFlags,
             missingFields: generated.missingFields,
             reviewerChecklist: generated.reviewerChecklist,
@@ -227,18 +249,46 @@ export async function POST(request: Request) {
       }
     }
 
-    const qualityScore = recomputeQualityTotal(generated.qualityScore);
+    const trainingAttributesMatch =
+      exercise.trainingAttributes.length === trainingAttributes.length &&
+      trainingAttributes.every((attribute) =>
+        exercise.trainingAttributes.includes(attribute),
+      );
+    if (!trainingAttributesMatch) {
+      try {
+        exercise = validateExercise({
+          ...exercise,
+          trainingAttributes,
+        });
+      } catch (err) {
+        const pinError = err instanceof Error ? err.message : String(err);
+        return NextResponse.json(
+          {
+            error:
+              "Generated drill failed validation after training attribute pin",
+            validationError: pinError,
+            briefMarkdown: generated.briefMarkdown,
+            qualityScore: recomputeQualityTotal(generated.qualityScore),
+            patternType: generated.patternType ?? exercise.patternType,
+            redFlags: generated.redFlags,
+            missingFields: generated.missingFields,
+            reviewerChecklist: generated.reviewerChecklist,
+            refinePrompt: generated.refinePrompt,
+            validationStatus: "failed" as const,
+            rawExercise: { ...exercise, trainingAttributes },
+          },
+          { status: 422 },
+        );
+      }
+    }
 
-    const isFirstForSkill = !summaries.some(
-      (s) => s.primarySkillSlug === exercise.primarySkillId,
-    );
+    const qualityScore = recomputeQualityTotal(generated.qualityScore);
 
     return NextResponse.json({
       exercise,
       briefMarkdown: generated.briefMarkdown,
-      seedTs: formatSeedTs(exercise, { isFirstForSkill }),
       qualityScore,
-      patternType: generated.patternType,
+      patternType: generated.patternType ?? exercise.patternType,
       redFlags: generated.redFlags,
       missingFields: generated.missingFields,
       reviewerChecklist: generated.reviewerChecklist,
@@ -248,7 +298,9 @@ export async function POST(request: Request) {
       difficultyLevel,
       difficultyInferred,
       difficultyDistribution,
-      isFirstForSkill,
+      trainingAttributes,
+      trainingAttributesInferred,
+      trainingAttributeDistribution,
     });
   } catch (err) {
     console.error("generate-drill failed", err);

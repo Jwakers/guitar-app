@@ -19,17 +19,29 @@ const TARGET_WEIGHTS: Record<number, number> = {
 export type DifficultyHistogram = Record<number, number>;
 
 export function countDifficulties(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillId?: string,
 ): DifficultyHistogram {
   const counts: DifficultyHistogram = {};
   for (let d = 1; d <= 10; d++) counts[d] = 0;
 
   for (const drill of drills) {
     if (
-      primarySkillSlug &&
-      drill.primarySkillSlug &&
-      drill.primarySkillSlug !== primarySkillSlug
+      coreSkillId &&
+      drill.coreSkillId &&
+      drill.coreSkillId !== coreSkillId
+    ) {
+      continue;
+    }
+    if (
+      subSkillId &&
+      drill.subSkillIds &&
+      !drill.subSkillIds.includes(subSkillId)
     ) {
       continue;
     }
@@ -47,10 +59,15 @@ export function countDifficulties(
  * When the library is empty, prefers 5 (centre of the 4–8 focus band).
  */
 export function inferDifficultyLevel(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillId?: string,
 ): number {
-  const counts = countDifficulties(drills, primarySkillSlug);
+  const counts = countDifficulties(drills, coreSkillId, subSkillId);
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
   if (total === 0) return 5;
@@ -80,10 +97,15 @@ export function inferDifficultyLevel(
 }
 
 export function formatDifficultyDistribution(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillId?: string,
 ): string {
-  const counts = countDifficulties(drills, primarySkillSlug);
+  const counts = countDifficulties(drills, coreSkillId, subSkillId);
   return Array.from({ length: 10 }, (_, i) => {
     const level = i + 1;
     return `${level}: ${counts[level] ?? 0}`;

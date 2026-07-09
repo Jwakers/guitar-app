@@ -1,5 +1,10 @@
 import type { FeedbackQuestion } from "./feedback-schema";
 import type { TabData } from "../tabs/internal-schema";
+import type {
+  CoreSkill,
+  SubSkill,
+  TrainingAttribute,
+} from "../skills/taxonomy";
 
 export type ExerciseType =
   | "warmup"
@@ -21,12 +26,16 @@ export type PrimaryProgressMetric =
 
 export type ExerciseStatus = "active" | "deprecated" | "replaced";
 
+export type PatternType =
+  | "micro_drill"
+  | "standard_loop"
+  | "musical_sequence"
+  | "benchmark";
+
 /**
  * Shape used in seed files.
  *
  * Differences from the Convex `exercises` table:
- * - `primarySkillId` / `secondarySkillIds` are string slugs, not `Id<"skills">`.
- *   They are resolved to DB IDs during the seeding mutation.
  * - `updatedAt` is omitted; it is stamped at insertion time.
  */
 export type ExerciseSeed = {
@@ -40,8 +49,9 @@ export type ExerciseSeed = {
   measurementInstructions: string;
   coachingNotes: string[];
 
-  primarySkillId: string;
-  secondarySkillIds: string[];
+  coreSkillId: CoreSkill;
+  subSkillIds: SubSkill[];
+  trainingAttributes: TrainingAttribute[];
 
   difficultyLevel: number;
   exerciseType: ExerciseType;
@@ -56,6 +66,8 @@ export type ExerciseSeed = {
   regressionRule: string;
 
   tabData: TabData;
+  patternType: PatternType;
+  microDrillJustification?: string;
 
   feedbackSchema: FeedbackQuestion[];
 

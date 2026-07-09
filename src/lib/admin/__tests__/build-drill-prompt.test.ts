@@ -28,6 +28,9 @@ describe("skillSlugToKnowledgeFilename", () => {
     expect(() => skillSlugToKnowledgeFilename("..")).toThrow(
       /Invalid skill slug/,
     );
+    expect(() => skillSlugToKnowledgeFilename("speed")).toThrow(
+      /Invalid skill slug/,
+    );
   });
 });
 
@@ -55,27 +58,22 @@ describe("loadSkillKnowledge", () => {
 describe("buildDrillPrompt", () => {
   it("embeds the primary skill knowledge document", () => {
     const { prompt } = buildDrillPrompt({
-      primarySkillSlug: "string_crossing",
-      secondarySkillSlugs: [],
+      coreSkillId: "picking",
+      subSkillIds: ["string_crossing"],
+      trainingAttributes: ["accuracy", "consistency"],
       difficultyLevel: 5,
       difficultyInferred: false,
       exerciseType: "primary",
       existingDrills: [],
-      skills: [
-        {
-          name: "String Crossing",
-          slug: "string_crossing",
-          description: "Adjacent only",
-          category: "picking",
-        },
-      ],
     });
 
-    expect(prompt).toContain("## Primary skill context (authoritative)");
+    expect(prompt).toContain("## Core skill context");
+    expect(prompt).toContain("## Sub-skill context");
     expect(prompt).toContain("# String Crossing");
-    expect(prompt).toContain("adjacent only");
+    expect(prompt).toContain("Core Skill: picking");
+    expect(prompt).toContain("Training attributes: accuracy");
     expect(prompt).toContain("string_crossing = adjacent only");
-    expect(prompt).toContain("patternType:");
+    expect(prompt).toContain("exercise.patternType is the source of truth");
     expect(prompt).toContain("Short pattern warning");
   });
 });

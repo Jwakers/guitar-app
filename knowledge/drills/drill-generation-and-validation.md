@@ -18,6 +18,34 @@ The goal is to create a small number of excellent drills that:
 
 The app should favour 40–80 excellent drills over hundreds of shallow exercises.
 
+The source-of-truth taxonomy is:
+
+```txt
+Core Skill -> Sub-skill -> Drill
+```
+
+Training attributes are layered onto a core skill or sub-skill. They are not standalone skills.
+
+```ts
+type CoreSkill =
+  | "picking"
+  | "fretting_control"
+  | "synchronisation"
+  | "rhythm_timing"
+  | "muting_noise_control"
+  | "lead_articulation"
+  | "chord_changes";
+
+type TrainingAttribute =
+  | "speed"
+  | "endurance"
+  | "accuracy"
+  | "control"
+  | "consistency";
+```
+
+Do not generate drills that classify `speed` or `endurance` as skills. Do not classify techniques such as `alternate_picking`, `string_crossing`, `legato`, `bends`, or `vibrato` as top-level skills; they are sub-skills under a core skill.
+
 ---
 
 ## 2. Generation Philosophy
@@ -200,9 +228,11 @@ Each brief must include:
 
 ## Purpose
 
-## Primary Skill
+## Core Skill
 
-## Secondary Skills
+## Sub-skills
+
+## Training Attributes
 
 ## Target Weakness
 
@@ -249,8 +279,9 @@ Every production drill must define:
 - status
 - description
 - purpose
-- primary skill
-- secondary skills
+- core skill
+- sub-skills
+- training attributes
 - target weaknesses
 - difficulty level
 - exercise type
@@ -431,15 +462,15 @@ Reject a drill immediately if any of these are true:
 - It requires video explanation for MVP.
 - It does not suit electric guitar.
 - It does not suit the MVP target user.
-- Its tab pattern violates the primary skill’s boundary (see §9.1).
+- Its tab pattern violates the declared sub-skill boundary (see §9.1).
 
-### 9.1 Skill boundary rules (picking)
+### 9.1 Sub-skill boundary rules (picking)
 
-When a skill knowledge document is provided, it is authoritative for that skill’s definition and “Not this skill” boundary.
+When a sub-skill knowledge document is provided, it is authoritative for that sub-skill’s definition and “Not this skill” boundary.
 
 Hard rules for the adjacent vs non-adjacent picking pair:
 
-| Primary skill slug | Allowed string changes in `tabData`                               | Reject if                                                    |
+| Sub-skill ID       | Allowed string changes in `tabData`                               | Reject if                                                    |
 | ------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------ |
 | `string_crossing`  | **Adjacent only** (string numbers differ by exactly 1)            | Any note-to-note jump skips a string (\|Δstring\| ≥ 2)       |
 | `string_skipping`  | Must include **at least one** non-adjacent jump (\|Δstring\| ≥ 2) | Pattern only uses adjacent changes (that is string crossing) |
@@ -447,10 +478,36 @@ Hard rules for the adjacent vs non-adjacent picking pair:
 Notes:
 
 - String numbers: 1 = high E (thinnest), 6 = low E (thickest).
-- Alternate picking may be a secondary skill for either; it does not redefine the primary skill.
-- If the brief says “string crossing” but the pattern skips strings, retag to `string_skipping` or redesign the tab — do not keep the wrong primary skill.
+- Alternate picking can be another `picking` sub-skill, but it does not override the string movement boundary.
+- If the brief says “string crossing” but the pattern skips strings, retag to `string_skipping` or redesign the tab — do not keep the wrong sub-skill.
 
-### 9.2 Musical variety (library review)
+### 9.2 Lead articulation in musical context
+
+Vibrato, bends, and legato should usually be trained in musical context.
+
+Avoid generating full drills like:
+
+```txt
+7~~~~ 7~~~~
+```
+
+unless the drill is explicitly a `micro_drill` or `benchmark`.
+
+Prefer drills like:
+
+```txt
+pentatonic phrase -> bend -> hold -> vibrato
+```
+
+or:
+
+```txt
+legato fragment -> target note -> controlled vibrato
+```
+
+The goal is still technical development, not song learning or theory teaching.
+
+### 9.3 Musical variety (library review)
 
 A single chromatic drill is fine when the mechanical goal justifies it.
 
@@ -598,7 +655,7 @@ If the reviewer cannot confidently answer these questions, the drill should be r
 
 ## 13. Production Acceptance Rule
 
-A drill may enter seed data only when all of the following are true:
+A drill may enter the production exercise library only when all of the following are true:
 
 ```txt
 Schema validation: pass
@@ -606,11 +663,11 @@ Tab validation: pass
 Training-value validation: pass
 Quality score: 24/30 or higher
 Human playability review: pass
-Seed object created: yes
-Tests added: yes
+Saved to dev Convex: yes
+Knowledge doc authored: yes
 ```
 
-The production seed library should never contain unreviewed generated drills.
+The production library should never contain unreviewed generated drills. Promotion from dev → prod uses `pnpm migrate:exercises` (see [`docs/exercise-migration.md`](../../docs/exercise-migration.md)).
 
 ---
 
@@ -628,10 +685,10 @@ Purpose:
 Build clean, repeatable alternate picking on one string before adding string changes or more complex coordination.
 ```
 
-Primary skill:
+Core skill / sub-skill:
 
 ```txt
-alternate_picking
+picking / alternate_picking
 ```
 
 Primary metric:
@@ -643,7 +700,7 @@ clean_bpm
 This drill is intentionally simple. It exists to validate the core app loop:
 
 ```txt
-seed drill
+author drill in dev
 → render tab
 → prescribe session
 → log result
@@ -660,7 +717,7 @@ Do not optimise the first drill for novelty. Optimise it for clarity, measurabil
 If building an internal tool that generates drills, it should output:
 
 1. Human-readable drill brief
-2. Structured seed object
+2. Structured exercise object (saved to dev Convex)
 3. Quality score estimate
 4. Pattern type (`micro_drill` | `standard_loop` | `musical_sequence` | `benchmark`)
 5. Red flag warnings (including short-pattern warnings from §3 when applicable)
@@ -668,7 +725,7 @@ If building an internal tool that generates drills, it should output:
 7. Missing field report
 8. Suggested reviewer checklist
 
-The tool should never insert directly into production seed data without review.
+The tool saves candidates to the dev deployment only. Production promotion requires human review and `pnpm migrate:exercises`.
 
 The tool should help produce better candidates, not replace human judgement.
 
