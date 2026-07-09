@@ -21,16 +21,17 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
   );
 
   const waitingForAuth = authLoading;
+  // Treat both undefined (query loading) and null (no row yet) as blocked.
   const waitingForUserQuery =
-    isAuthenticated && user === undefined && syncStatus !== "failed";
+    isAuthenticated && user == null && syncStatus !== "failed";
   const waitingForSync =
     isAuthenticated &&
-    user === null &&
+    user == null &&
     syncStatus !== "failed" &&
     syncStatus !== "ready";
-  // Sync reported ready but query still null briefly — keep waiting.
+  // Sync reported ready but query still null/undefined briefly — keep waiting.
   const waitingForQueryAfterSync =
-    isAuthenticated && user === null && syncStatus === "ready";
+    isAuthenticated && user == null && syncStatus === "ready";
 
   const needsOnboarding =
     user !== undefined && user !== null && !user.onboardingCompleted;
@@ -54,7 +55,7 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (isAuthenticated && syncStatus === "failed" && user === null) {
+  if (isAuthenticated && syncStatus === "failed" && user == null) {
     return (
       <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 px-4">
         <p className="font-mono text-sm text-muted-foreground">

@@ -51,6 +51,8 @@ export function formatSeedTs(
 
   const arrayName = `${toCamelCase(exercise.primarySkillId)}Exercises`;
 
+  // Relative import assumes paste into seed/exercises/*.ts (not src/).
+  // If the paste target moves, update this path to match.
   return `import type { ExerciseSeed } from "../../src/lib/exercises/exercise-schema";
 
 ${exerciseConst}

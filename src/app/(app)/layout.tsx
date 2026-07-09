@@ -12,10 +12,8 @@ export default function AppLayout({
     <div className="flex min-h-screen flex-col pb-16">
       <UserSyncProvider>
         <UserSync />
-        <OnboardingGuard>
-          {children}
-          <Nav />
-        </OnboardingGuard>
+        <OnboardingGuard>{children}</OnboardingGuard>
+        <Nav />
       </UserSyncProvider>
     </div>
   );
