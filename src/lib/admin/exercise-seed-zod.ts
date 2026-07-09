@@ -150,10 +150,18 @@ export const qualityScoreZodSchema = z.object({
   total: z.number().int().min(0).max(30),
 });
 
+export const patternTypeZodSchema = z.enum([
+  "micro_drill",
+  "standard_loop",
+  "musical_sequence",
+  "benchmark",
+]);
+
 export const drillGeneratorOutputSchema = z.object({
   exercise: exerciseSeedZodSchema,
   briefMarkdown: z.string().min(1),
   qualityScore: qualityScoreZodSchema,
+  patternType: patternTypeZodSchema,
   redFlags: z.array(z.string()),
   missingFields: z.array(z.string()),
   reviewerChecklist: z.array(z.string()).min(1),

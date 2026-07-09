@@ -110,6 +110,11 @@ type GenerateResponse = {
   briefMarkdown: string;
   seedTs: string;
   qualityScore: QualityScore;
+  patternType?:
+    | "micro_drill"
+    | "standard_loop"
+    | "musical_sequence"
+    | "benchmark";
   redFlags: string[];
   missingFields: string[];
   reviewerChecklist: string[];
@@ -122,6 +127,16 @@ type GenerateResponse = {
   difficultyInferred?: boolean;
   difficultyDistribution?: string;
   isFirstForSkill?: boolean;
+};
+
+const PATTERN_TYPE_LABELS: Record<
+  NonNullable<GenerateResponse["patternType"]>,
+  string
+> = {
+  micro_drill: "Micro-drill",
+  standard_loop: "Standard loop",
+  musical_sequence: "Musical sequence",
+  benchmark: "Benchmark",
 };
 
 function nameToSlug(name: string): string {
@@ -531,6 +546,20 @@ export function DrillGenerator() {
                 {result.exercise.purpose}
               </p>
             </div>
+
+            {result.patternType && (
+              <section className="rounded-lg border border-border bg-card p-4">
+                <h3 className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+                  PATTERN TYPE
+                </h3>
+                <p className="mt-1 text-sm font-medium">
+                  {PATTERN_TYPE_LABELS[result.patternType]}
+                </p>
+                <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                  {result.patternType}
+                </p>
+              </section>
+            )}
 
             {score && (
               <section

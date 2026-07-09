@@ -61,7 +61,111 @@ This does **not** turn the app into a song-learning or theory product. The goal 
 
 ---
 
-## 3. Source-of-Truth Flow
+## 3. Pattern Length, Musical Shape & Drill Completeness
+
+Drills should be short enough to practise easily, but not so short that they feel dry, underdeveloped, or mechanically trivial.
+
+A two-note or very small movement pattern is acceptable only when the drill is intentionally a **micro-drill** targeting one highly specific weakness, such as:
+
+* synchronising a single finger change
+* isolating a pick stroke problem
+* correcting a specific string transition
+* testing timing on one repeated movement
+* reducing tension in one motion
+
+However, micro-drills should not be the default output.
+
+For most standard drills, prefer a complete musical or mechanical phrase of at least:
+
+* 1–2 bars minimum
+* 8–16 notes minimum for picking/synchronisation drills
+* a clear loop point
+* a recognisable shape, sequence, or motif
+* enough movement to make repetition feel purposeful
+
+Where possible, a drill should feel like a focused training phrase rather than a tiny fragment.
+
+Good standard drill sources include:
+
+* pentatonic sequences
+* scale fragments
+* triads
+* arpeggio fragments
+* chord-tone patterns
+* rhythmic motifs
+* repeated melodic cells
+* call-and-response style phrases
+* small position-based sequences
+
+The drill should still prioritise the target skill. Do not make the pattern more musical if doing so weakens the training purpose.
+
+> Use the smallest pattern that fully trains the weakness — but no smaller.
+
+### Drill Type Classification
+
+Each generated drill should declare one of these pattern types:
+
+```ts
+patternType:
+  | "micro_drill"
+  | "standard_loop"
+  | "musical_sequence"
+  | "benchmark"
+```
+
+Definitions:
+
+#### micro_drill
+
+A very small pattern, often 2–6 notes, used only for highly specific mechanical isolation.
+
+Must explain why such a short pattern is justified.
+
+#### standard_loop
+
+A compact repeatable drill, usually 1–2 bars, designed for daily technical practice.
+
+This should be the default for most MVP drills.
+
+#### musical_sequence
+
+A drill based on a more musical fragment, such as a pentatonic phrase, scale sequence, triad, arpeggio, or chord-tone idea.
+
+Use when the skill can be trained without relying on sterile chromatic movement.
+
+#### benchmark
+
+A drill designed primarily to test progress. It should be measurable, repeatable, and slightly broader than a micro-drill.
+
+### Short Drill Warning
+
+If a generated drill contains fewer than 8 notes, the generator must include a warning:
+
+```txt
+Short pattern warning: this drill is very small. Confirm it is intentionally a micro-drill and not an underdeveloped standard drill.
+```
+
+### Rejection / Revision Rule
+
+Mark a drill for revision if:
+
+* it is only 2–4 notes long
+* it is not explicitly labelled as a micro-drill
+* it does not explain why the short pattern is necessary
+* it could be expanded into a more musical loop without losing the training purpose
+* it feels like a placeholder rather than a complete practice item
+
+### Final Principle
+
+A drill does not need to be long, but it should feel complete.
+
+Short is good when it creates focus.
+
+Short is bad when it feels unfinished.
+
+---
+
+## 4. Source-of-Truth Flow
 
 Use this flow:
 
@@ -85,7 +189,7 @@ A drill should be traceable back to a knowledge document or skill taxonomy entry
 
 ---
 
-## 4. Drill Brief Format
+## 5. Drill Brief Format
 
 Before a drill becomes seed data, it should exist as a human-readable drill brief.
 
@@ -135,7 +239,7 @@ The brief is for understanding and review. The seed object is for runtime use.
 
 ---
 
-## 5. Required Drill Fields
+## 6. Required Drill Fields
 
 Every production drill must define:
 
@@ -169,7 +273,7 @@ A drill missing any required training-quality field should be rejected even if T
 
 ---
 
-## 6. Drill Quality Score
+## 7. Drill Quality Score
 
 Every candidate drill should be scored out of 30.
 
@@ -197,7 +301,7 @@ For the initial MVP library, aim for 26+ wherever possible.
 
 ---
 
-## 7. Scoring Criteria
+## 8. Scoring Criteria
 
 ### Clear Training Purpose
 
@@ -308,7 +412,7 @@ Reject if:
 
 ---
 
-## 8. Red Flag Rejection List
+## 9. Red Flag Rejection List
 
 Reject a drill immediately if any of these are true:
 
@@ -327,9 +431,9 @@ Reject a drill immediately if any of these are true:
 - It requires video explanation for MVP.
 - It does not suit electric guitar.
 - It does not suit the MVP target user.
-- Its tab pattern violates the primary skill’s boundary (see §8.1).
+- Its tab pattern violates the primary skill’s boundary (see §9.1).
 
-### 8.1 Skill boundary rules (picking)
+### 9.1 Skill boundary rules (picking)
 
 When a skill knowledge document is provided, it is authoritative for that skill’s definition and “Not this skill” boundary.
 
@@ -346,7 +450,7 @@ Notes:
 - Alternate picking may be a secondary skill for either; it does not redefine the primary skill.
 - If the brief says “string crossing” but the pattern skips strings, retag to `string_skipping` or redesign the tab — do not keep the wrong primary skill.
 
-### 8.2 Musical variety (library review)
+### 9.2 Musical variety (library review)
 
 A single chromatic drill is fine when the mechanical goal justifies it.
 
@@ -358,7 +462,7 @@ When generating a candidate that uses chromatic 1-2-3-4 (or similar) without a c
 
 ---
 
-## 9. Validation Layers
+## 10. Validation Layers
 
 A drill must pass three kinds of validation.
 
@@ -389,6 +493,19 @@ Examples:
 - notes belong to valid strings
 - loop hints reference valid bars
 
+#### Bends, target pitch, and fingering
+
+Bend notes must set `technique: "bend"` and a correct `targetPitch` (octave-qualified preferred, e.g. `"G4"`).
+
+The AlphaTab adapter infers bend amount from fretted pitch → `targetPitch` and emits AlphaTeX quarter-tones:
+
+- `2` = half step (renders as `1/2`)
+- `4` = whole step (renders as `full`)
+
+Without a usable `targetPitch`, bends default to a whole step.
+
+Do not rely on tab fingering glyphs. The AlphaTab adapter never emits left-hand fingering (`lf`), even when `note.finger` or `displayHints.showFingering` is set — finger numbers collide with bend tip labels and are too prescriptive. Put finger guidance in coaching notes or the description instead. Optional `note.finger` may still be stored for future use, but it is not rendered.
+
 ### 3. Training-Value Validation
 
 The drill is worth practising.
@@ -406,7 +523,7 @@ Passing schema validation alone is not enough.
 
 ---
 
-## 10. Feedback Schema Requirements
+## 11. Feedback Schema Requirements
 
 Each drill must define a feedback schema that collects the minimum data needed to make the next training decision.
 
@@ -459,7 +576,7 @@ feedbackSchema: [
 
 ---
 
-## 11. Human Playability Review
+## 12. Human Playability Review
 
 Before seeding a drill, a human should play or inspect it.
 
@@ -479,7 +596,7 @@ If the reviewer cannot confidently answer these questions, the drill should be r
 
 ---
 
-## 12. Production Acceptance Rule
+## 13. Production Acceptance Rule
 
 A drill may enter seed data only when all of the following are true:
 
@@ -497,7 +614,7 @@ The production seed library should never contain unreviewed generated drills.
 
 ---
 
-## 13. First MVP Drill Example
+## 14. First MVP Drill Example
 
 The first accepted candidate drill is:
 
@@ -538,17 +655,18 @@ Do not optimise the first drill for novelty. Optimise it for clarity, measurabil
 
 ---
 
-## 14. Drill Generator Tool Requirements
+## 15. Drill Generator Tool Requirements
 
 If building an internal tool that generates drills, it should output:
 
 1. Human-readable drill brief
 2. Structured seed object
 3. Quality score estimate
-4. Red flag warnings
-5. Validation status
-6. Missing field report
-7. Suggested reviewer checklist
+4. Pattern type (`micro_drill` | `standard_loop` | `musical_sequence` | `benchmark`)
+5. Red flag warnings (including short-pattern warnings from §3 when applicable)
+6. Validation status
+7. Missing field report
+8. Suggested reviewer checklist
 
 The tool should never insert directly into production seed data without review.
 
@@ -556,7 +674,7 @@ The tool should help produce better candidates, not replace human judgement.
 
 ---
 
-## 15. Final Principle
+## 16. Final Principle
 
 A drill is not good because the tab renders.
 

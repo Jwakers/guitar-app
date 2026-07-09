@@ -248,14 +248,16 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "## Output requirements",
     "Return a single structured object with:",
     "- exercise: full ExerciseSeed (skill slugs, valid tabData, feedbackSchema with training_verdict)",
-    "- briefMarkdown: human-readable brief using the sections from the knowledge doc §4",
+    "- briefMarkdown: human-readable brief using the sections from the knowledge doc §5",
     "- qualityScore: six category scores 0–5 plus total (must equal sum)",
-    "- redFlags: list any red-flag issues (empty array if none)",
+    "- patternType: one of micro_drill | standard_loop | musical_sequence | benchmark (see knowledge doc §3; default most MVP drills to standard_loop)",
+    "- redFlags: list any red-flag issues (empty array if none). If the tab has fewer than 8 notes, MUST include: \"Short pattern warning: this drill is very small. Confirm it is intentionally a micro-drill and not an underdeveloped standard drill.\"",
     "- missingFields: any gaps vs required fields (empty if complete)",
     "- reviewerChecklist: suggested human playability review questions for this drill",
     "- refinePrompt: a ready-to-use continuation prompt if the reviewer wants to iterate further",
     "",
     "Tab patterns MUST obey the primary skill boundary (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
+    "Prefer complete 1–2 bar loops (8–16+ notes for picking/sync) over tiny fragments unless patternType is micro_drill with a clear isolation justification.",
   );
 
   return { system, prompt: parts.join("\n") };

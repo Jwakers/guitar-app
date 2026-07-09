@@ -57,5 +57,7 @@ describe("buildDrillPrompt", () => {
     expect(prompt).toContain("# String Crossing");
     expect(prompt).toContain("adjacent only");
     expect(prompt).toContain("string_crossing = adjacent only");
+    expect(prompt).toContain("patternType:");
+    expect(prompt).toContain("Short pattern warning");
   });
 });
