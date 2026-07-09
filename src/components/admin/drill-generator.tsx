@@ -121,6 +121,7 @@ type GenerateResponse = {
   difficultyLevel?: number;
   difficultyInferred?: boolean;
   difficultyDistribution?: string;
+  isFirstForSkill?: boolean;
 };
 
 function nameToSlug(name: string): string {
@@ -571,8 +572,8 @@ export function DrillGenerator() {
                   RED FLAGS
                 </h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-destructive">
-                  {result.redFlags.map((flag) => (
-                    <li key={flag}>{flag}</li>
+                  {result.redFlags.map((flag, i) => (
+                    <li key={`red-flag-${i}-${flag}`}>{flag}</li>
                   ))}
                 </ul>
               </section>
@@ -584,8 +585,8 @@ export function DrillGenerator() {
                   MISSING FIELDS
                 </h3>
                 <ul className="list-disc space-y-1 pl-5 text-sm">
-                  {result.missingFields.map((f) => (
-                    <li key={f}>{f}</li>
+                  {result.missingFields.map((f, i) => (
+                    <li key={`missing-${i}-${f}`}>{f}</li>
                   ))}
                 </ul>
               </section>
@@ -596,8 +597,8 @@ export function DrillGenerator() {
                 REVIEWER CHECKLIST
               </h3>
               <ul className="list-disc space-y-1 pl-5 text-sm">
-                {result.reviewerChecklist.map((item) => (
-                  <li key={item}>{item}</li>
+                {result.reviewerChecklist.map((item, i) => (
+                  <li key={`checklist-${i}-${item}`}>{item}</li>
                 ))}
               </ul>
             </section>
@@ -614,7 +615,14 @@ export function DrillGenerator() {
 
           <div className="mx-auto mt-8 w-full max-w-2xl space-y-6 px-4">
             <CopyBlock label="DRILL BRIEF" value={result.briefMarkdown} />
-            <CopyBlock label="SEED TYPESCRIPT" value={result.seedTs} />
+            <CopyBlock
+              label={
+                result.isFirstForSkill
+                  ? "SEED TYPESCRIPT (NEW FILE)"
+                  : "SEED TYPESCRIPT"
+              }
+              value={result.seedTs}
+            />
 
             <section className="space-y-2">
               <label className="block space-y-2">

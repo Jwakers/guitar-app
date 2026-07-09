@@ -169,7 +169,7 @@ export type QualityScore = z.infer<typeof qualityScoreZodSchema>;
 export function normalizeExerciseSeed(
   raw: z.infer<typeof exerciseSeedZodSchema>,
 ) {
-  const notes = (beat: z.infer<typeof tabBeatSchema>) => ({
+  const normalizeBeat = (beat: z.infer<typeof tabBeatSchema>) => ({
     duration: beat.duration,
     notes: beat.notes.map((n) => ({
       string: n.string,
@@ -234,7 +234,7 @@ export function normalizeExerciseSeed(
       tempo: raw.tabData.tempo,
       timeSignature: raw.tabData.timeSignature,
       bars: raw.tabData.bars.map((bar) => ({
-        beats: bar.beats.map(notes),
+        beats: bar.beats.map(normalizeBeat),
       })),
       ...(cleanedHints && Object.keys(cleanedHints).length > 0
         ? { displayHints: cleanedHints }

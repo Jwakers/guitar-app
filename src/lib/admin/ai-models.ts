@@ -16,8 +16,28 @@ export const DRILL_GENERATOR_MODEL_OPTIONS = [
     label: "Claude Sonnet 4.5",
   },
   {
+    id: "anthropic/claude-sonnet-4.6" satisfies GatewayModelId,
+    label: "Claude Sonnet 4.6",
+  },
+  {
+    id: "anthropic/claude-sonnet-5" satisfies GatewayModelId,
+    label: "Claude Sonnet 5",
+  },
+  {
     id: "anthropic/claude-opus-4.5" satisfies GatewayModelId,
     label: "Claude Opus 4.5",
+  },
+  {
+    id: "anthropic/claude-opus-4.6" satisfies GatewayModelId,
+    label: "Claude Opus 4.6",
+  },
+  {
+    id: "anthropic/claude-opus-4.8" satisfies GatewayModelId,
+    label: "Claude Opus 4.8",
+  },
+  {
+    id: "anthropic/claude-haiku-4.5" satisfies GatewayModelId,
+    label: "Claude Haiku 4.5",
   },
   {
     id: "openai/gpt-4.1" satisfies GatewayModelId,

@@ -200,18 +200,41 @@ export async function POST(request: Request) {
 
     // Pin difficulty to the requested/inferred level so the model cannot drift.
     if (exercise.difficultyLevel !== difficultyLevel) {
-      exercise = validateExercise({
-        ...exercise,
-        difficultyLevel,
-      });
+      try {
+        exercise = validateExercise({
+          ...exercise,
+          difficultyLevel,
+        });
+      } catch (err) {
+        const pinError = err instanceof Error ? err.message : String(err);
+        return NextResponse.json(
+          {
+            error: "Generated drill failed validation after difficulty pin",
+            validationError: pinError,
+            briefMarkdown: generated.briefMarkdown,
+            qualityScore: recomputeQualityTotal(generated.qualityScore),
+            redFlags: generated.redFlags,
+            missingFields: generated.missingFields,
+            reviewerChecklist: generated.reviewerChecklist,
+            refinePrompt: generated.refinePrompt,
+            validationStatus: "failed" as const,
+            rawExercise: { ...exercise, difficultyLevel },
+          },
+          { status: 422 },
+        );
+      }
     }
 
     const qualityScore = recomputeQualityTotal(generated.qualityScore);
 
+    const isFirstForSkill = !summaries.some(
+      (s) => s.primarySkillSlug === exercise.primarySkillId,
+    );
+
     return NextResponse.json({
       exercise,
       briefMarkdown: generated.briefMarkdown,
-      seedTs: formatSeedTs(exercise),
+      seedTs: formatSeedTs(exercise, { isFirstForSkill }),
       qualityScore,
       redFlags: generated.redFlags,
       missingFields: generated.missingFields,
@@ -222,6 +245,7 @@ export async function POST(request: Request) {
       difficultyLevel,
       difficultyInferred,
       difficultyDistribution,
+      isFirstForSkill,
     });
   } catch (err) {
     console.error("generate-drill failed", err);

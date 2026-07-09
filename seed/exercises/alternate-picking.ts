@@ -518,6 +518,12 @@ export const twoStringAlternatePickingTransitions: ExerciseSeed = {
           label: "Needs Work",
         },
       ],
+      followUpRules: [
+        {
+          ifOptionId: "needs_work",
+          showQuestionId: "main_challenge",
+        },
+      ],
     },
     {
       id: "difficulty",
@@ -574,12 +580,6 @@ export const twoStringAlternatePickingTransitions: ExerciseSeed = {
         {
           id: "sync_issue",
           label: "Fretting hand synchronisation",
-        },
-      ],
-      followUpRules: [
-        {
-          ifOptionId: "nailed_it",
-          showQuestionId: "main_challenge",
         },
       ],
     },
@@ -1084,6 +1084,12 @@ export const threeStringAlternatePickingPyramid: ExerciseSeed = {
           label: "Needs Work",
         },
       ],
+      followUpRules: [
+        {
+          ifOptionId: "needs_work",
+          showQuestionId: "pick_direction_control",
+        },
+      ],
     },
     {
       id: "difficulty",
@@ -1154,12 +1160,6 @@ export const threeStringAlternatePickingPyramid: ExerciseSeed = {
         {
           id: "rarely",
           label: "Rarely",
-        },
-      ],
-      followUpRules: [
-        {
-          ifOptionId: "needs_work",
-          showQuestionId: "pick_direction_control",
         },
       ],
     },
