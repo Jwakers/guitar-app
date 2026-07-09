@@ -72,9 +72,9 @@ const tabBeat = v.object({
     v.literal("quarter"),
     v.literal("eighth"),
     v.literal("sixteenth"),
-    v.literal("triplet"),
   ),
   notes: v.array(tabNote),
+  tuplet: v.optional(v.number()),
   picking: v.optional(
     v.union(
       v.literal("down"),
@@ -128,6 +128,9 @@ export default defineSchema({
     onboardingCompleted: v.boolean(),
     subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
     timezone: v.string(),
+    // Editable only in the Convex dashboard / DB — never via client mutations.
+    // Optional for backwards compatibility with existing rows; treat missing as false.
+    isSuperUser: v.optional(v.boolean()),
   }).index("by_authProviderId", ["authProviderId"]),
 
   userProfiles: defineTable({
@@ -234,7 +237,7 @@ export default defineSchema({
     ),
     replacedBySlug: v.optional(v.string()),
     updatedAt: v.number(),
-  }),
+  }).index("by_slug", ["slug"]),
 
   exerciseProgressions: defineTable({
     skillId: v.id("skills"),
@@ -291,7 +294,12 @@ export default defineSchema({
     title: v.string(),
     goal: v.string(),
     estimatedMinutes: v.number(),
-    status: v.string(), // "planned" | "active" | "completed" | "skipped"
+    status: v.union(
+      v.literal("planned"),
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("skipped"),
+    ),
     sessionType: v.union(
       v.literal("standard"),
       v.literal("light"),

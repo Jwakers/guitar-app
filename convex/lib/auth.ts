@@ -1,3 +1,4 @@
+import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 export async function requireCurrentUser(ctx: QueryCtx | MutationCtx) {
@@ -25,4 +26,14 @@ export async function getCurrentUserOrNull(ctx: QueryCtx | MutationCtx) {
       q.eq("authProviderId", identity.subject),
     )
     .unique();
+}
+
+export async function requireSuperUser(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Doc<"users">> {
+  const user = await requireCurrentUser(ctx);
+  if (user.isSuperUser !== true) {
+    throw new Error("Forbidden");
+  }
+  return user;
 }

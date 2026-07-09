@@ -31,6 +31,7 @@ export const createOrUpdateUser = mutation({
       onboardingCompleted: false,
       subscriptionTier: "free",
       timezone: "UTC",
+      isSuperUser: false,
     });
   },
 });
@@ -47,10 +48,23 @@ export const getCurrentUser = query({
       onboardingCompleted: v.boolean(),
       subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
       timezone: v.string(),
+      isSuperUser: v.boolean(),
     }),
     v.null(),
   ),
   handler: async (ctx) => {
-    return await getCurrentUserOrNull(ctx);
+    const user = await getCurrentUserOrNull(ctx);
+    if (!user) return null;
+    return {
+      _id: user._id,
+      _creationTime: user._creationTime,
+      authProviderId: user.authProviderId,
+      email: user.email,
+      displayName: user.displayName,
+      onboardingCompleted: user.onboardingCompleted,
+      subscriptionTier: user.subscriptionTier,
+      timezone: user.timezone,
+      isSuperUser: user.isSuperUser === true,
+    };
   },
 });
