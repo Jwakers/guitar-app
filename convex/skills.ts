@@ -41,21 +41,53 @@ export const getSkill = query({
 });
 
 /**
- * Seed the skills table with the 13 MVP skills.
- * Idempotent — safe to call multiple times; exits early if skills already exist.
- * Run once via: npx convex run skills:seedSkills
+ * Seed / refresh the skills table from SKILLS_SEED.
+ * Idempotent — inserts missing skills; patches description/category/flags for
+ * existing rows matched by name so taxonomy copy can evolve.
+ * Run via: npx convex run skills:seedSkills
  */
 export const seedSkills = internalMutation({
   args: {},
-  returns: v.object({ seeded: v.number(), skipped: v.boolean() }),
+  returns: v.object({
+    inserted: v.number(),
+    updated: v.number(),
+    skipped: v.number(),
+  }),
   handler: async (ctx) => {
-    const existing = await ctx.db.query("skills").first();
-    if (existing) return { seeded: 0, skipped: true };
+    const existing = await ctx.db.query("skills").collect();
+    const byName = new Map(existing.map((s) => [s.name, s]));
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
 
     for (const skill of SKILLS_SEED) {
-      await ctx.db.insert("skills", skill);
+      const row = byName.get(skill.name);
+      if (!row) {
+        await ctx.db.insert("skills", skill);
+        inserted++;
+        continue;
+      }
+
+      const unchanged =
+        row.description === skill.description &&
+        row.category === skill.category &&
+        row.isMvp === skill.isMvp &&
+        row.sortOrder === skill.sortOrder;
+
+      if (unchanged) {
+        skipped++;
+      } else {
+        await ctx.db.patch(row._id, {
+          description: skill.description,
+          category: skill.category,
+          isMvp: skill.isMvp,
+          sortOrder: skill.sortOrder,
+        });
+        updated++;
+      }
     }
 
-    return { seeded: SKILLS_SEED.length, skipped: false };
+    return { inserted, updated, skipped };
   },
 });

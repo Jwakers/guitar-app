@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { TabData } from "@/lib/tabs/internal-schema";
 import { tabDataToAlphaTex } from "@/lib/tabs/alphatab-adapter";
+import { createAlphaTabSettings } from "@/lib/tabs/render-config";
 import { cn } from "@/lib/utils";
 
 interface TabRendererProps {
@@ -42,19 +43,10 @@ export function TabRenderer({ tabData, className }: TabRendererProps) {
       .then((alphaTab) => {
         if (!mounted || !containerRef.current) return;
 
-        api = new alphaTab.AlphaTabApi(containerRef.current, {
-          core: {
-            // Load the worker script from CDN so no webpack plugin is needed.
-            scriptFile:
-              "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/alphaTab.min.js",
-            fontDirectory:
-              "https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.8.4/dist/font/",
-          },
-          display: {
-            // 3 = StaveProfile.Tab — tab-only, no standard notation stave.
-            staveProfile: 3,
-          },
-        }) as AlphaTabInstance;
+        api = new alphaTab.AlphaTabApi(
+          containerRef.current,
+          createAlphaTabSettings(),
+        ) as AlphaTabInstance;
 
         api.tex(tabDataToAlphaTex(tabData));
       })

@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 
 export type ExerciseSummaryForPrompt = {
   title: string;
@@ -35,6 +35,38 @@ export type BuildDrillPromptInput = {
 };
 
 let cachedKnowledgeDoc: string | null = null;
+const skillDocCache = new Map<string, string | null>();
+
+/** Snake_case skill slugs only — rejects path segments and traversal. */
+const SKILL_SLUG_RE = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Map skill slug `string_crossing` → knowledge file `string-crossing.md`.
+ * Throws if the slug is not a safe taxonomy-style identifier.
+ */
+export function skillSlugToKnowledgeFilename(slug: string): string {
+  if (!SKILL_SLUG_RE.test(slug)) {
+    throw new Error(`Invalid skill slug for knowledge lookup: "${slug}"`);
+  }
+  return `${slug.replace(/_/g, "-")}.md`;
+}
+
+function resolveSkillKnowledgePath(slug: string): string | null {
+  let filename: string;
+  try {
+    filename = skillSlugToKnowledgeFilename(slug);
+  } catch {
+    return null;
+  }
+
+  const skillsDir = resolve(process.cwd(), "knowledge/skills");
+  const candidate = resolve(skillsDir, filename);
+  const prefix = skillsDir.endsWith(sep) ? skillsDir : `${skillsDir}${sep}`;
+  if (candidate !== skillsDir && !candidate.startsWith(prefix)) {
+    return null;
+  }
+  return candidate;
+}
 
 export function loadDrillGenerationKnowledge(): string {
   if (cachedKnowledgeDoc) return cachedKnowledgeDoc;
@@ -44,6 +76,25 @@ export function loadDrillGenerationKnowledge(): string {
   );
   cachedKnowledgeDoc = readFileSync(path, "utf8");
   return cachedKnowledgeDoc;
+}
+
+/**
+ * Load a skill knowledge document if present.
+ * Returns null when the slug is invalid, escapes knowledge/skills, or the file
+ * has not been authored yet.
+ */
+export function loadSkillKnowledge(slug: string): string | null {
+  if (skillDocCache.has(slug)) {
+    return skillDocCache.get(slug) ?? null;
+  }
+  const path = resolveSkillKnowledgePath(slug);
+  if (path === null || !existsSync(path)) {
+    skillDocCache.set(slug, null);
+    return null;
+  }
+  const content = readFileSync(path, "utf8");
+  skillDocCache.set(slug, content);
+  return content;
 }
 
 const SCHEMA_CONSTRAINTS = `
@@ -88,6 +139,36 @@ Example shape from Single String Alternate Picking Control:
 - isMvp: true, version: 1, status: "active"
 `.trim();
 
+function formatSkillDocSection(
+  label: string,
+  slug: string,
+  skills: SkillForPrompt[],
+): string {
+  const meta = skills.find((s) => s.slug === slug);
+  const doc = loadSkillKnowledge(slug);
+  const header = `### ${label}: \`${slug}\``;
+  const blurb = meta
+    ? `${meta.name} [${meta.category}] — ${meta.description}`
+    : "(skill not found in taxonomy list)";
+
+  if (doc) {
+    return [
+      header,
+      `Short description: ${blurb}`,
+      "",
+      "Authoritative skill knowledge document (obey Definition and Not This Skill):",
+      doc,
+    ].join("\n");
+  }
+
+  return [
+    header,
+    `Short description: ${blurb}`,
+    "",
+    "(No skill knowledge document yet — use the short description and do not invent overlapping skill boundaries.)",
+  ].join("\n");
+}
+
 export function buildDrillPrompt(input: BuildDrillPromptInput): {
   system: string;
   prompt: string;
@@ -112,6 +193,7 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "You are an expert guitar training drill designer for an adaptive practice app.",
     "You draft high-quality ExerciseSeed candidates. You are NOT the final authority — humans review before seed acceptance.",
     "Follow the knowledge document and schema constraints exactly.",
+    "When a skill knowledge document is provided, its Definition and Not This Skill sections are binding for tab design.",
     "Never duplicate an existing drill's title, purpose, pattern, or skill focus.",
     "",
     "# Knowledge document (authoritative process & scoring)",
@@ -151,6 +233,20 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     parts.push(`Additional direction from reviewer:\n${input.direction.trim()}`);
   }
 
+  parts.push(
+    "",
+    "## Primary skill context (authoritative)",
+    formatSkillDocSection("Primary skill", input.primarySkillSlug, input.skills),
+  );
+
+  if (input.secondarySkillSlugs.length > 0) {
+    parts.push("", "## Secondary skill context");
+    for (const slug of input.secondarySkillSlugs) {
+      parts.push(formatSkillDocSection("Secondary skill", slug, input.skills));
+      parts.push("");
+    }
+  }
+
   parts.push("", "## Available skills (use these slugs only)", skillsList);
   parts.push(
     "",
@@ -175,12 +271,16 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "## Output requirements",
     "Return a single structured object with:",
     "- exercise: full ExerciseSeed (skill slugs, valid tabData, feedbackSchema with training_verdict)",
-    "- briefMarkdown: human-readable brief using the sections from the knowledge doc §4",
+    "- briefMarkdown: human-readable brief using the sections from the knowledge doc §5",
     "- qualityScore: six category scores 0–5 plus total (must equal sum)",
-    "- redFlags: list any red-flag issues (empty array if none)",
+    "- patternType: one of micro_drill | standard_loop | musical_sequence | benchmark (see knowledge doc §3; default most MVP drills to standard_loop)",
+    "- redFlags: list any red-flag issues (empty array if none). If the tab has fewer than 8 notes, MUST include: \"Short pattern warning: this drill is very small. Confirm it is intentionally a micro-drill and not an underdeveloped standard drill.\"",
     "- missingFields: any gaps vs required fields (empty if complete)",
     "- reviewerChecklist: suggested human playability review questions for this drill",
     "- refinePrompt: a ready-to-use continuation prompt if the reviewer wants to iterate further",
+    "",
+    "Tab patterns MUST obey the primary skill boundary (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
+    "Prefer complete 1–2 bar loops (8–16+ notes for picking/sync) over tiny fragments unless patternType is micro_drill with a clear isolation justification.",
   );
 
   return { system, prompt: parts.join("\n") };
