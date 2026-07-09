@@ -205,26 +205,51 @@ export const listExercises = query({
       defaultTargetBpm: v.optional(v.number()),
       estimatedMinutes: v.number(),
       isMvp: v.boolean(),
+      primarySkillId: v.id("skills"),
+      primarySkillName: v.string(),
+      primarySkillSlug: v.string(),
+      skillSortOrder: v.number(),
     }),
   ),
   handler: async (ctx) => {
-    const exercises = await ctx.db.query("exercises").collect();
+    const [exercises, skills] = await Promise.all([
+      ctx.db.query("exercises").collect(),
+      ctx.db.query("skills").collect(),
+    ]);
+
+    const skillById = new Map(skills.map((s) => [s._id, s]));
+
     return exercises
-      .sort((a, b) => a.title.localeCompare(b.title))
-      .map((ex) => ({
-        _id: ex._id,
-        _creationTime: ex._creationTime,
-        title: ex.title,
-        slug: ex.slug,
-        description: ex.description,
-        difficultyLevel: ex.difficultyLevel,
-        exerciseType: ex.exerciseType,
-        primaryProgressMetric: ex.primaryProgressMetric,
-        supportsBpm: ex.supportsBpm,
-        defaultTargetBpm: ex.defaultTargetBpm,
-        estimatedMinutes: ex.estimatedMinutes,
-        isMvp: ex.isMvp,
-      }));
+      .map((ex) => {
+        const skill = skillById.get(ex.primarySkillId);
+        return {
+          _id: ex._id,
+          _creationTime: ex._creationTime,
+          title: ex.title,
+          slug: ex.slug,
+          description: ex.description,
+          difficultyLevel: ex.difficultyLevel,
+          exerciseType: ex.exerciseType,
+          primaryProgressMetric: ex.primaryProgressMetric,
+          supportsBpm: ex.supportsBpm,
+          defaultTargetBpm: ex.defaultTargetBpm,
+          estimatedMinutes: ex.estimatedMinutes,
+          isMvp: ex.isMvp,
+          primarySkillId: ex.primarySkillId,
+          primarySkillName: skill?.name ?? "Unknown",
+          primarySkillSlug: skill ? nameToSlug(skill.name) : "unknown",
+          skillSortOrder: skill?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+        };
+      })
+      .sort((a, b) => {
+        if (a.skillSortOrder !== b.skillSortOrder) {
+          return a.skillSortOrder - b.skillSortOrder;
+        }
+        if (a.difficultyLevel !== b.difficultyLevel) {
+          return a.difficultyLevel - b.difficultyLevel;
+        }
+        return a.title.localeCompare(b.title);
+      });
   },
 });
 
