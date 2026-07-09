@@ -128,6 +128,9 @@ export default defineSchema({
     onboardingCompleted: v.boolean(),
     subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
     timezone: v.string(),
+    // Editable only in the Convex dashboard / DB — never via client mutations.
+    // Optional for backwards compatibility with existing rows; treat missing as false.
+    isSuperUser: v.optional(v.boolean()),
   }).index("by_authProviderId", ["authProviderId"]),
 
   userProfiles: defineTable({

@@ -6,6 +6,8 @@ No drill should enter the production exercise library without a corresponding do
 
 The platform targets approximately 40–80 exceptional drills, not hundreds of mediocre ones.
 
+**Process & scoring authority:** [`drill-generation-and-validation.md`](./drill-generation-and-validation.md) — how drills are generated, scored, reviewed, validated, and accepted. The internal drill-generation tool must use this document as intelligence for drafting and quality checks. Generated drills are candidates only; they must not enter seed data without schema validation, training-value review, and human playability review.
+
 ---
 
 ## Planned Drill Documents
