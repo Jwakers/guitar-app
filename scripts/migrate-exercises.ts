@@ -83,15 +83,56 @@ function convexRun(
 }
 
 function parseConvexJson<T>(raw: string): T {
-  // convex run may prefix log lines; find the JSON payload.
-  const lines = raw.split("\n").filter((line) => line.trim().length > 0);
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i]!.trim();
-    if (line.startsWith("[") || line.startsWith("{")) {
-      return JSON.parse(line) as T;
+  const start = raw.search(/[\[{]/);
+  if (start === -1) {
+    throw new Error(`Could not parse Convex output as JSON:\n${raw}`);
+  }
+
+  const end = findJsonValueEnd(raw, start);
+  if (end === -1) {
+    throw new Error(`Could not parse Convex output as JSON:\n${raw}`);
+  }
+
+  return JSON.parse(raw.slice(start, end + 1)) as T;
+}
+
+function findJsonValueEnd(raw: string, start: number): number {
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i]!;
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (ch === "\\") {
+        escape = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "{" || ch === "[") {
+      stack.push(ch === "{" ? "}" : "]");
+      continue;
+    }
+
+    if (stack.length > 0 && ch === stack[stack.length - 1]) {
+      stack.pop();
+      if (stack.length === 0) {
+        return i;
+      }
     }
   }
-  throw new Error(`Could not parse Convex output as JSON:\n${raw}`);
+
+  return -1;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {

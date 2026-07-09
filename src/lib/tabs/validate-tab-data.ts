@@ -85,6 +85,17 @@ function validateNote(note: unknown, path: string): TabNote {
     throw new Error(`${path}.targetPitch: must be a string if set`);
   }
 
+  if (technique === "bend") {
+    if (
+      typeof targetPitch !== "string" ||
+      targetPitch.trim().length === 0
+    ) {
+      throw new Error(
+        `${path}.targetPitch: required for technique "bend" (octave-qualified pitch, e.g. "G4")`,
+      );
+    }
+  }
+
   return note as TabNote;
 }
 

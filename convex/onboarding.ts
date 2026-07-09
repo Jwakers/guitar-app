@@ -1,35 +1,12 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
+import {
+  coreSkillValidator,
+  subSkillValidator,
+} from "./lib/exerciseValidators";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
-
-const coreSkillValidator = v.union(
-  v.literal("picking"),
-  v.literal("fretting_control"),
-  v.literal("synchronisation"),
-  v.literal("rhythm_timing"),
-  v.literal("muting_noise_control"),
-  v.literal("lead_articulation"),
-  v.literal("chord_changes"),
-);
-
-const subSkillValidator = v.union(
-  v.literal("alternate_picking"),
-  v.literal("string_crossing"),
-  v.literal("string_skipping"),
-  v.literal("finger_independence"),
-  v.literal("fretting_accuracy"),
-  v.literal("position_shifting"),
-  v.literal("legato"),
-  v.literal("bends"),
-  v.literal("vibrato"),
-  v.literal("slides"),
-  v.literal("palm_muting"),
-  v.literal("fret_hand_muting"),
-  v.literal("subdivision_control"),
-  v.literal("accent_control"),
-);
 
 const skillTargetValidator = v.union(
   v.object({ kind: v.literal("core"), id: coreSkillValidator }),

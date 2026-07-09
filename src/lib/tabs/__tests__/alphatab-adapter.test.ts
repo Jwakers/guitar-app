@@ -65,15 +65,35 @@ describe("tabDataToAlphaTex", () => {
             beats: [
               {
                 duration: "quarter",
-                notes: [{ string: 1, fret: 7, technique: "bend" }],
+                notes: [
+                  { string: 2, fret: 7, technique: "bend", targetPitch: "G#4" },
+                ],
               },
             ],
           },
         ],
       }),
     );
-    // No targetPitch → default full step (4 quarter-tones).
-    expect(tex).toContain("7.1{b (0 4)}.4");
+    expect(tex).toContain("7.2{b (0 4)}.4");
+  });
+
+  it("throws when a bend note has no targetPitch", () => {
+    expect(() =>
+      tabDataToAlphaTex(
+        baseTab({
+          bars: [
+            {
+              beats: [
+                {
+                  duration: "quarter",
+                  notes: [{ string: 1, fret: 7, technique: "bend" }],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toThrow(/targetPitch/);
   });
 
   it("infers half-step bend amount from targetPitch", () => {

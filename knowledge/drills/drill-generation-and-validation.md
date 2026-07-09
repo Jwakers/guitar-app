@@ -559,7 +559,7 @@ The AlphaTab adapter infers bend amount from fretted pitch → `targetPitch` and
 - `2` = half step (renders as `1/2`)
 - `4` = whole step (renders as `full`)
 
-Without a usable `targetPitch`, bends default to a whole step.
+Bend notes without a valid `targetPitch` fail tab validation and must not be rendered — the adapter throws rather than defaulting to a whole step.
 
 Do not rely on tab fingering glyphs. The AlphaTab adapter never emits left-hand fingering (`lf`), even when `note.finger` or `displayHints.showFingering` is set — finger numbers collide with bend tip labels and are too prescriptive. Put finger guidance in coaching notes or the description instead. Optional `note.finger` may still be stored for future use, but it is not rendered.
 
