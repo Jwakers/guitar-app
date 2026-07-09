@@ -6,7 +6,14 @@ Each skill document is the authoritative source of expertise for that skill area
 
 ---
 
-## Planned Skill Documents
+## Skill Documents
+
+### Written
+
+- `string-crossing.md`
+- `string-skipping.md`
+
+### Planned
 
 - `alternate-picking.md`
 - `synchronisation.md`
@@ -15,12 +22,12 @@ Each skill document is the authoritative source of expertise for that skill area
 - `vibrato.md`
 - `bends.md`
 - `muting.md`
-- `string-crossing.md`
-- `string-skipping.md`
 - `chord-changes.md`
 - `endurance.md`
 - `speed.md`
 - `fretting-accuracy.md`
+
+The drill generator loads `knowledge/skills/{slug-with-hyphens}.md` for the selected primary skill (and any secondary skills that have docs). Missing docs fall back to the short Convex skill description only.
 
 ---
 

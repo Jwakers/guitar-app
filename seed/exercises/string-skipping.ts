@@ -1,55 +1,55 @@
 import type { ExerciseSeed } from "../../src/lib/exercises/exercise-schema";
 
-export const adjacentToNonAdjacentStringCrossing: ExerciseSeed = {
-  title: "Adjacent to Non-Adjacent String Crossing",
-  slug: "adjacent-to-non-adjacent-string-crossing",
+export const everyOtherStringSkip: ExerciseSeed = {
+  title: "Every Other String Skip",
+  slug: "every-other-string-skip",
   description:
-    "Train accurate and efficient pick movement across non-adjacent strings with controlled motion, targeting string crossing mechanics while maintaining timing and pick angle consistency.",
+    "Train accurate pick jumps on a fixed every-other-string path (low E → D → B), clearing each skipped string without noise while keeping alternate picking and timing locked.",
   purpose:
-    "Isolate and develop the specific mechanical skill of crossing non-adjacent strings cleanly with the pick, bridging the gap between simple adjacent-string changes and full string skipping.",
+    "Develop clean one-string skips on a repeating 6–4–2 ladder so the pick clears unused strings and lands with consistent attack and timing.",
   targetWeaknesses: [
-    "Loss of control when crossing non-adjacent strings",
-    "Inconsistent pick angle across string changes",
-    "Unwanted string noise during large pick movements",
-    "Timing slips when traversing multiple strings",
-    "Excessive motion or tension in the picking hand during string crossings",
+    "Hitting or sounding the skipped string during the jump",
+    "Overshooting or undershooting the target string after a skip",
+    "Timing gaps during larger pick travel",
+    "Inconsistent pick angle across non-adjacent landings",
+    "Excessive arm motion instead of a controlled skip path",
   ],
   minimumCleanStandard:
-    "All notes must ring clearly with no fret buzz, muted strikes, or timing errors. At least 90% of repetitions within the session must be clean at the logged BPM.",
+    "All target notes ring clearly with no fret buzz, muted strikes, or timing errors. Skipped strings must stay silent. At least 90% of repetitions within the session must be clean at the logged BPM.",
   measurementInstructions:
-    "Log the highest BPM at which you can play both bars cleanly in a loop for at least 1 minute, with consistent pick attack, clear notes, and locked timing. Only log repeatable clean performance, not one-off successes.",
+    "Log the highest BPM at which you can loop both bars for at least 1 minute with clear notes, locked timing, consistent pick attack, and no noise from skipped strings. Only log repeatable clean performance, not one-off successes.",
   coachingNotes: [
-    "Focus on the pick path: let the pick glide over the skipped strings rather than lifting high above them.",
-    "Keep your pick angle consistent—most string crossing problems come from rotating the pick mid-motion.",
-    "Use the minimum motion necessary; efficient string crossing is about control, not speed.",
-    "Mute lightly with your fretting hand palm or unused fingers to avoid sympathetic ringing.",
-    "If you feel tension in your forearm or shoulder, slow down and check that your wrist is doing most of the work.",
+    "Glide over the skipped string — clear it, do not strike it.",
+    "Use the minimum pick path that still clears the middle string.",
+    "Keep pick angle steady; aim the tip at the landing string.",
+    "Mute lightly with unused fretting fingers so skipped strings cannot ring.",
+    "If landings feel tense or noisy, slow down before chasing BPM.",
   ],
-  primarySkillId: "string_crossing",
-  secondarySkillIds: [],
+  primarySkillId: "string_skipping",
+  secondarySkillIds: ["alternate_picking"],
   difficultyLevel: 5,
   exerciseType: "primary",
   primaryProgressMetric: "clean_bpm",
   supportsBpm: true,
   defaultTargetBpm: 80,
   successCriteria: [
-    "All notes ring cleanly with no fret buzz or muted strikes",
-    "Pick motion is smooth and controlled across all string crossings",
-    "Timing is locked to the metronome with no rushing or dragging",
-    "No unwanted string noise between notes",
-    "Consistent pick attack and tone across all three strings",
+    "All target notes ring cleanly with no fret buzz or muted strikes",
+    "Skipped strings stay silent on every jump",
+    "Pick landings are accurate on the 6–4–2 path",
+    "Timing stays locked to the metronome with no rushing or dragging",
+    "Alternate picking direction stays consistent through the skips",
   ],
   commonMistakes: [
-    "Using excessive motion in the picking hand instead of controlled, efficient movements",
-    "Changing pick angle mid-cross, causing inconsistent tone or missed notes",
-    "Allowing sympathetic ringing from open or adjacent strings",
-    "Tensing the shoulder or forearm rather than using wrist and finger motion",
-    "Rushing through crossings or losing the downbeat",
+    "Sounding the skipped string instead of clearing it",
+    "Using a full arm swing when a controlled wrist path would clear the string",
+    "Changing pick angle mid-skip and missing the landing",
+    "Leaving fretting-hand muting off so skipped strings ring sympathetically",
+    "Rushing the note after each jump and losing the downbeat",
   ],
   progressionRule:
     "Progress to +5 BPM when the user logs 3 consecutive sessions at the current target BPM with Training Verdict 'Nailed It' or 'Nearly There', cleanliness rating 'clean' or 'mostly_clean', and difficulty rating 'easy' or 'good'. Confidence must be medium or high.",
   regressionRule:
-    "Regress by −5 BPM if the user logs 2 consecutive sessions with Training Verdict 'Needs Work', difficulty rating 'impossible', or cleanliness 'struggled'. If regression would go below 60 BPM, hold at 60 BPM and suggest reviewing basic alternate picking or fretting accuracy.",
+    "Regress by −5 BPM if the user logs 2 consecutive sessions with Training Verdict 'Needs Work', difficulty rating 'impossible', or cleanliness 'struggled'. If regression would go below 60 BPM, hold at 60 BPM and suggest reviewing basic alternate picking before retrying skips.",
   tabData: {
     tuning: ["E", "A", "D", "G", "B", "E"],
     tempo: 80,
@@ -309,6 +309,12 @@ export const adjacentToNonAdjacentStringCrossing: ExerciseSeed = {
           label: "Needs Work",
         },
       ],
+      followUpRules: [
+        {
+          ifOptionId: "needs_work",
+          showQuestionId: "issue",
+        },
+      ],
     },
     {
       id: "difficulty",
@@ -361,16 +367,20 @@ export const adjacentToNonAdjacentStringCrossing: ExerciseSeed = {
       required: false,
       options: [
         {
-          id: "pick_motion",
-          label: "Pick motion inconsistent",
+          id: "hit_skipped_string",
+          label: "Hit the skipped string",
         },
         {
-          id: "string_noise",
-          label: "Unwanted string noise",
+          id: "missed_landing",
+          label: "Missed the landing string",
         },
         {
           id: "timing",
-          label: "Timing slipped",
+          label: "Timing slipped on the jump",
+        },
+        {
+          id: "pick_angle",
+          label: "Pick angle inconsistent",
         },
         {
           id: "tension",
@@ -381,12 +391,6 @@ export const adjacentToNonAdjacentStringCrossing: ExerciseSeed = {
           label: "Other",
         },
       ],
-      followUpRules: [
-        {
-          ifOptionId: "needs_work",
-          showQuestionId: "issue",
-        },
-      ],
     },
   ],
   estimatedMinutes: 3,
@@ -395,6 +399,4 @@ export const adjacentToNonAdjacentStringCrossing: ExerciseSeed = {
   status: "active",
 };
 
-export const stringSkippingExercises: ExerciseSeed[] = [
-  adjacentToNonAdjacentStringCrossing,
-];
+export const stringSkippingExercises: ExerciseSeed[] = [everyOtherStringSkip];

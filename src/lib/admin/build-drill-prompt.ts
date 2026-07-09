@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export type ExerciseSummaryForPrompt = {
@@ -35,6 +35,12 @@ export type BuildDrillPromptInput = {
 };
 
 let cachedKnowledgeDoc: string | null = null;
+const skillDocCache = new Map<string, string | null>();
+
+/** Map skill slug `string_crossing` → knowledge file `string-crossing.md`. */
+export function skillSlugToKnowledgeFilename(slug: string): string {
+  return `${slug.replace(/_/g, "-")}.md`;
+}
 
 export function loadDrillGenerationKnowledge(): string {
   if (cachedKnowledgeDoc) return cachedKnowledgeDoc;
@@ -44,6 +50,28 @@ export function loadDrillGenerationKnowledge(): string {
   );
   cachedKnowledgeDoc = readFileSync(path, "utf8");
   return cachedKnowledgeDoc;
+}
+
+/**
+ * Load a skill knowledge document if present.
+ * Returns null when the file has not been authored yet.
+ */
+export function loadSkillKnowledge(slug: string): string | null {
+  if (skillDocCache.has(slug)) {
+    return skillDocCache.get(slug) ?? null;
+  }
+  const path = join(
+    process.cwd(),
+    "knowledge/skills",
+    skillSlugToKnowledgeFilename(slug),
+  );
+  if (!existsSync(path)) {
+    skillDocCache.set(slug, null);
+    return null;
+  }
+  const content = readFileSync(path, "utf8");
+  skillDocCache.set(slug, content);
+  return content;
 }
 
 const SCHEMA_CONSTRAINTS = `
@@ -88,6 +116,36 @@ Example shape from Single String Alternate Picking Control:
 - isMvp: true, version: 1, status: "active"
 `.trim();
 
+function formatSkillDocSection(
+  label: string,
+  slug: string,
+  skills: SkillForPrompt[],
+): string {
+  const meta = skills.find((s) => s.slug === slug);
+  const doc = loadSkillKnowledge(slug);
+  const header = `### ${label}: \`${slug}\``;
+  const blurb = meta
+    ? `${meta.name} [${meta.category}] — ${meta.description}`
+    : "(skill not found in taxonomy list)";
+
+  if (doc) {
+    return [
+      header,
+      `Short description: ${blurb}`,
+      "",
+      "Authoritative skill knowledge document (obey Definition and Not This Skill):",
+      doc,
+    ].join("\n");
+  }
+
+  return [
+    header,
+    `Short description: ${blurb}`,
+    "",
+    "(No skill knowledge document yet — use the short description and do not invent overlapping skill boundaries.)",
+  ].join("\n");
+}
+
 export function buildDrillPrompt(input: BuildDrillPromptInput): {
   system: string;
   prompt: string;
@@ -112,6 +170,7 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "You are an expert guitar training drill designer for an adaptive practice app.",
     "You draft high-quality ExerciseSeed candidates. You are NOT the final authority — humans review before seed acceptance.",
     "Follow the knowledge document and schema constraints exactly.",
+    "When a skill knowledge document is provided, its Definition and Not This Skill sections are binding for tab design.",
     "Never duplicate an existing drill's title, purpose, pattern, or skill focus.",
     "",
     "# Knowledge document (authoritative process & scoring)",
@@ -151,6 +210,20 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     parts.push(`Additional direction from reviewer:\n${input.direction.trim()}`);
   }
 
+  parts.push(
+    "",
+    "## Primary skill context (authoritative)",
+    formatSkillDocSection("Primary skill", input.primarySkillSlug, input.skills),
+  );
+
+  if (input.secondarySkillSlugs.length > 0) {
+    parts.push("", "## Secondary skill context");
+    for (const slug of input.secondarySkillSlugs) {
+      parts.push(formatSkillDocSection("Secondary skill", slug, input.skills));
+      parts.push("");
+    }
+  }
+
   parts.push("", "## Available skills (use these slugs only)", skillsList);
   parts.push(
     "",
@@ -181,6 +254,8 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "- missingFields: any gaps vs required fields (empty if complete)",
     "- reviewerChecklist: suggested human playability review questions for this drill",
     "- refinePrompt: a ready-to-use continuation prompt if the reviewer wants to iterate further",
+    "",
+    "Tab patterns MUST obey the primary skill boundary (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
   );
 
   return { system, prompt: parts.join("\n") };

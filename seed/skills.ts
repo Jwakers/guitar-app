@@ -19,7 +19,7 @@ export const SKILLS_SEED: SkillSeedEntry[] = [
   {
     name: "String Crossing",
     description:
-      "Accurate and efficient pick movement across non-adjacent strings.",
+      "Clean pick travel between adjacent strings only (e.g. 1→2, 2→3) with efficient motion, consistent angle, and locked timing.",
     category: "picking",
     isMvp: true,
     sortOrder: 2,
@@ -27,7 +27,7 @@ export const SKILLS_SEED: SkillSeedEntry[] = [
   {
     name: "String Skipping",
     description:
-      "Skipping strings with the pick while maintaining timing and cleanliness.",
+      "Accurate pick jumps across non-adjacent strings (e.g. 1→3, 2→4), clearing skipped strings without noise while keeping timing and attack.",
     category: "picking",
     isMvp: true,
     sortOrder: 3,

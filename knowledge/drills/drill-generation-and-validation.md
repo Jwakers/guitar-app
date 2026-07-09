@@ -299,6 +299,24 @@ Reject a drill immediately if any of these are true:
 * It requires video explanation for MVP.
 * It does not suit electric guitar.
 * It does not suit the MVP target user.
+* Its tab pattern violates the primary skill’s boundary (see §8.1).
+
+### 8.1 Skill boundary rules (picking)
+
+When a skill knowledge document is provided, it is authoritative for that skill’s definition and “Not this skill” boundary.
+
+Hard rules for the adjacent vs non-adjacent picking pair:
+
+| Primary skill slug | Allowed string changes in `tabData` | Reject if |
+| --- | --- | --- |
+| `string_crossing` | **Adjacent only** (string numbers differ by exactly 1) | Any note-to-note jump skips a string (\|Δstring\| ≥ 2) |
+| `string_skipping` | Must include **at least one** non-adjacent jump (\|Δstring\| ≥ 2) | Pattern only uses adjacent changes (that is string crossing) |
+
+Notes:
+
+* String numbers: 1 = high E (thinnest), 6 = low E (thickest).
+* Alternate picking may be a secondary skill for either; it does not redefine the primary skill.
+* If the brief says “string crossing” but the pattern skips strings, retag to `string_skipping` or redesign the tab — do not keep the wrong primary skill.
 
 ---
 
