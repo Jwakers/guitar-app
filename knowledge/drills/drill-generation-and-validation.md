@@ -123,6 +123,22 @@ Training value still comes first. The drill must serve the target skill and weak
 
 This does **not** turn the app into a song-learning or theory product. The goal is technical training that feels less sterile while remaining focused, measurable, and progressive.
 
+### Evidence-informed practice design
+
+Drill authoring must align with [`knowledge/principles/practice-methodology.md`](../principles/practice-methodology.md). Before accepting a drill, ask:
+
+- Is this drill too repetitive?
+- Does it encourage active attention?
+- Could it benefit from a musical phrase instead of a sterile fragment?
+- Is it best learned additively?
+- Would hands-separate practice help?
+- Does it sit at the edge of ability?
+- What should the user listen or feel for?
+- What should happen if the user fails?
+- Is this a micro-drill, standard loop, musical sequence, or benchmark?
+
+> Repetition is only useful when attention, intent, and feedback remain active.
+
 ---
 
 ## 3. Pattern Length, Musical Shape & Drill Completeness
@@ -296,9 +312,22 @@ Each brief must include:
 
 ## Regression Rule
 
+## Attention Focus
+
 ## Feedback Questions
 
 ## Reviewer Notes
+```
+
+**Attention Focus** (required) — what should the player actively pay attention to while practising?
+
+Examples:
+
+```txt
+Listen for even note spacing.
+Notice whether the picking hand tenses after the string change.
+Focus on whether the bend reaches pitch before vibrato starts.
+Feel whether the fretting hand releases cleanly between chords.
 ```
 
 The brief is for understanding and review. The seed object is for runtime use.
@@ -336,7 +365,44 @@ Every production drill must define:
 - estimated minutes
 - MVP flag
 
+**Optional evidence-informed fields** (use when they improve practice quality; not required for MVP schema validation):
+
+- `practiceSteps` — additive/chunked learning layers (especially synchronisation, string crossing, chord changes, lead articulation, rhythm timing, difficult picking)
+- `handsSeparateMode` — fretting-only / picking-only / combined instructions when isolation reduces overload
+- `mentalCue` — light mental rehearsal prompt (rhythm, bends, vibrato, phrasing; use sparingly)
+- `attentionFocus` — mirrors the brief section; what the player should listen or feel for
+- `troubleshootingPrompts` — repair guidance when user logs `needs_work` or Impossible difficulty
+
+```ts
+type PracticeStep = {
+  title: string;
+  instruction: string;
+  focus: "fretting" | "picking" | "rhythm" | "combined" | "listening" | "mental";
+  estimatedMinutes?: number;
+};
+
+type HandsSeparateMode = {
+  frettingOnly?: string;
+  pickingOnly?: string;
+  combined?: string;
+};
+
+type TroubleshootingPrompt = {
+  trigger: "needs_work" | "impossible" | "low_confidence" | "timing_breakdown" | "tension_reported";
+  response: string;
+};
+```
+
 A drill missing any required training-quality field should be rejected even if TypeScript accepts it.
+
+### Reject or revise drills that
+
+- encourage mindless repetition (masked practice)
+- have no clear attention focus in the brief
+- are too short without being justified as a micro-drill
+- are too long without chunking or `practiceSteps`
+- have no troubleshooting path when failure is likely
+- do not explain what the user should notice while practising
 
 ---
 
@@ -699,6 +765,8 @@ Tab validation: pass
 Training-value validation: pass
 Quality score: 24/30 or higher
 Human playability review: pass
+Attention Focus present in brief: yes
+Troubleshooting path defined (if drill likely to produce needs_work): yes
 Saved to dev Convex: yes
 Knowledge doc authored: yes
 ```
@@ -752,14 +820,15 @@ Do not optimise the first drill for novelty. Optimise it for clarity, measurabil
 
 If building an internal tool that generates drills, it should output:
 
-1. Human-readable drill brief
+1. Human-readable drill brief (including **Attention Focus**)
 2. Structured exercise object (saved to dev Convex)
 3. Quality score estimate
 4. Pattern type (`micro_drill` | `standard_loop` | `musical_sequence` | `benchmark`)
-5. Red flag warnings (including short-pattern warnings from §3 when applicable)
-6. Validation status
-7. Missing field report
-8. Suggested reviewer checklist
+5. Red flag warnings (including short-pattern warnings from §3, masked-repetition warnings)
+6. Suggested `practiceSteps` and `handsSeparateMode` when additive or isolation would help
+7. Validation status
+8. Missing field report
+9. Suggested reviewer checklist
 
 The tool saves candidates to the dev deployment only. Production promotion requires human review and `pnpm migrate:exercises`.
 
@@ -776,5 +845,9 @@ A drill is good because it creates a measurable training stimulus that helps the
 Rendering proves the data is displayable.
 
 Validation proves the object is well-formed.
+
+> The app should not simply generate things to repeat. It should generate focused training conditions that keep the player attentive, challenged, and able to correct the right thing.
+
+See [`practice-methodology.md`](../principles/practice-methodology.md) for the full evidence-informed practice design framework.
 
 Review proves the drill is worth practising.

@@ -10,6 +10,8 @@ The core product promise is:
 
 > Train guitar fundamentals like an athlete trains their body: structured sessions, progressive overload, measurable performance, adaptive programming, and long-term progress tracking.
 
+Sessions are designed using **evidence-informed practice design** — focused attention, interleaved practice, edge-of-ability targeting, chunking, and targeted troubleshooting. This is not guaranteed neuroscience optimisation. The operational source of truth is [`knowledge/principles/practice-methodology.md`](../knowledge/principles/practice-methodology.md).
+
 The app must answer one question every time the user opens it:
 
 > What should I train today?
@@ -174,12 +176,14 @@ primaryGoals[]
 focusCoreSkillIds[]
 focusSubSkillIds[]
 availableDays[]
-defaultSessionLengthMinutes
+defaultSessionLengthMinutes // maps to session duration presets: 10 | 15 | 20 | 30 | 45 minutes
 preferredIntensity
 dataTonePreference
 createdAt
 updatedAt
 ```
+
+`defaultSessionLengthMinutes` influences session chunking templates. Longer presets use internal sections (warm-up, primary focus, interleaved support, benchmark, reflection) rather than one unbroken block. See [Practice Methodology — Short, Focused Practice Chunks](../knowledge/principles/practice-methodology.md#3-short-focused-practice-chunks).
 
 ---
 
@@ -963,6 +967,8 @@ Do not build in MVP:
 * Generate weekly plan
 * Generate today session
 * Basic progressive overload rules
+* Interleaved session design (rotate complementary drills in standard sessions)
+* Edge-of-ability targeting from Reliable Performance
 
 ### Phase 4 — Practice Flow
 
@@ -971,6 +977,7 @@ Do not build in MVP:
 * Tab display (alphaTab)
 * Exercise logging
 * Session completion
+* Breakdown follow-ups (`breakdown_cause`) and repair strategies on poor verdicts
 
 ### Phase 5 — Progress
 
@@ -979,6 +986,7 @@ Do not build in MVP:
 * Personal bests
 * Progress dashboard
 * Skill detail pages
+* Built-in practice journal (planned vs completed, difficulties, adaptations)
 
 ### Phase 6 — Gamification
 
@@ -1189,13 +1197,45 @@ type Exercise = {
   estimatedMinutes: number;
   isMvp: boolean;
 
+  // Evidence-informed practice — optional (not required for MVP validation)
+  practiceSteps?: PracticeStep[];
+  handsSeparateMode?: HandsSeparateMode;
+  mentalCue?: string;
+  attentionFocus?: string;
+  troubleshootingPrompts?: TroubleshootingPrompt[];
+
   // Seed data versioning
   version: number;
   status: "active" | "deprecated" | "replaced";
   replacedBySlug?: string;
   updatedAt: number;
 };
+
+type PracticeStep = {
+  title: string;
+  instruction: string;
+  focus: "fretting" | "picking" | "rhythm" | "combined" | "listening" | "mental";
+  estimatedMinutes?: number;
+};
+
+type HandsSeparateMode = {
+  frettingOnly?: string;
+  pickingOnly?: string;
+  combined?: string;
+};
+
+type TroubleshootingPrompt = {
+  trigger:
+    | "needs_work"
+    | "impossible"
+    | "low_confidence"
+    | "timing_breakdown"
+    | "tension_reported";
+  response: string;
+};
 ```
+
+Optional evidence-informed fields are documented in [`knowledge/principles/practice-methodology.md`](../knowledge/principles/practice-methodology.md). They are not yet enforced in Convex validators or seed validation — use when they improve practice quality.
 
 The `tabData` field is the canonical internal representation. Exercise data should not be authored as renderer-specific notation.
 
@@ -1223,6 +1263,12 @@ The following rules must be enforced at seed time and at any future write path t
 * Lead articulation drills using bends, vibrato, or legato should use musical context unless they are explicit micro-drills or benchmarks.
 * Exercises where `supportsBpm` is `true` must include a `defaultTargetBpm`.
 * Exercises where `supportsBpm` is `false` must include `measurementInstructions` describing exactly how performance is quantified.
+
+**Evidence-informed practice (soft guidance, not hard validation yet):**
+
+* Complex drills for synchronisation, string crossing, chord changes, lead articulation, rhythm timing, or difficult picking patterns *should* consider `practiceSteps` and/or `handsSeparateMode` when additive or hands-separate learning would reduce overload.
+* Drills likely to produce `needs_work` verdicts *should* define `troubleshootingPrompts` or a clear regression path.
+* `attentionFocus` should be present in drill briefs for all production drills (see drill-generation doc).
 
 ---
 
@@ -1252,8 +1298,11 @@ Every new exercise must be reviewed against this checklist before it is committe
 * Why would the training engine prescribe this exercise today?
 * Is the tab data musically and mechanically sensible?
 * Is the exercise suitable for intermediate electric guitarists?
+* What should the player actively pay attention to while practising? (`attentionFocus`)
+* What happens if the user fails — is there a troubleshooting or regression path?
+* Does this drill avoid masked practice (mindless repetition without attention)?
 
-An exercise that cannot answer all ten questions should not be added.
+An exercise that cannot answer all twelve questions should not be added.
 
 ---
 
@@ -1495,13 +1544,27 @@ Example:
 **Options:** Easy / Good / Hard / Impossible
 
 - If **Easy**: no follow-up questions.
-- If **Impossible**: display a follow-up question.
+- If **Needs Work** or **Impossible** (difficulty): display a lightweight breakdown follow-up when useful.
 
-**Follow-up question:** What caused the difficulty?
+**Follow-up question (`breakdown_cause`):** What broke down?
 
-**Options:** Too fast / Coordination / Hand fatigue / Pain / Didn't understand / Other
+**Options:** Too fast / Picking hand / Fretting hand / Synchronisation / Rhythm / timing / Tension / fatigue / Didn't understand
 
-Follow-up rules are defined in the exercise's `feedbackSchema` using the `followUpRules` field and are evaluated deterministically at runtime.
+This question must be triggered only by poor verdicts (`needs_work`) or Impossible difficulty — not shown on every exercise. Follow-up rules are defined in the exercise's `feedbackSchema` using the `followUpRules` field and are evaluated deterministically at runtime.
+
+**Repair strategy mapping** (engine consumes `breakdown_cause` to adapt next prescription):
+
+| Breakdown cause | Typical engine response |
+|---|---|
+| too_fast | Reduce target BPM |
+| picking_hand | Hands-separate picking step or prerequisite drill |
+| fretting_hand | Hands-separate fretting step or smaller chunk |
+| synchronisation | Additive `practiceSteps`; reduce tempo |
+| rhythm_timing | Rhythm isolation drill; optional `mentalCue` |
+| tension | Light/control session; reduce intensity |
+| unclear | Extra coaching; prerequisite drill |
+
+> Mistakes should generate information, not punishment. See [`practice-methodology.md`](../knowledge/principles/practice-methodology.md#7-targeted-troubleshooting).
 
 ---
 
@@ -1569,6 +1632,24 @@ The user's best-ever recorded value for a given metric. This is celebrated and d
 The user's consistently repeatable value, derived from recent logs weighted by Training Verdict. This is the value the training engine uses to generate session targets.
 
 Training targets must be generated from Reliable Performance. Peak Performance must be surfaced in progress views but must not cause the engine to overshoot programming targets.
+
+**Edge-of-ability zone** (productive challenge):
+
+```txt
+Challenging but repeatable.
+Uncomfortable but not chaotic.
+Difficult enough to require attention.
+Controlled enough to produce clean reps.
+```
+
+Targets should usually sit slightly above Reliable Performance, not at Peak Performance.
+
+| Perceived difficulty | Training Verdict | Engine signal |
+|---|---|---|
+| Easy | Nailed It | progression may be needed |
+| Good / Challenging | Nailed It | ideal growth zone |
+| Hard | Nearly There | useful but monitor |
+| Impossible | Needs Work | target too high or drill unsuitable |
 
 ---
 
@@ -1839,6 +1920,28 @@ Reason codes must be machine-readable and are used by the AI explanation layer t
 
 The engine builds sessions from predefined templates, not from arbitrary exercise lists.
 
+**Session duration presets** (from `userProfiles.defaultSessionLengthMinutes`):
+
+```txt
+10 minute quick session
+15 minute focused session
+20 minute focused session
+30 minute standard session
+45 minute extended session
+```
+
+Longer sessions use internal sections, not one unbroken block. Example 45-minute structure:
+
+```txt
+10 min warm-up/control
+15 min primary focus
+10 min interleaved support work
+5 min benchmark
+5 min reflection/logging
+```
+
+> Optimise for quality of attention, not just practice duration.
+
 **Standard session:**
 
 ```txt
@@ -2038,6 +2141,8 @@ All progression, hold, and regression decisions must be implemented deterministi
 
 The engine must intentionally repeat exercises when repetition provides training value. Repetition must not be avoided purely for the sake of variety.
 
+**Active repetition** (consolidation with attention and feedback) differs from **masked practice** (mindless repetition while attention drops). See [`practice-methodology.md`](../knowledge/principles/practice-methodology.md#1-avoid-masked-practice).
+
 **Repeat when:**
 
 * The exercise is part of an active progression path.
@@ -2052,6 +2157,46 @@ The engine must intentionally repeat exercises when repetition provides training
 * The user has failed the exercise repeatedly with no performance change.
 * The exercise no longer provides a meaningful training stimulus.
 * Maintenance work at a lower intensity would be more appropriate.
+* Repetition would become masked practice — same movement for too long without variation or attention cues.
+
+---
+
+## 11a. Practice Design Rules
+
+Evidence-informed session design rules. Full rationale: [`practice-methodology.md`](../knowledge/principles/practice-methodology.md).
+
+### Interleaving rule
+
+Standard sessions should usually interleave related skills rather than repeat the same exact demand for too long.
+
+**Primary focus: picking — good:**
+
+```txt
+picking control → rhythm timing → string crossing → picking benchmark
+```
+
+**Primary focus: picking — poor:**
+
+```txt
+single-string picking → single-string variation → single-string speed → single-string endurance
+```
+
+Use blocked practice only when first learning or repairing a specific movement. Use interleaving in standard and weekly sessions.
+
+### Edge-of-ability rule
+
+```txt
+Use:    Reliable Performance + small progression
+Avoid:  Peak Performance + aggressive progression
+```
+
+### Troubleshooting rule
+
+If recent logs show repeated failure (`needs_work`, Impossible difficulty, or repeated `breakdown_cause`), the next prescription should usually become smaller, clearer, or more isolated: reduce BPM, shorten pattern, switch to micro-drill, use hands-separate step, prescribe prerequisite drill, lower intensity, or provide extra coaching.
+
+### Attention rule
+
+If a session is long, split it into focused chunks per duration presets. Do not create long unbroken repetitions of the same movement.
 
 ---
 
@@ -2661,6 +2806,9 @@ Consistent terminology across code, copy, and documentation reduces confusion.
 | A once-achieved high score | `Personal Best` or `Peak Performance` |
 | A multi-week programme | `Training Block` or `Block` |
 | A loggable performance threshold | `Benchmark` |
+| Mindless repetition without attention | `Masked Practice` |
+| Rotating related but distinct drills in one session | `Interleaved Practice` |
+| Session design grounded in practice research | `Evidence-Informed Practice Design` |
 
 Avoid using `Lesson`, `Course`, or `Student` anywhere in the product. These terms imply a teacher-led educational product, which this is not.
 
@@ -2675,9 +2823,11 @@ Before implementing advanced scoring, AI coaching, subscription features, or gam
 3. **Seed skill taxonomy** — 3–5 skills seeded and queryable (not all 13; see First Implementation Milestone below)
 4. **10–15 excellent MVP drills** — fully validated exercises covering the first 3–5 skills, with real tab data, passing the quality contract checklist
 5. **Onboarding** — goal selection, schedule, initial skill assessment producing initial skill ratings
-6. **Today session generation** — engine generating a valid `PracticeSession` from user state
-7. **Exercise logging** — `logExerciseResult` writing an `ExerciseLog` with `TrainingVerdict` and `feedbackResponses`
+6. **Today session generation** — engine generating a valid `PracticeSession` from user state (interleaved, edge-of-ability, chunked per duration preset)
+7. **Exercise logging** — `logExerciseResult` writing an `ExerciseLog` with `TrainingVerdict`, `feedbackResponses`, and optional `breakdown_cause`
 8. **Derived `UserExerciseState`** — updated after each log, consumed by the engine for next-session decisions
+
+**Future (post-core-loop):** `mentalCue` and `practiceSteps` in practice player UI; hands-separate mode display.
 
 This sequence validates the core training loop before any further investment. If any of these steps does not work end-to-end, the rest of the product has no foundation.
 

@@ -22,6 +22,7 @@ Documents here do not directly affect production code until their findings have 
 
 Research documents should be summarised and cited when they inform a decision in:
 
+- `knowledge/principles/practice-methodology.md`
 - `knowledge/whitepapers/`
 - `knowledge/skills/`
 - `knowledge/training-blocks/`
