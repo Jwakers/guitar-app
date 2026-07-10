@@ -8,6 +8,8 @@ The platform targets approximately 40–80 exceptional drills, not hundreds of m
 
 **Process & scoring authority:** [`drill-generation-and-validation.md`](./drill-generation-and-validation.md) — how drills are generated, scored, reviewed, validated, and accepted. The internal drill-generation tool must use this document as intelligence for drafting and quality checks. Generated drills are candidates only; they must not enter production without schema validation, training-value review, human playability review, and migration via [`docs/exercise-migration.md`](../../docs/exercise-migration.md).
 
+**Practice methodology:** [`knowledge/principles/practice-methodology.md`](../principles/practice-methodology.md) — evidence-informed practice design governing attention focus, interleaving, chunking, and troubleshooting in drill authoring.
+
 ---
 
 ## Exercise migration
@@ -50,7 +52,7 @@ Organised by core skill and sub-skill:
 **Rhythm & Timing / Palm Muting**
 - `palm-muting-control-l1.md` (rhythm riff with palm muting + rests — not standalone open-string noise drill)
 
-*(Remaining drills to be authored before exercise seed work begins.)*
+*(Remaining drills to be authored in dev Convex before production migration.)*
 
 ---
 
@@ -93,6 +95,21 @@ The errors players most frequently make on this drill.
 
 ## Coaching Notes
 Technique and mindset guidance to accompany this drill.
+
+## Attention Focus
+What the player should actively listen for, feel, or notice while practising. Required for all production drills.
+
+## Practice Steps
+(Optional) Additive learning layers — fretting only, picking only, combine slowly, add rhythm, add speed.
+
+## Hands-Separate Mode
+(Optional) Fretting-only, picking-only, and combined instructions when isolation reduces overload.
+
+## Mental Cue
+(Optional) Light mental rehearsal prompt before playing — hum phrase, visualise movement, tap rhythm.
+
+## Troubleshooting Prompts
+(Optional) Repair guidance when the player logs needs_work or Impossible difficulty.
 
 ## Progression Rules
 The conditions under which a player should advance to a harder variation.

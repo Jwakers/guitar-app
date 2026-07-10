@@ -134,7 +134,7 @@ TabData:
 
 Quality scoring:
 - Score each of the 6 categories 0–5; total must equal the sum
-- Seed threshold is 24/30; aim for 26+ for MVP
+- Production acceptance threshold is 24/30; aim for 26+ for MVP
 - List any red flags from the knowledge document
 `.trim();
 
@@ -217,7 +217,7 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
 
   const system = [
     "You are an expert guitar training drill designer for an adaptive practice app.",
-    "You draft high-quality ExerciseSeed candidates. You are NOT the final authority — humans review before seed acceptance.",
+    "You draft high-quality ExerciseSeed candidates. You are NOT the final authority — humans review before production acceptance.",
     "Follow the knowledge document and schema constraints exactly.",
     "When a skill knowledge document is provided, its Definition and Not This Skill sections are binding for tab design.",
     "Never duplicate an existing drill's title, purpose, pattern, or skill focus.",

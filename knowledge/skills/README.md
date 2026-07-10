@@ -8,9 +8,11 @@ The canonical taxonomy is:
 Core Skill -> Sub-skill -> Drill
 ```
 
-Core skills live in code at `src/lib/skills/taxonomy.ts`. These markdown files add deeper authoring guidance for sub-skills, especially boundaries like “string crossing” vs “string skipping”.
+Core skills live in code at `src/lib/skills/taxonomy.ts`. These markdown files add deeper authoring guidance for sub-skills, especially boundaries like "string crossing" vs "string skipping".
 
 Muting-related sub-skills (`palm_muting`, `fret_hand_muting`, `release_control`) are **cross-cutting technique tags**. They attach to valid core skills (e.g. rhythm + palm muting, picking + fret-hand muting) and are not a standalone core skill category. Noise control is assessed via training attributes (`noise_control`, `cleanliness`), not as a top-level skill.
+
+**Practice methodology:** Sub-skill authoring should align with [`knowledge/principles/practice-methodology.md`](../principles/practice-methodology.md) — attention focus, additive learning paths, hands-separate entry points, and troubleshooting guidance inform how drills for each sub-skill are designed.
 
 ---
 
@@ -69,6 +71,18 @@ One of: clean_bpm | accuracy_score | timing_consistency | control_score |
 
 ## Supporting Metrics
 Additional data points collected but not used as the primary metric.
+
+## Attention Focus
+What the player should actively listen for, feel, or notice while practising drills for this sub-skill.
+
+## Additive Learning Path
+Typical practiceSteps layering for this sub-skill (e.g. fretting shape → picking pattern → combine slowly → add rhythm → add speed).
+
+## Hands-Separate Entry Points
+When fretting-only or picking-only preparation helps before combining (optional — use when isolation reduces overload).
+
+## Troubleshooting
+Common breakdown causes (too fast, picking hand, fretting hand, synchronisation, etc.) and typical repair drills or strategies.
 
 ## Common Weaknesses
 Typical gaps in this skill for intermediate guitarists.

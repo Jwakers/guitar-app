@@ -159,7 +159,7 @@ export default defineSchema({
   }).index("by_userId", ["userId"]),
 
   // -------------------------------------------------------------------------
-  // Domain seed data (global, read-only at runtime)
+  // Global catalog data (read-only at runtime for app users)
   // -------------------------------------------------------------------------
 
   exercises: defineTable({
@@ -235,7 +235,7 @@ export default defineSchema({
       }),
     ),
 
-    // Seed data versioning
+    // Catalog versioning
     version: v.number(),
     status: v.union(
       v.literal("active"),

@@ -704,7 +704,7 @@ export function DrillGenerator() {
                 </p>
                 {belowThreshold && (
                   <p className="mt-1 text-sm text-destructive">
-                    Below seed threshold (24). Refine before accepting.
+                    Below acceptance threshold (24). Refine before saving.
                   </p>
                 )}
                 <ul className="mt-3 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
@@ -816,9 +816,9 @@ export function DrillGenerator() {
                 {belowThreshold
                   ? " (score is below 24 — refine before production acceptance)"
                   : ""}
-                . Production seed still requires schema + tab + training-value
-                validation, score ≥ 24, human playability review, seed file
-                paste, and tests.
+                . Production acceptance still requires schema + tab + training-value
+                validation, score ≥ 24, human playability review, and{" "}
+                <code className="text-xs">pnpm migrate:exercises</code> to prod.
               </p>
             </section>
           </div>
