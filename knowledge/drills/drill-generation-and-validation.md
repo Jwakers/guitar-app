@@ -32,19 +32,55 @@ type CoreSkill =
   | "fretting_control"
   | "synchronisation"
   | "rhythm_timing"
-  | "muting_noise_control"
   | "lead_articulation"
   | "chord_changes";
+
+type SubSkill =
+  | "alternate_picking"
+  | "string_crossing"
+  | "string_skipping"
+  | "finger_independence"
+  | "fretting_accuracy"
+  | "position_shifting"
+  | "legato"
+  | "bends"
+  | "vibrato"
+  | "slides"
+  | "subdivision_control"
+  | "accent_control"
+  | "palm_muting"
+  | "fret_hand_muting"
+  | "release_control";
 
 type TrainingAttribute =
   | "speed"
   | "endurance"
   | "accuracy"
   | "control"
-  | "consistency";
+  | "consistency"
+  | "cleanliness"
+  | "noise_control";
 ```
 
 Do not generate drills that classify `speed` or `endurance` as skills. Do not classify techniques such as `alternate_picking`, `string_crossing`, `legato`, `bends`, or `vibrato` as top-level skills; they are sub-skills under a core skill.
+
+**Noise control is not a core skill.** It is a cross-cutting execution quality assessed inside meaningful drills via `trainingAttributes` (`noise_control`, `cleanliness`), optional feedback questions, success criteria, and coaching notes. `palm_muting`, `fret_hand_muting`, and `release_control` are supplementary technique tags — never the only sub-skills on a drill.
+
+### Noise control principle
+
+> Noise control should usually be trained inside meaningful musical or technical context, not as an isolated tab pattern.
+
+Reject or heavily revise drills where:
+
+- the primary skill is noise control
+- the drill is just repeated open-string picking
+- the tab does not create a meaningful musical or mechanical challenge
+- the only training value is “try not to make noise”
+- the drill would be better expressed as a success criterion inside another drill
+
+Good uses: alternate picking across strings where unused strings may ring; rhythm riffs with palm muting and rests; chord changes with clean releases; lead articulation where bends/slides must not create excess noise.
+
+Bad uses: dry `0-0-0-0` open-string alternate picking with no rhythmic or palm-muting purpose; two-note patterns where the only instruction is “keep it clean”.
 
 ---
 

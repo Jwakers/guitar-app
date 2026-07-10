@@ -8,11 +8,13 @@ import {
 export type TrainingAttributeHistogram = Record<TrainingAttribute, number>;
 
 const DEFAULT_TARGET_WEIGHTS: Record<TrainingAttribute, number> = {
-  accuracy: 0.28,
-  consistency: 0.28,
-  control: 0.24,
-  speed: 0.12,
-  endurance: 0.08,
+  accuracy: 0.22,
+  consistency: 0.22,
+  control: 0.18,
+  cleanliness: 0.12,
+  speed: 0.1,
+  endurance: 0.06,
+  noise_control: 0.1,
 };
 
 /** Typical attribute emphasis per sub-skill (from seed library patterns). */
@@ -103,6 +105,8 @@ function emptyHistogram(): TrainingAttributeHistogram {
     accuracy: 0,
     control: 0,
     consistency: 0,
+    cleanliness: 0,
+    noise_control: 0,
   };
 }
 

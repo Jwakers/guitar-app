@@ -1,4 +1,8 @@
 import { cn } from "@/lib/utils";
+import {
+  subSkillBelongsToCoreSkill,
+  type CoreSkill,
+} from "@/lib/skills/taxonomy";
 import type {
   CoreSkillOption,
   SubSkillOption,
@@ -45,15 +49,14 @@ export function GoalsStep({
     }
   }
 
-  function toggleSubSkill(skill: SubSkillOption) {
+  function toggleSubSkill(skill: SubSkillOption, sectionCoreSkillId: CoreSkill) {
     const current = data.focusSubSkillIds;
     if (current.includes(skill.id)) {
       const nextSubSkillIds = current.filter((id) => id !== skill.id);
       const nextCoreSkillIds = data.focusCoreSkillIds.filter((coreSkillId) =>
-        nextSubSkillIds.some((subSkillId) => {
-          const subSkill = subSkills.find((item) => item.id === subSkillId);
-          return subSkill?.coreSkillId === coreSkillId;
-        }),
+        nextSubSkillIds.some((subSkillId) =>
+          subSkillBelongsToCoreSkill(subSkillId, coreSkillId),
+        ),
       );
       onUpdate({
         focusSubSkillIds: nextSubSkillIds,
@@ -62,9 +65,9 @@ export function GoalsStep({
     } else if (current.length < MAX_FOCUS_SKILLS) {
       onUpdate({
         focusSubSkillIds: [...current, skill.id],
-        focusCoreSkillIds: data.focusCoreSkillIds.includes(skill.coreSkillId)
+        focusCoreSkillIds: data.focusCoreSkillIds.includes(sectionCoreSkillId)
           ? data.focusCoreSkillIds
-          : [...data.focusCoreSkillIds, skill.coreSkillId],
+          : [...data.focusCoreSkillIds, sectionCoreSkillId],
       });
     }
   }
@@ -127,8 +130,8 @@ export function GoalsStep({
         </p>
         <div className="flex flex-col gap-4 pt-1">
           {coreSkills.map((coreSkill) => {
-            const coreSubSkills = subSkills.filter(
-              (skill) => skill.coreSkillId === coreSkill.id,
+            const coreSubSkills = subSkills.filter((skill) =>
+              subSkillBelongsToCoreSkill(skill.id, coreSkill.id),
             );
             if (coreSubSkills.length === 0) return null;
             return (
@@ -146,7 +149,7 @@ export function GoalsStep({
                     <button
                       type="button"
                       key={skill.id}
-                      onClick={() => toggleSubSkill(skill)}
+                      onClick={() => toggleSubSkill(skill, coreSkill.id)}
                       disabled={maxed}
                       aria-pressed={selected}
                       className={cn(

@@ -10,6 +10,8 @@ Core Skill -> Sub-skill -> Drill
 
 Core skills live in code at `src/lib/skills/taxonomy.ts`. These markdown files add deeper authoring guidance for sub-skills, especially boundaries like “string crossing” vs “string skipping”.
 
+Muting-related sub-skills (`palm_muting`, `fret_hand_muting`, `release_control`) are **cross-cutting technique tags**. They attach to valid core skills (e.g. rhythm + palm muting, picking + fret-hand muting) and are not a standalone core skill category. Noise control is assessed via training attributes (`noise_control`, `cleanliness`), not as a top-level skill.
+
 ---
 
 ## Sub-skill Documents
@@ -31,6 +33,7 @@ Core skills live in code at `src/lib/skills/taxonomy.ts`. These markdown files a
 - `slides.md`
 - `palm-muting.md`
 - `fret-hand-muting.md`
+- `release-control.md`
 - `subdivision-control.md`
 - `accent-control.md`
 

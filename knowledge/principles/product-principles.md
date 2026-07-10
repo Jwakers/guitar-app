@@ -42,4 +42,4 @@ The user's most limited resource is practice time. Every interaction — logging
 The training engine must produce recommendations that a thoughtful musician would recognise as sensible. If the app cannot explain why it prescribed a session, the session should not be prescribed.
 
 **Hide taxonomy complexity from the player.**
-The internal model is Core Skill → Sub-skill → Drill with training attributes layered on top. That structure exists so the app can make better practice decisions; user-facing copy should stay simple unless the extra detail helps the guitarist practise.
+The internal model is Core Skill → Sub-skill → Drill with training attributes layered on top. That structure exists so the app can make better practice decisions; user-facing copy should stay simple unless the extra detail helps the guitarist practise. Noise control is assessed inside real movement drills — it is not a standalone skill bucket.

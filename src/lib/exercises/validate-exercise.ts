@@ -12,11 +12,14 @@ import {
   CORE_SKILLS,
   SUB_SKILLS,
   TRAINING_ATTRIBUTES,
-  coreSkillForSubSkill,
   coreSkillRequiresSubSkills,
   isCoreSkill,
+  isLegacyCoreSkill,
   isSubSkill,
   isTrainingAttribute,
+  subSkillBelongsToCoreSkill,
+  subSkillCanDriveStandaloneGeneration,
+  type CoreSkill,
   type SubSkill,
 } from "../skills/taxonomy";
 import { validateTabData } from "../tabs/validate-tab-data";
@@ -164,6 +167,100 @@ function assertTabSupportsSubSkills(
   }
 }
 
+function assertNoiseControlRules(
+  exercise: Pick<
+    ExerciseSeed,
+    | "purpose"
+    | "targetWeaknesses"
+    | "coreSkillId"
+    | "subSkillIds"
+    | "trainingAttributes"
+    | "primaryProgressMetric"
+    | "patternType"
+    | "microDrillJustification"
+    | "coachingNotes"
+    | "tabData"
+  >,
+): void {
+  const typedSubSkills = exercise.subSkillIds as SubSkill[];
+  const hasConcreteSubSkill = subSkillCanDriveStandaloneGeneration(typedSubSkills);
+
+  if (typedSubSkills.length > 0 && !hasConcreteSubSkill) {
+    throw new Error(
+      'validateExercise: subSkillIds cannot consist only of cross-cutting technique tags (palm_muting, fret_hand_muting, release_control); attach them to a concrete core skill movement',
+    );
+  }
+
+  const noiseOnlyPurpose =
+    /\b(noise control|noise-control|unwanted string|string noise|muting only|damping only)\b/i.test(
+      exercise.purpose,
+    ) && !hasConcreteSubSkill;
+  if (noiseOnlyPurpose) {
+    throw new Error(
+      "validateExercise: noise control must be assessed inside a concrete skill drill, not as the sole training purpose",
+    );
+  }
+
+  if (
+    exercise.primaryProgressMetric === "noise_control" &&
+    !hasConcreteSubSkill
+  ) {
+    throw new Error(
+      'validateExercise: primaryProgressMetric "noise_control" requires at least one non-cross-cutting sub-skill',
+    );
+  }
+
+  if (isMeaninglessOpenStringRepetition(exercise)) {
+    throw new Error(
+      "validateExercise: meaningless open-string repetition is not a valid drill; train noise control inside a musical or mechanical context",
+    );
+  }
+}
+
+function isMeaninglessOpenStringRepetition(
+  exercise: Pick<
+    ExerciseSeed,
+    "subSkillIds" | "purpose" | "coachingNotes" | "patternType" | "tabData"
+  >,
+): boolean {
+  const notes = noteSequence(exercise.tabData);
+  if (notes.length < 4) return false;
+
+  if (!notes.every((note) => note.fret === 0)) return false;
+  if (new Set(notes.map((note) => note.string)).size !== 1) return false;
+
+  const hasMuteTechnique = notes.some((note) => note.technique === "mute");
+  const hasAccent = exercise.tabData.bars.some((bar) =>
+    bar.beats.some((beat) => beat.accent),
+  );
+  const hasRest = exercise.tabData.bars.some((bar) =>
+    bar.beats.some((beat) => beat.rest),
+  );
+  const durations = exercise.tabData.bars.flatMap((bar) =>
+    bar.beats.map((beat) => beat.duration),
+  );
+  const hasVariedDuration = new Set(durations).size > 1;
+
+  const palmMutingContext =
+    exercise.subSkillIds.includes("palm_muting") ||
+    /\bpalm[- ]?mut/i.test(exercise.purpose) ||
+    exercise.coachingNotes.some((note) => /\bpalm[- ]?mut/i.test(note));
+
+  if (
+    exercise.patternType === "micro_drill" &&
+    palmMutingContext &&
+    hasAccent
+  ) {
+    return false;
+  }
+
+  if (hasMuteTechnique || hasAccent || hasRest || hasVariedDuration) {
+    return false;
+  }
+
+  return true;
+}
+
 function assertPatternRules(exercise: ExerciseSeed): void {
   const notes = noteSequence(exercise.tabData);
   const isTinyPattern = notes.length <= 6;
@@ -280,6 +377,11 @@ export function validateExercise(data: unknown): ExerciseSeed {
 
   // Taxonomy
   const coreSkillId = requireNonEmptyString(data.coreSkillId, "coreSkillId");
+  if (isLegacyCoreSkill(coreSkillId)) {
+    throw new Error(
+      `validateExercise: "${coreSkillId}" is no longer a valid core skill; noise control is a cross-cutting training attribute, not a standalone skill area`,
+    );
+  }
   if (!isCoreSkill(coreSkillId)) {
     throw new Error(
       `validateExercise: "coreSkillId" is invalid: ${JSON.stringify(
@@ -302,12 +404,14 @@ export function validateExercise(data: unknown): ExerciseSeed {
         )}. Valid sub-skills: ${SUB_SKILLS.join(", ")}`,
       );
     }
-    if (coreSkillForSubSkill(subSkillId) !== coreSkillId) {
+    if (!subSkillBelongsToCoreSkill(subSkillId, coreSkillId as CoreSkill)) {
       throw new Error(
-        `validateExercise: sub-skill "${subSkillId}" does not belong under core skill "${coreSkillId}"`,
+        `validateExercise: sub-skill "${subSkillId}" is not allowed under core skill "${coreSkillId}"`,
       );
     }
   }
+
+  const typedSubSkillIds = subSkillIds as SubSkill[];
 
   const trainingAttributes = requireStringArray(
     requireNonEmptyArray(data.trainingAttributes, "trainingAttributes"),
@@ -386,6 +490,18 @@ export function validateExercise(data: unknown): ExerciseSeed {
   const typedExercise = data as ExerciseSeed;
   assertPatternRules(typedExercise);
   assertTabSupportsSubSkills(typedExercise);
+  assertNoiseControlRules({
+    purpose: typedExercise.purpose,
+    targetWeaknesses: typedExercise.targetWeaknesses,
+    coreSkillId: typedExercise.coreSkillId,
+    subSkillIds: typedSubSkillIds,
+    trainingAttributes: trainingAttributes as ExerciseSeed["trainingAttributes"],
+    primaryProgressMetric: typedExercise.primaryProgressMetric,
+    patternType: typedExercise.patternType,
+    microDrillJustification: typedExercise.microDrillJustification,
+    coachingNotes: typedExercise.coachingNotes,
+    tabData: typedExercise.tabData,
+  });
 
   // Metadata
   if (

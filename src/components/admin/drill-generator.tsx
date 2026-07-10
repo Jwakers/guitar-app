@@ -515,7 +515,9 @@ export function DrillGenerator() {
             </div>
             <span className="block text-xs text-muted-foreground">
               Leave all unselected to auto-infer from library gaps for this
-              core/sub-skill — weighted toward typical attributes for the skill.
+              core/sub-skill. Muting tags (palm muting, fret-hand muting,
+              release control) supplement another movement — they do not drive
+              standalone drills.
             </span>
           </div>
 

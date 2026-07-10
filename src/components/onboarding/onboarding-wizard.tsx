@@ -36,7 +36,7 @@ export type CoreSkillOption = {
 
 export type SubSkillOption = {
   id: SubSkill;
-  coreSkillId: CoreSkill;
+  primaryCoreSkillId: CoreSkill;
   name: string;
   description: string;
   sortOrder: number;
@@ -81,7 +81,7 @@ export function OnboardingWizard() {
     const skill = SUB_SKILL_DEFINITIONS[id];
     return {
       id,
-      coreSkillId: skill.coreSkillId,
+      primaryCoreSkillId: skill.primaryCoreSkillId,
       name: skill.label,
       description: skill.description,
       sortOrder: skill.sortOrder,
