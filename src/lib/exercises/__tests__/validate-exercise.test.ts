@@ -84,7 +84,82 @@ describe("validateExercise taxonomy", () => {
         coreSkillId: "lead_articulation",
         subSkillIds: ["string_crossing"],
       }),
-    ).toThrow(/does not belong/);
+    ).toThrow(/not allowed under/);
+  });
+
+  it("rejects removed muting_noise_control core skill", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        coreSkillId: "muting_noise_control" as ExerciseSeed["coreSkillId"],
+      }),
+    ).toThrow(/no longer a valid core skill/);
+  });
+
+  it("rejects cross-cutting-only sub-skills", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        coreSkillId: "rhythm_timing",
+        subSkillIds: ["palm_muting"],
+      }),
+    ).toThrow(/cross-cutting technique tags/);
+  });
+
+  it("accepts rhythm_timing with palm_muting and noise_control in context", () => {
+    const exercise = {
+      ...baseExercise,
+      coreSkillId: "rhythm_timing",
+      subSkillIds: ["accent_control", "palm_muting"],
+      trainingAttributes: ["control", "consistency", "noise_control"],
+      purpose: "Train accented eighth-note rhythm with palm-muted rests.",
+      tabData: {
+        ...baseExercise.tabData,
+        bars: [
+          {
+            beats: Array.from({ length: 8 }, (_, i) => ({
+              duration: "eighth" as const,
+              accent: i % 4 === 0,
+              rest: i % 4 === 3,
+              notes:
+                i % 4 === 3
+                  ? []
+                  : [{ string: 6 as const, fret: 3 + (i % 2) }],
+            })),
+          },
+          {
+            beats: Array.from({ length: 8 }, (_, i) => ({
+              duration: "eighth" as const,
+              accent: i === 0,
+              notes: [{ string: 5 as const, fret: 5 + (i % 3) }],
+            })),
+          },
+        ],
+      },
+    } satisfies ExerciseSeed;
+    expect(validateExercise(exercise)).toEqual(exercise);
+  });
+
+  it("rejects meaningless open-string repetition", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        purpose: "Keep open strings clean.",
+        subSkillIds: ["alternate_picking"],
+        tabData: {
+          ...baseExercise.tabData,
+          bars: [
+            {
+              beats: Array.from({ length: 8 }, () => ({
+                duration: "eighth" as const,
+                picking: "alternate" as const,
+                notes: [{ string: 6 as const, fret: 0 }],
+              })),
+            },
+          ],
+        },
+      }),
+    ).toThrow(/meaningless open-string repetition/);
   });
 
   it("requires explicit micro-drill justification", () => {

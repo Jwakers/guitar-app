@@ -1,3 +1,7 @@
+export const metadata = {
+  title: "Today",
+};
+
 export default function TodayPage() {
   return (
     <div className="flex flex-1 items-center justify-center px-6 py-12">

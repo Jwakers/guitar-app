@@ -10,8 +10,11 @@ import {
   CORE_SKILLS,
   SUB_SKILL_DEFINITIONS,
   SUB_SKILLS,
+  subSkillsForCoreSkill,
   TRAINING_ATTRIBUTE_DEFINITIONS,
   TRAINING_ATTRIBUTES,
+  type CoreSkill,
+  type SubSkill,
 } from "../src/lib/skills/taxonomy";
 
 export const listCoreSkills = query({
@@ -49,30 +52,41 @@ export const listSubSkills = query({
     }),
   ),
   handler: async (_ctx, args) => {
-    return SUB_SKILLS.map((id) => {
+    if (args.coreSkillId !== undefined) {
+      return subSkillsForCoreSkill(args.coreSkillId)
+        .map((id) => {
+          const skill = SUB_SKILL_DEFINITIONS[id];
+          return {
+            id,
+            coreSkillId: args.coreSkillId!,
+            name: skill.label,
+            description: skill.description,
+            sortOrder: skill.sortOrder,
+          };
+        })
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+
+    const entries = SUB_SKILLS.flatMap((id: SubSkill) => {
       const skill = SUB_SKILL_DEFINITIONS[id];
-      return {
+      return skill.allowedCoreSkillIds.map((coreSkillId: CoreSkill) => ({
         id,
-        coreSkillId: skill.coreSkillId,
+        coreSkillId,
         name: skill.label,
         description: skill.description,
         sortOrder: skill.sortOrder,
-      };
-    })
-      .filter((skill) =>
-        args.coreSkillId === undefined
-          ? true
-          : skill.coreSkillId === args.coreSkillId,
-      )
-      .sort((a, b) => {
-        if (a.coreSkillId !== b.coreSkillId) {
-          return (
-            CORE_SKILL_DEFINITIONS[a.coreSkillId].sortOrder -
-            CORE_SKILL_DEFINITIONS[b.coreSkillId].sortOrder
-          );
-        }
-        return a.sortOrder - b.sortOrder;
-      });
+      }));
+    });
+
+    return entries.sort((a, b) => {
+      if (a.coreSkillId !== b.coreSkillId) {
+        return (
+          CORE_SKILL_DEFINITIONS[a.coreSkillId].sortOrder -
+          CORE_SKILL_DEFINITIONS[b.coreSkillId].sortOrder
+        );
+      }
+      return a.sortOrder - b.sortOrder;
+    });
   },
 });
 

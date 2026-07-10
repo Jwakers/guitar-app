@@ -16,11 +16,17 @@ import { ScheduleStep } from "./steps/schedule-step";
 import { SkillAssessmentStep } from "./steps/skill-assessment-step";
 import { CompletingStep } from "./steps/completing-step";
 
+export type FocusSubSkillSelection = {
+  subSkillId: SubSkill;
+  coreSkillId: CoreSkill;
+};
+
 export type WizardData = {
   dataTonePreference: string;
   primaryGoals: string[];
   focusCoreSkillIds: CoreSkill[];
   focusSubSkillIds: SubSkill[];
+  focusSubSkillSelections: FocusSubSkillSelection[];
   availableDays: string[];
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
@@ -36,7 +42,7 @@ export type CoreSkillOption = {
 
 export type SubSkillOption = {
   id: SubSkill;
-  coreSkillId: CoreSkill;
+  primaryCoreSkillId: CoreSkill;
   name: string;
   description: string;
   sortOrder: number;
@@ -47,6 +53,7 @@ const DEFAULT_DATA: WizardData = {
   primaryGoals: [],
   focusCoreSkillIds: [],
   focusSubSkillIds: [],
+  focusSubSkillSelections: [],
   availableDays: ["Monday", "Wednesday", "Friday"],
   defaultSessionLengthMinutes: 45,
   preferredIntensity: "moderate",
@@ -81,7 +88,7 @@ export function OnboardingWizard() {
     const skill = SUB_SKILL_DEFINITIONS[id];
     return {
       id,
-      coreSkillId: skill.coreSkillId,
+      primaryCoreSkillId: skill.primaryCoreSkillId,
       name: skill.label,
       description: skill.description,
       sortOrder: skill.sortOrder,

@@ -108,7 +108,7 @@ describe("inferTrainingAttributes", () => {
 describe("formatTrainingAttributeDistribution", () => {
   it("formats zero counts when the library is empty", () => {
     expect(formatTrainingAttributeDistribution([])).toBe(
-      "speed: 0, endurance: 0, accuracy: 0, control: 0, consistency: 0",
+      "speed: 0, endurance: 0, accuracy: 0, control: 0, consistency: 0, cleanliness: 0, noise_control: 0",
     );
   });
 
@@ -122,6 +122,8 @@ describe("formatTrainingAttributeDistribution", () => {
     ];
     expect(
       formatTrainingAttributeDistribution(drills, "picking", ["alternate_picking"]),
-    ).toBe("speed: 1, endurance: 0, accuracy: 1, control: 0, consistency: 0");
+    ).toBe(
+      "speed: 1, endurance: 0, accuracy: 1, control: 0, consistency: 0, cleanliness: 0, noise_control: 0",
+    );
   });
 });

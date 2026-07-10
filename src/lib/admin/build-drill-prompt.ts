@@ -154,11 +154,25 @@ Example shape from Single String Alternate Picking Control:
 - isMvp: true, version: 1, status: "active"
 `.trim();
 
+const NOISE_CONTROL_GUIDANCE = `
+## Noise control (cross-cutting quality — NOT a core skill)
+
+Noise control is assessed inside meaningful musical or technical context, not as an isolated tab pattern.
+
+- NEVER use coreSkillId "muting_noise_control" or "noise_control"
+- Use trainingAttributes such as "noise_control" or "cleanliness" when unwanted string noise is relevant
+- palm_muting, fret_hand_muting, and release_control are supplementary technique tags — never the only sub-skills on a drill
+- Optional feedbackSchema question id "noise_control" only when string noise genuinely matters
+
+Good: alternate picking across strings where unused strings may ring; rhythm riffs with palm muting and rests; chord changes with clean releases.
+Bad: repeated 0-0-0-0 open-string picking with no rhythm, accent, or palm-muting purpose; drills where the only instruction is "keep it clean".
+`.trim();
+
 function formatSkillDocSection(label: string, slug: SubSkill): string {
   const meta = SUB_SKILL_DEFINITIONS[slug];
   const doc = loadSkillKnowledge(slug);
   const header = `### ${label}: \`${slug}\``;
-  const blurb = `${meta.label} [${coreSkillLabel(meta.coreSkillId)}] — ${meta.description}`;
+  const blurb = `${meta.label} [${coreSkillLabel(meta.primaryCoreSkillId)}] — ${meta.description}`;
 
   if (doc) {
     return [
@@ -214,6 +228,8 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     SCHEMA_CONSTRAINTS,
     "",
     FEW_SHOT_STRUCTURE,
+    "",
+    NOISE_CONTROL_GUIDANCE,
   ].join("\n");
 
   const parts: string[] = [
@@ -313,6 +329,8 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "Tab patterns MUST obey sub-skill boundaries (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
     "Prefer complete 1–2 bar loops (8–16+ notes for picking/sync) over tiny fragments unless patternType is micro_drill with a clear isolation justification.",
     "Do not create full drills for techniques that are only useful in isolation. For lead articulation, prefer musical-context phrases such as pentatonic phrase → bend → hold → vibrato, or legato fragment → target note → controlled vibrato.",
+    "",
+    NOISE_CONTROL_GUIDANCE,
   );
 
   return { system, prompt: parts.join("\n") };

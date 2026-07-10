@@ -1,7 +1,7 @@
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
 export const metadata = {
-  title: "Setup — GTPL",
+  title: "Onboarding",
 };
 
 export default function OnboardingPage() {

@@ -1,7 +1,7 @@
 import { DrillList } from "@/components/drills/drill-list";
 
 export const metadata = {
-  title: "Drills — GTPL",
+  title: "Drills",
 };
 
 export default function DrillsPage() {

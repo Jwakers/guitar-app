@@ -201,7 +201,6 @@ type CoreSkill =
   | "fretting_control"
   | "synchronisation"
   | "rhythm_timing"
-  | "muting_noise_control"
   | "lead_articulation"
   | "chord_changes";
 
@@ -216,17 +215,20 @@ type SubSkill =
   | "bends"
   | "vibrato"
   | "slides"
+  | "subdivision_control"
+  | "accent_control"
   | "palm_muting"
   | "fret_hand_muting"
-  | "subdivision_control"
-  | "accent_control";
+  | "release_control";
 
 type TrainingAttribute =
   | "speed"
   | "endurance"
   | "accuracy"
   | "control"
-  | "consistency";
+  | "consistency"
+  | "cleanliness"
+  | "noise_control";
 ```
 
 Examples:
@@ -234,12 +236,14 @@ Examples:
 ```txt
 Picking + Speed
 Lead Articulation + Control
-Rhythm & Timing + Consistency
-Chord Changes + Endurance
-Muting & Noise Control + Accuracy
+Rhythm & Timing + Consistency + noise_control
+Chord Changes + cleanliness
+Picking + alternate_picking + fret_hand_muting + noise_control
 ```
 
 `speed` and `endurance` must never be classified as skills. Techniques such as `bends`, `vibrato`, and `legato` are sub-skills under `lead_articulation`, not top-level categories.
+
+**Noise control is a cross-cutting execution quality, not a standalone core skill.** Use `trainingAttributes: ["noise_control"]` or `["cleanliness"]` when assessing unwanted string noise inside a concrete movement drill. Muting-related sub-skills (`palm_muting`, `fret_hand_muting`, `release_control`) attach to valid core skills and must not drive standalone drill generation.
 
 ---
 
@@ -1456,8 +1460,25 @@ Example per-exercise feedback requirements:
 **Bends**
 * Pitch confidence (subjective, required)
 
-**Muting**
-* Noise control (subjective, required)
+**Muting / noise (cross-cutting — optional feedback)**
+
+When unwanted string noise is genuinely relevant to the drill goal, include an optional subjective question:
+
+```ts
+{
+  id: "noise_control",
+  label: "Noise Control",
+  type: "segmented",
+  required: false,
+  options: [
+    { id: "noisy", label: "Noisy" },
+    { id: "mostly_clean", label: "Mostly Clean" },
+    { id: "clean", label: "Clean" }
+  ]
+}
+```
+
+Do not ask this on every drill.
 
 New exercise types must not require frontend code changes to collect feedback. The UI renders questions dynamically from the exercise's `feedbackSchema`.
 

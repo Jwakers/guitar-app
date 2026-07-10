@@ -9,6 +9,7 @@ import type {
   TabNoteString,
   TabNoteTechnique,
 } from "./internal-schema";
+import { validateBendTargetPitch } from "./pitch-helpers";
 
 const VALID_DURATIONS = new Set<TabBeatDuration>([
   "whole",
@@ -47,7 +48,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function validateNote(note: unknown, path: string): TabNote {
+function validateNote(note: unknown, path: string, tuning: string[]): TabNote {
   if (!isRecord(note)) {
     throw new Error(`${path}: expected an object`);
   }
@@ -94,12 +95,19 @@ function validateNote(note: unknown, path: string): TabNote {
         `${path}.targetPitch: required for technique "bend" (octave-qualified pitch, e.g. "G4")`,
       );
     }
+    validateBendTargetPitch(
+      targetPitch,
+      tuning,
+      string as TabNoteString,
+      fret as number,
+      path,
+    );
   }
 
   return note as TabNote;
 }
 
-function validateBeat(beat: unknown, path: string): TabBeat {
+function validateBeat(beat: unknown, path: string, tuning: string[]): TabBeat {
   if (!isRecord(beat)) {
     throw new Error(`${path}: expected an object`);
   }
@@ -129,7 +137,7 @@ function validateBeat(beat: unknown, path: string): TabBeat {
   }
 
   const validatedNotes = notes.map((n, i) =>
-    validateNote(n, `${path}.notes[${i}]`),
+    validateNote(n, `${path}.notes[${i}]`, tuning),
   );
 
   if (picking !== undefined && !VALID_PICKINGS.has(picking as TabBeatPicking)) {
@@ -149,7 +157,7 @@ function validateBeat(beat: unknown, path: string): TabBeat {
   return { ...beat, notes: validatedNotes } as TabBeat;
 }
 
-function validateBar(bar: unknown, path: string): TabBar {
+function validateBar(bar: unknown, path: string, tuning: string[]): TabBar {
   if (!isRecord(bar)) {
     throw new Error(`${path}: expected an object`);
   }
@@ -161,7 +169,7 @@ function validateBar(bar: unknown, path: string): TabBar {
   }
 
   return {
-    beats: beats.map((b, i) => validateBeat(b, `${path}.beats[${i}]`)),
+    beats: beats.map((b, i) => validateBeat(b, `${path}.beats[${i}]`, tuning)),
   };
 }
 
@@ -209,7 +217,10 @@ export function validateTabData(data: unknown): TabData {
     throw new Error("tabData.bars: must be a non-empty array");
   }
 
-  const validatedBars = bars.map((b, i) => validateBar(b, `tabData.bars[${i}]`));
+  const validatedTuning = tuning as string[];
+  const validatedBars = bars.map((b, i) =>
+    validateBar(b, `tabData.bars[${i}]`, validatedTuning),
+  );
 
   // displayHints is optional; validate its fields if present
   if (displayHints !== undefined) {
@@ -283,7 +294,7 @@ export function validateTabData(data: unknown): TabData {
   }
 
   return {
-    tuning: tuning as string[],
+    tuning: validatedTuning,
     ...(capo !== undefined ? { capo: capo as number } : {}),
     tempo: tempo as number,
     timeSignature: timeSignature as { beats: number; beatValue: number },

@@ -29,6 +29,7 @@ import {
   TRAINING_ATTRIBUTES,
   coreSkillRequiresSubSkills,
   subSkillBelongsToCoreSkill,
+  subSkillCanDriveStandaloneGeneration,
 } from "@/lib/skills/taxonomy";
 
 export const runtime = "nodejs";
@@ -72,10 +73,21 @@ const requestSchema = z
       if (!subSkillBelongsToCoreSkill(subSkillId, data.coreSkillId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `sub-skill "${subSkillId}" does not belong under core skill "${data.coreSkillId}"`,
+          message: `sub-skill "${subSkillId}" is not allowed under core skill "${data.coreSkillId}"`,
           path: ["subSkillIds"],
         });
       }
+    }
+    if (
+      data.subSkillIds.length > 0 &&
+      !subSkillCanDriveStandaloneGeneration(data.subSkillIds)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "subSkillIds cannot consist only of cross-cutting technique tags (palm_muting, fret_hand_muting, release_control)",
+        path: ["subSkillIds"],
+      });
     }
   });
 

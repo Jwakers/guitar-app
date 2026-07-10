@@ -1,5 +1,9 @@
 import { DrillView } from "@/components/drills/drill-view";
 
+export const metadata = {
+  title: "Drill",
+};
+
 export default async function DrillPage({
   params,
 }: {

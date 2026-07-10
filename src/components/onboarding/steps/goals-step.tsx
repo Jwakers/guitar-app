@@ -1,6 +1,11 @@
 import { cn } from "@/lib/utils";
+import {
+  subSkillBelongsToCoreSkill,
+  type CoreSkill,
+} from "@/lib/skills/taxonomy";
 import type {
   CoreSkillOption,
+  FocusSubSkillSelection,
   SubSkillOption,
   WizardData,
 } from "../onboarding-wizard";
@@ -45,28 +50,53 @@ export function GoalsStep({
     }
   }
 
-  function toggleSubSkill(skill: SubSkillOption) {
-    const current = data.focusSubSkillIds;
-    if (current.includes(skill.id)) {
-      const nextSubSkillIds = current.filter((id) => id !== skill.id);
-      const nextCoreSkillIds = data.focusCoreSkillIds.filter((coreSkillId) =>
-        nextSubSkillIds.some((subSkillId) => {
-          const subSkill = subSkills.find((item) => item.id === subSkillId);
-          return subSkill?.coreSkillId === coreSkillId;
-        }),
+  function syncFocusSelections(
+    selections: FocusSubSkillSelection[],
+  ): Pick<WizardData, "focusSubSkillSelections" | "focusSubSkillIds" | "focusCoreSkillIds"> {
+    return {
+      focusSubSkillSelections: selections,
+      focusSubSkillIds: [...new Set(selections.map((selection) => selection.subSkillId))],
+      focusCoreSkillIds: [...new Set(selections.map((selection) => selection.coreSkillId))],
+    };
+  }
+
+  function toggleSubSkill(skill: SubSkillOption, sectionCoreSkillId: CoreSkill) {
+    const current = data.focusSubSkillSelections;
+    const isSelectedInSection = current.some(
+      (selection) =>
+        selection.subSkillId === skill.id &&
+        selection.coreSkillId === sectionCoreSkillId,
+    );
+
+    if (isSelectedInSection) {
+      onUpdate(
+        syncFocusSelections(
+          current.filter(
+            (selection) =>
+              !(
+                selection.subSkillId === skill.id &&
+                selection.coreSkillId === sectionCoreSkillId
+              ),
+          ),
+        ),
       );
-      onUpdate({
-        focusSubSkillIds: nextSubSkillIds,
-        focusCoreSkillIds: nextCoreSkillIds,
-      });
-    } else if (current.length < MAX_FOCUS_SKILLS) {
-      onUpdate({
-        focusSubSkillIds: [...current, skill.id],
-        focusCoreSkillIds: data.focusCoreSkillIds.includes(skill.coreSkillId)
-          ? data.focusCoreSkillIds
-          : [...data.focusCoreSkillIds, skill.coreSkillId],
-      });
+      return;
     }
+
+    const isNewSubSkill = !data.focusSubSkillIds.includes(skill.id);
+    if (isNewSubSkill && data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS) {
+      return;
+    }
+
+    const withoutSubSkill = current.filter(
+      (selection) => selection.subSkillId !== skill.id,
+    );
+    onUpdate(
+      syncFocusSelections([
+        ...withoutSubSkill,
+        { subSkillId: skill.id, coreSkillId: sectionCoreSkillId },
+      ]),
+    );
   }
 
   const canProceed =
@@ -127,8 +157,8 @@ export function GoalsStep({
         </p>
         <div className="flex flex-col gap-4 pt-1">
           {coreSkills.map((coreSkill) => {
-            const coreSubSkills = subSkills.filter(
-              (skill) => skill.coreSkillId === coreSkill.id,
+            const coreSubSkills = subSkills.filter((skill) =>
+              subSkillBelongsToCoreSkill(skill.id, coreSkill.id),
             );
             if (coreSubSkills.length === 0) return null;
             return (
@@ -138,15 +168,23 @@ export function GoalsStep({
               </span>
               <div className="flex flex-wrap gap-2">
                 {coreSubSkills.map((skill) => {
-                  const selected = data.focusSubSkillIds.includes(skill.id);
+                  const selected = data.focusSubSkillSelections.some(
+                    (selection) =>
+                      selection.subSkillId === skill.id &&
+                      selection.coreSkillId === coreSkill.id,
+                  );
+                  const alreadySelectedElsewhere = data.focusSubSkillIds.includes(
+                    skill.id,
+                  );
                   const maxed =
                     !selected &&
+                    !alreadySelectedElsewhere &&
                     data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS;
                   return (
                     <button
                       type="button"
                       key={skill.id}
-                      onClick={() => toggleSubSkill(skill)}
+                      onClick={() => toggleSubSkill(skill, coreSkill.id)}
                       disabled={maxed}
                       aria-pressed={selected}
                       className={cn(
