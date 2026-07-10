@@ -83,7 +83,8 @@ export function GoalsStep({
       return;
     }
 
-    if (data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS) {
+    const isNewSubSkill = !data.focusSubSkillIds.includes(skill.id);
+    if (isNewSubSkill && data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS) {
       return;
     }
 
@@ -172,8 +173,12 @@ export function GoalsStep({
                       selection.subSkillId === skill.id &&
                       selection.coreSkillId === coreSkill.id,
                   );
+                  const alreadySelectedElsewhere = data.focusSubSkillIds.includes(
+                    skill.id,
+                  );
                   const maxed =
                     !selected &&
+                    !alreadySelectedElsewhere &&
                     data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS;
                   return (
                     <button

@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+export const metadata = {
+  title: "Not Found",
+};
+
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-[50vh] w-full max-w-2xl flex-col justify-center px-4 py-16">

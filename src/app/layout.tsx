@@ -15,7 +15,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Guitar Training Performance Lab",
+  title: {
+    default: "GTPL",
+    template: "%s · GTPL",
+  },
   description:
     "A data-driven guitar training platform for intermediate electric guitarists.",
 };

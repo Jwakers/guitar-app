@@ -107,9 +107,8 @@ describe("validateTabData bend validation", () => {
   it("accepts drop-D tuning with octave-less open strings", () => {
     expect(() =>
       validateTabData({
+        ...baseTab,
         tuning: ["D", "A", "D", "G", "B", "E"],
-        tempo: 90,
-        timeSignature: { beats: 4, beatValue: 4 },
         bars: [
           {
             beats: [

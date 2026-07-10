@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Activity, Target, TrendingUp } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: { absolute: "GTPL" },
+};
 
 export default function Home() {
   return (
