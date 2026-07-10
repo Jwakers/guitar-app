@@ -90,15 +90,19 @@ Drills may be drafted by AI, written manually, or produced by an internal genera
 
 However, generated drills are only candidates.
 
-A generated drill must not be saved to Convex or promoted to production unless it passes:
+**Dev Convex (authoring environment):** A candidate may be saved to the dev deployment when it passes automated gates 1–4 below. Human playability review is not required for dev save — dev is for tab rendering, iteration, and play-testing. The drill generator may save below the production quality threshold (score < 24/30) with a warning. Uncertain or unreviewed candidates belong in dev only.
+
+**Production promotion:** A drill must not be migrated to the production exercise library unless it passes all five gates, including human playability review (see §12–§13).
+
+Automated gates (required for dev save and production promotion):
 
 1. Schema validation
 2. Tab data validation
 3. Exercise quality validation
-4. Training-value scoring
-5. Human playability review
+4. Training-value scoring (≥ 24/30 for production; dev may save lower with warning)
+5. Human playability review (production only)
 
-AI or automated generation may assist with drafting, but it must not be the final authority.
+AI or automated generation may assist with drafting, but it must not be the final authority for production acceptance.
 
 ### Pattern material
 
@@ -739,7 +743,7 @@ feedbackSchema: [
 
 ## 12. Human Playability Review
 
-Before promoting a drill to production, a human should play or inspect it.
+Human playability review is required before production promotion, not before saving to dev. Dev saves exist so reviewers can render tabs and play-test candidates; production must never receive unreviewed drills.
 
 The reviewer should answer:
 
@@ -753,7 +757,7 @@ The reviewer should answer:
 - Is anything painful, awkward, or unclear?
 - Is this suitable for an intermediate electric guitarist?
 
-If the reviewer cannot confidently answer these questions, the drill should be revised before saving to dev or migrating to production.
+If the reviewer cannot confidently answer these questions, revise the drill in dev and do not run `pnpm migrate:exercises` until review passes.
 
 ---
 

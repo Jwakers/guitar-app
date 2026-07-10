@@ -1075,8 +1075,9 @@ type TabBar = {
 };
 
 type TabBeat = {
-  duration: "whole" | "half" | "quarter" | "eighth" | "sixteenth" | "triplet";
+  duration: "whole" | "half" | "quarter" | "eighth" | "sixteenth";
   notes: TabNote[];
+  tuplet?: number; // e.g. 3 for triplets — use with base duration, not a standalone "triplet" duration
   picking?: "down" | "up" | "alternate" | "economy" | "sweep";
   accent?: boolean;
   rest?: boolean;
@@ -1383,18 +1384,21 @@ Component structure:
 
 ### Schema Migration Note
 
-The current `convex/schema.ts` `exercises` table stores tab data as:
+**Active contract:** `exercises.tabData` — structured `TabData` as defined in §3 above and implemented in `/lib/tabs/internal-schema.ts`, `convex/schema.ts`, and `convex/lib/exerciseValidators.ts`. All new and migrated exercises must use this shape.
+
+**Legacy schema (obsolete — do not author against this):**
 
 ```ts
+// REMOVED — pre-migration exercises only
 tab: v.object({
   tuning: v.array(v.string()),
   bpmSuggestion: v.optional(v.number()),
-  notation: v.string(), // ASCII tab string — no longer canonical
+  notation: v.string(), // ASCII tab string — obsolete; not renderable by the alphaTab adapter
   notes: v.optional(v.array(v.string())),
 })
 ```
 
-The exercises table now uses structured `tabData` per the `TabData` schema. Legacy ASCII `notation` fields are not canonical.
+ASCII `notation` strings are not canonical. They are not validated by `validateTabData`, cannot be converted by the alphaTab adapter, and must not appear in new exercise payloads. When inspecting old rows, treat any `tab.notation` field as legacy data to be replaced with structured `tabData` before the exercise is promoted or edited.
 
 ---
 
