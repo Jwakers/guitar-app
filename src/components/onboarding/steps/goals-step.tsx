@@ -5,6 +5,7 @@ import {
 } from "@/lib/skills/taxonomy";
 import type {
   CoreSkillOption,
+  FocusSubSkillSelection,
   SubSkillOption,
   WizardData,
 } from "../onboarding-wizard";
@@ -49,27 +50,52 @@ export function GoalsStep({
     }
   }
 
+  function syncFocusSelections(
+    selections: FocusSubSkillSelection[],
+  ): Pick<WizardData, "focusSubSkillSelections" | "focusSubSkillIds" | "focusCoreSkillIds"> {
+    return {
+      focusSubSkillSelections: selections,
+      focusSubSkillIds: [...new Set(selections.map((selection) => selection.subSkillId))],
+      focusCoreSkillIds: [...new Set(selections.map((selection) => selection.coreSkillId))],
+    };
+  }
+
   function toggleSubSkill(skill: SubSkillOption, sectionCoreSkillId: CoreSkill) {
-    const current = data.focusSubSkillIds;
-    if (current.includes(skill.id)) {
-      const nextSubSkillIds = current.filter((id) => id !== skill.id);
-      const nextCoreSkillIds = data.focusCoreSkillIds.filter((coreSkillId) =>
-        nextSubSkillIds.some((subSkillId) =>
-          subSkillBelongsToCoreSkill(subSkillId, coreSkillId),
+    const current = data.focusSubSkillSelections;
+    const isSelectedInSection = current.some(
+      (selection) =>
+        selection.subSkillId === skill.id &&
+        selection.coreSkillId === sectionCoreSkillId,
+    );
+
+    if (isSelectedInSection) {
+      onUpdate(
+        syncFocusSelections(
+          current.filter(
+            (selection) =>
+              !(
+                selection.subSkillId === skill.id &&
+                selection.coreSkillId === sectionCoreSkillId
+              ),
+          ),
         ),
       );
-      onUpdate({
-        focusSubSkillIds: nextSubSkillIds,
-        focusCoreSkillIds: nextCoreSkillIds,
-      });
-    } else if (current.length < MAX_FOCUS_SKILLS) {
-      onUpdate({
-        focusSubSkillIds: [...current, skill.id],
-        focusCoreSkillIds: data.focusCoreSkillIds.includes(sectionCoreSkillId)
-          ? data.focusCoreSkillIds
-          : [...data.focusCoreSkillIds, sectionCoreSkillId],
-      });
+      return;
     }
+
+    if (data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS) {
+      return;
+    }
+
+    const withoutSubSkill = current.filter(
+      (selection) => selection.subSkillId !== skill.id,
+    );
+    onUpdate(
+      syncFocusSelections([
+        ...withoutSubSkill,
+        { subSkillId: skill.id, coreSkillId: sectionCoreSkillId },
+      ]),
+    );
   }
 
   const canProceed =
@@ -141,7 +167,11 @@ export function GoalsStep({
               </span>
               <div className="flex flex-wrap gap-2">
                 {coreSubSkills.map((skill) => {
-                  const selected = data.focusSubSkillIds.includes(skill.id);
+                  const selected = data.focusSubSkillSelections.some(
+                    (selection) =>
+                      selection.subSkillId === skill.id &&
+                      selection.coreSkillId === coreSkill.id,
+                  );
                   const maxed =
                     !selected &&
                     data.focusSubSkillIds.length >= MAX_FOCUS_SKILLS;

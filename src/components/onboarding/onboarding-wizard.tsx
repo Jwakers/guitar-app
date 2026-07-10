@@ -16,11 +16,17 @@ import { ScheduleStep } from "./steps/schedule-step";
 import { SkillAssessmentStep } from "./steps/skill-assessment-step";
 import { CompletingStep } from "./steps/completing-step";
 
+export type FocusSubSkillSelection = {
+  subSkillId: SubSkill;
+  coreSkillId: CoreSkill;
+};
+
 export type WizardData = {
   dataTonePreference: string;
   primaryGoals: string[];
   focusCoreSkillIds: CoreSkill[];
   focusSubSkillIds: SubSkill[];
+  focusSubSkillSelections: FocusSubSkillSelection[];
   availableDays: string[];
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
@@ -47,6 +53,7 @@ const DEFAULT_DATA: WizardData = {
   primaryGoals: [],
   focusCoreSkillIds: [],
   focusSubSkillIds: [],
+  focusSubSkillSelections: [],
   availableDays: ["Monday", "Wednesday", "Friday"],
   defaultSessionLengthMinutes: 45,
   preferredIntensity: "moderate",

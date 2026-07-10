@@ -6,7 +6,7 @@ import type {
   TabNote,
   TabNoteTechnique,
 } from "./internal-schema";
-import { bendQuarterTones } from "./pitch-helpers";
+import { bendQuarterTones, resolveOpenStringPitch } from "./pitch-helpers";
 
 // ---------------------------------------------------------------------------
 // Duration mapping
@@ -19,9 +19,6 @@ const DURATION_MAP: Record<TabBeatDuration, number> = {
   eighth: 8,
   sixteenth: 16,
 };
-
-// Standard guitar octaves for TabData.tuning ordered string 6 → string 1.
-const STANDARD_GUITAR_OCTAVES = ["E2", "A2", "D3", "G3", "B3", "E4"] as const;
 
 const TECHNIQUE_EFFECTS: Partial<
   Record<Exclude<TabNoteTechnique, "bend" | "release" | "picked">, string>
@@ -48,15 +45,6 @@ function resolveEmitFlags(hints: DisplayHints | undefined): EmitFlags {
     // Opt-in: picking strokes only when explicitly requested.
     showPicking: hints?.showPicking === true,
   };
-}
-
-// ---------------------------------------------------------------------------
-// Pitch helpers (tuning display only)
-// ---------------------------------------------------------------------------
-
-function resolveOpenStringPitch(tuningNote: string, tuningIndex: number): string {
-  if (/\d$/.test(tuningNote)) return tuningNote;
-  return STANDARD_GUITAR_OCTAVES[tuningIndex] ?? tuningNote;
 }
 
 // ---------------------------------------------------------------------------

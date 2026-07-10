@@ -103,4 +103,31 @@ describe("validateTabData bend validation", () => {
       }),
     ).toThrow(/exceeds maximum supported bend/);
   });
+
+  it("accepts drop-D tuning with octave-less open strings", () => {
+    expect(() =>
+      validateTabData({
+        tuning: ["D", "A", "D", "G", "B", "E"],
+        tempo: 90,
+        timeSignature: { beats: 4, beatValue: 4 },
+        bars: [
+          {
+            beats: [
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 6,
+                    fret: 0,
+                    technique: "bend",
+                    targetPitch: "D#2",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    ).not.toThrow();
+  });
 });

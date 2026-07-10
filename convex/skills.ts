@@ -9,9 +9,12 @@ import {
   CORE_SKILL_DEFINITIONS,
   CORE_SKILLS,
   SUB_SKILL_DEFINITIONS,
+  SUB_SKILLS,
   subSkillsForCoreSkill,
   TRAINING_ATTRIBUTE_DEFINITIONS,
   TRAINING_ATTRIBUTES,
+  type CoreSkill,
+  type SubSkill,
 } from "../src/lib/skills/taxonomy";
 
 export const listCoreSkills = query({
@@ -49,33 +52,41 @@ export const listSubSkills = query({
     }),
   ),
   handler: async (_ctx, args) => {
-    const skillIds =
-      args.coreSkillId === undefined
-        ? (Object.keys(SUB_SKILL_DEFINITIONS) as (keyof typeof SUB_SKILL_DEFINITIONS)[])
-        : subSkillsForCoreSkill(args.coreSkillId);
+    if (args.coreSkillId !== undefined) {
+      return subSkillsForCoreSkill(args.coreSkillId)
+        .map((id) => {
+          const skill = SUB_SKILL_DEFINITIONS[id];
+          return {
+            id,
+            coreSkillId: args.coreSkillId!,
+            name: skill.label,
+            description: skill.description,
+            sortOrder: skill.sortOrder,
+          };
+        })
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    }
 
-    return skillIds
-      .map((id) => {
-        const skill = SUB_SKILL_DEFINITIONS[id];
-        return {
-          id,
-          coreSkillId: args.coreSkillId ?? skill.primaryCoreSkillId,
-          name: skill.label,
-          description: skill.description,
-          sortOrder: skill.sortOrder,
-        };
-      })
-      .sort((a, b) => {
-        const aCore = args.coreSkillId ?? SUB_SKILL_DEFINITIONS[a.id].primaryCoreSkillId;
-        const bCore = args.coreSkillId ?? SUB_SKILL_DEFINITIONS[b.id].primaryCoreSkillId;
-        if (aCore !== bCore) {
-          return (
-            CORE_SKILL_DEFINITIONS[aCore].sortOrder -
-            CORE_SKILL_DEFINITIONS[bCore].sortOrder
-          );
-        }
-        return a.sortOrder - b.sortOrder;
-      });
+    const entries = SUB_SKILLS.flatMap((id: SubSkill) => {
+      const skill = SUB_SKILL_DEFINITIONS[id];
+      return skill.allowedCoreSkillIds.map((coreSkillId: CoreSkill) => ({
+        id,
+        coreSkillId,
+        name: skill.label,
+        description: skill.description,
+        sortOrder: skill.sortOrder,
+      }));
+    });
+
+    return entries.sort((a, b) => {
+      if (a.coreSkillId !== b.coreSkillId) {
+        return (
+          CORE_SKILL_DEFINITIONS[a.coreSkillId].sortOrder -
+          CORE_SKILL_DEFINITIONS[b.coreSkillId].sortOrder
+        );
+      }
+      return a.sortOrder - b.sortOrder;
+    });
   },
 });
 

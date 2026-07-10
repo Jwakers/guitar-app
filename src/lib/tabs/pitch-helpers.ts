@@ -47,9 +47,13 @@ export function pitchToMidi(raw: string): number | null {
   return (parsed.octave + 1) * 12 + parsed.pc;
 }
 
-function resolveOpenStringPitch(tuningNote: string, tuningIndex: number): string {
+export function resolveOpenStringPitch(tuningNote: string, tuningIndex: number): string {
   if (/\d$/.test(tuningNote)) return tuningNote;
-  return STANDARD_GUITAR_OCTAVES[tuningIndex] ?? tuningNote;
+  const standardPitch = STANDARD_GUITAR_OCTAVES[tuningIndex];
+  if (standardPitch === undefined) return tuningNote;
+  const octave = standardPitch.match(/\d+$/)?.[0];
+  if (octave === undefined) return tuningNote;
+  return `${tuningNote}${octave}`;
 }
 
 /** TabData.tuning is string 6 → 1; note.string 1 = high E = last tuning entry. */

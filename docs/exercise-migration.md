@@ -70,12 +70,15 @@ CONVEX_DEPLOY_KEY=prod:... npx convex run exercises:importExerciseSeeds '{"exerc
 
 ## Taxonomy changes (dev reset)
 
-When the skill taxonomy changes incompatibly (e.g. removing a core skill), wipe legacy dev data and re-author exercises:
+When the skill taxonomy changes incompatibly (e.g. removing a core skill), wipe legacy dev data and re-author exercises.
+
+**Side effects:** deletes all exercises, user skill ratings, and user profiles, and sets `onboardingCompleted: false` on every user (everyone must re-onboard).
 
 ```bash
-# Dev deployment only — set the guard flag first, then confirm the deployment in the dashboard.
+# Dev deployment only — set guards first, then confirm the deployment in the dashboard.
+npx convex env set DEPLOYMENT_TIER dev
 npx convex env set ALLOW_TAXONOMY_RESET true
 npx convex run devReset:resetLegacyTaxonomyData '{"confirm":"RESET_LEGACY_TAXONOMY_DATA"}'
 ```
 
-The mutation refuses to run unless `ALLOW_TAXONOMY_RESET=true` is set on the target deployment. Never set this on production. It deletes exercises, user skill ratings, and profiles in the target deployment. Re-save drills in dev under the new taxonomy before migrating to prod.
+The mutation refuses to run unless `DEPLOYMENT_TIER=dev` and `ALLOW_TAXONOMY_RESET=true` are set on the target deployment. Never set these on production. Re-save drills in dev under the new taxonomy before migrating to prod.
