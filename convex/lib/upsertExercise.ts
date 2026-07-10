@@ -85,67 +85,12 @@ export async function upsertExerciseBySlug(
 }
 
 export function exerciseDocToSeed(
-  doc: {
-    title: string;
-    slug: string;
-    description: string;
-    purpose: string;
-    targetWeaknesses: string[];
-    minimumCleanStandard: string;
-    measurementInstructions: string;
-    coachingNotes: string[];
-    coreSkillId: ExerciseSeed["coreSkillId"];
-    subSkillIds: ExerciseSeed["subSkillIds"];
-    trainingAttributes: ExerciseSeed["trainingAttributes"];
-    difficultyLevel: number;
-    exerciseType: ExerciseSeed["exerciseType"];
-    primaryProgressMetric: ExerciseSeed["primaryProgressMetric"];
-    supportsBpm: boolean;
-    defaultTargetBpm?: number;
-    successCriteria: string[];
-    commonMistakes: string[];
-    progressionRule: string;
-    regressionRule: string;
-    tabData: ExerciseSeed["tabData"];
-    patternType: ExerciseSeed["patternType"];
-    microDrillJustification?: string;
-    feedbackSchema: ExerciseSeed["feedbackSchema"];
-    estimatedMinutes: number;
-    isMvp: boolean;
-    version: number;
-    status: ExerciseSeed["status"];
-    replacedBySlug?: string;
+  doc: ExerciseSeed & {
+    _id?: unknown;
+    _creationTime?: unknown;
+    updatedAt?: unknown;
   },
 ): ExerciseSeed {
-  return {
-    title: doc.title,
-    slug: doc.slug,
-    description: doc.description,
-    purpose: doc.purpose,
-    targetWeaknesses: doc.targetWeaknesses,
-    minimumCleanStandard: doc.minimumCleanStandard,
-    measurementInstructions: doc.measurementInstructions,
-    coachingNotes: doc.coachingNotes,
-    coreSkillId: doc.coreSkillId,
-    subSkillIds: doc.subSkillIds,
-    trainingAttributes: doc.trainingAttributes,
-    difficultyLevel: doc.difficultyLevel,
-    exerciseType: doc.exerciseType,
-    primaryProgressMetric: doc.primaryProgressMetric,
-    supportsBpm: doc.supportsBpm,
-    defaultTargetBpm: doc.defaultTargetBpm,
-    successCriteria: doc.successCriteria,
-    commonMistakes: doc.commonMistakes,
-    progressionRule: doc.progressionRule,
-    regressionRule: doc.regressionRule,
-    tabData: doc.tabData,
-    patternType: doc.patternType,
-    microDrillJustification: doc.microDrillJustification,
-    feedbackSchema: doc.feedbackSchema,
-    estimatedMinutes: doc.estimatedMinutes,
-    isMvp: doc.isMvp,
-    version: doc.version,
-    status: doc.status,
-    replacedBySlug: doc.replacedBySlug,
-  };
+  const { _id, _creationTime, updatedAt, ...seed } = doc;
+  return seed;
 }

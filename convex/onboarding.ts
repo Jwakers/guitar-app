@@ -5,6 +5,7 @@ import {
   coreSkillValidator,
   subSkillValidator,
 } from "./lib/exerciseValidators";
+import { skillTargetKey } from "../src/lib/skills/taxonomy";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
 
@@ -79,17 +80,17 @@ export const saveOnboardingAnswers = mutation({
 
     // Upsert userSkillRatings
     for (const { skillTarget, rating } of args.skillRatings) {
-      const skillTargetKey = `${skillTarget.kind}:${skillTarget.id}`;
+      const key = skillTargetKey(skillTarget);
       const existing = await ctx.db
         .query("userSkillRatings")
         .withIndex("by_userId_skillTargetKey", (q) =>
-          q.eq("userId", user._id).eq("skillTargetKey", skillTargetKey),
+          q.eq("userId", user._id).eq("skillTargetKey", key),
         )
         .unique();
 
       const ratingData = {
         userId: user._id,
-        skillTargetKey,
+        skillTargetKey: key,
         skillTarget,
         rating: rating * 20, // 1–5 → 20–100
         confidence: 0.5,

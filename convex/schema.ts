@@ -1,5 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+  coreSkillValidator,
+  patternTypeValidator,
+  subSkillValidator,
+  trainingAttributeValidator,
+} from "./lib/exerciseValidators";
 
 // ---------------------------------------------------------------------------
 // Shared validator fragments
@@ -32,51 +38,9 @@ const sessionSlotType = v.union(
   v.literal("maintenance"),
 );
 
-const coreSkill = v.union(
-  v.literal("picking"),
-  v.literal("fretting_control"),
-  v.literal("synchronisation"),
-  v.literal("rhythm_timing"),
-  v.literal("muting_noise_control"),
-  v.literal("lead_articulation"),
-  v.literal("chord_changes"),
-);
-
-const subSkill = v.union(
-  v.literal("alternate_picking"),
-  v.literal("string_crossing"),
-  v.literal("string_skipping"),
-  v.literal("finger_independence"),
-  v.literal("fretting_accuracy"),
-  v.literal("position_shifting"),
-  v.literal("legato"),
-  v.literal("bends"),
-  v.literal("vibrato"),
-  v.literal("slides"),
-  v.literal("palm_muting"),
-  v.literal("fret_hand_muting"),
-  v.literal("subdivision_control"),
-  v.literal("accent_control"),
-);
-
-const trainingAttribute = v.union(
-  v.literal("speed"),
-  v.literal("endurance"),
-  v.literal("accuracy"),
-  v.literal("control"),
-  v.literal("consistency"),
-);
-
 const skillTarget = v.union(
-  v.object({ kind: v.literal("core"), id: coreSkill }),
-  v.object({ kind: v.literal("sub"), id: subSkill }),
-);
-
-const patternType = v.union(
-  v.literal("micro_drill"),
-  v.literal("standard_loop"),
-  v.literal("musical_sequence"),
-  v.literal("benchmark"),
+  v.object({ kind: v.literal("core"), id: coreSkillValidator }),
+  v.object({ kind: v.literal("sub"), id: subSkillValidator }),
 );
 
 // ---------------------------------------------------------------------------
@@ -185,8 +149,8 @@ export default defineSchema({
     experienceLevel: v.string(),
     guitarType: v.string(),
     primaryGoals: v.array(v.string()),
-    focusCoreSkillIds: v.array(coreSkill),
-    focusSubSkillIds: v.array(subSkill),
+    focusCoreSkillIds: v.array(coreSkillValidator),
+    focusSubSkillIds: v.array(subSkillValidator),
     availableDays: v.array(v.string()),
     defaultSessionLengthMinutes: v.number(),
     preferredIntensity: v.string(),
@@ -212,9 +176,9 @@ export default defineSchema({
     coachingNotes: v.array(v.string()),
 
     // Taxonomy
-    coreSkillId: coreSkill,
-    subSkillIds: v.array(subSkill),
-    trainingAttributes: v.array(trainingAttribute),
+    coreSkillId: coreSkillValidator,
+    subSkillIds: v.array(subSkillValidator),
+    trainingAttributes: v.array(trainingAttributeValidator),
 
     // Difficulty & type
     difficultyLevel: v.number(), // 1–10
@@ -240,7 +204,7 @@ export default defineSchema({
 
     // Tab
     tabData,
-    patternType,
+    patternType: patternTypeValidator,
     microDrillJustification: v.optional(v.string()),
 
     // Metadata
@@ -301,10 +265,10 @@ export default defineSchema({
     endDate: v.number(),
     durationWeeks: v.number(),
     primaryGoal: v.string(),
-    focusCoreSkillIds: v.array(coreSkill),
-    focusSubSkillIds: v.array(subSkill),
-    supportCoreSkillIds: v.array(coreSkill),
-    supportSubSkillIds: v.array(subSkill),
+    focusCoreSkillIds: v.array(coreSkillValidator),
+    focusSubSkillIds: v.array(subSkillValidator),
+    supportCoreSkillIds: v.array(coreSkillValidator),
+    supportSubSkillIds: v.array(subSkillValidator),
     status: v.union(
       v.literal("active"),
       v.literal("completed"),
@@ -401,9 +365,9 @@ export default defineSchema({
     userId: v.id("users"),
     sessionId: v.id("practiceSessions"),
     exerciseId: v.id("exercises"),
-    coreSkillId: coreSkill,
-    subSkillIds: v.array(subSkill),
-    trainingAttributes: v.array(trainingAttribute),
+    coreSkillId: coreSkillValidator,
+    subSkillIds: v.array(subSkillValidator),
+    trainingAttributes: v.array(trainingAttributeValidator),
     date: v.number(), // Unix timestamp (ms)
 
     trainingVerdict,
@@ -444,8 +408,8 @@ export default defineSchema({
   userExerciseState: defineTable({
     userId: v.id("users"),
     exerciseId: v.id("exercises"),
-    coreSkillId: coreSkill,
-    subSkillIds: v.array(subSkill),
+    coreSkillId: coreSkillValidator,
+    subSkillIds: v.array(subSkillValidator),
 
     currentLevel: v.number(),
     masteryStatus: v.union(

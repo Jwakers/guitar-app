@@ -106,13 +106,45 @@ function emptyHistogram(): TrainingAttributeHistogram {
   };
 }
 
+function matchesSubSkillFilter(
+  drillSubSkillIds: string[] | undefined,
+  filterSubSkillIds: string[] | undefined,
+): boolean {
+  if (!filterSubSkillIds || filterSubSkillIds.length === 0) return true;
+  if (!drillSubSkillIds || drillSubSkillIds.length === 0) return false;
+  return filterSubSkillIds.some((id) => drillSubSkillIds.includes(id));
+}
+
+function averageSubSkillWeights(
+  subSkillIds: string[],
+): Partial<Record<TrainingAttribute, number>> | undefined {
+  const layers = subSkillIds
+    .map((id) => SUB_SKILL_TARGET_WEIGHTS[id as SubSkill])
+    .filter((weights): weights is Partial<Record<TrainingAttribute, number>> =>
+      Boolean(weights),
+    );
+  if (layers.length === 0) return undefined;
+
+  const merged: Partial<Record<TrainingAttribute, number>> = {};
+  for (const attribute of TRAINING_ATTRIBUTES) {
+    const values = layers
+      .map((layer) => layer[attribute])
+      .filter((value): value is number => typeof value === "number");
+    if (values.length > 0) {
+      merged[attribute] =
+        values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+  }
+  return merged;
+}
+
 function targetWeights(
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): Record<TrainingAttribute, number> {
   const subWeights =
-    subSkillId && subSkillId in SUB_SKILL_TARGET_WEIGHTS
-      ? SUB_SKILL_TARGET_WEIGHTS[subSkillId as SubSkill]
+    subSkillIds && subSkillIds.length > 0
+      ? averageSubSkillWeights(subSkillIds)
       : undefined;
   const coreWeights =
     coreSkillId && coreSkillId in CORE_SKILL_TARGET_WEIGHTS
@@ -135,7 +167,7 @@ function scopedDrills(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ) {
   return drills.filter((drill) => {
     if (
@@ -145,14 +177,7 @@ function scopedDrills(
     ) {
       return false;
     }
-    if (
-      subSkillId &&
-      drill.subSkillIds &&
-      !drill.subSkillIds.includes(subSkillId)
-    ) {
-      return false;
-    }
-    return true;
+    return matchesSubSkillFilter(drill.subSkillIds, subSkillIds);
   });
 }
 
@@ -163,11 +188,11 @@ export function countTrainingAttributes(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): TrainingAttributeHistogram {
   const counts = emptyHistogram();
 
-  for (const drill of scopedDrills(drills, coreSkillId, subSkillId)) {
+  for (const drill of scopedDrills(drills, coreSkillId, subSkillIds)) {
     for (const attribute of drill.trainingAttributes ?? []) {
       if (attribute in counts) {
         counts[attribute] += 1;
@@ -189,11 +214,11 @@ export function inferTrainingAttributes(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
   count = 3,
 ): TrainingAttribute[] {
-  const targets = targetWeights(coreSkillId, subSkillId);
-  const counts = countTrainingAttributes(drills, coreSkillId, subSkillId);
+  const targets = targetWeights(coreSkillId, subSkillIds);
+  const counts = countTrainingAttributes(drills, coreSkillId, subSkillIds);
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   const targetSum = TRAINING_ATTRIBUTES.reduce(
     (sum, id) => sum + targets[id],
@@ -223,8 +248,8 @@ export function formatTrainingAttributeDistribution(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): string {
-  const counts = countTrainingAttributes(drills, coreSkillId, subSkillId);
+  const counts = countTrainingAttributes(drills, coreSkillId, subSkillIds);
   return TRAINING_ATTRIBUTES.map((id) => `${id}: ${counts[id]}`).join(", ");
 }

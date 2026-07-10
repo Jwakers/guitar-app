@@ -1,19 +1,34 @@
 import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 
+const RESET_CONFIRMATION = "RESET_LEGACY_TAXONOMY_DATA" as const;
+
+function assertSafeToReset() {
+  const deployment = process.env.CONVEX_DEPLOYMENT ?? "";
+  if (/prod/i.test(deployment)) {
+    throw new Error(
+      `resetLegacyTaxonomyData refused: deployment "${deployment}" looks like production`,
+    );
+  }
+}
+
 /**
  * Wipes legacy taxonomy data so the new schema can deploy cleanly.
- * Run once: npx convex run devReset:resetLegacyTaxonomyData
+ * Run once: npx convex run devReset:resetLegacyTaxonomyData '{"confirm":"RESET_LEGACY_TAXONOMY_DATA"}'
  */
 export const resetLegacyTaxonomyData = internalMutation({
-  args: {},
+  args: {
+    confirm: v.literal(RESET_CONFIRMATION),
+  },
   returns: v.object({
     exercises: v.number(),
     userSkillRatings: v.number(),
     userProfiles: v.number(),
     usersReset: v.number(),
   }),
-  handler: async (ctx) => {
+  handler: async (ctx, _args) => {
+    assertSafeToReset();
+
     let exercises = 0;
     for (const row of await ctx.db.query("exercises").collect()) {
       await ctx.db.delete(row._id);

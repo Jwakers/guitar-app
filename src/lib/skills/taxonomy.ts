@@ -43,6 +43,20 @@ export type SkillTarget =
   | { kind: "core"; id: CoreSkill }
   | { kind: "sub"; id: SubSkill };
 
+/** Core skills that do not require sub-skill selection in drills or onboarding. */
+export const CORE_SKILLS_WITHOUT_SUBSKILLS = new Set<CoreSkill>([
+  "synchronisation",
+  "chord_changes",
+]);
+
+export function coreSkillRequiresSubSkills(coreSkillId: CoreSkill): boolean {
+  return !CORE_SKILLS_WITHOUT_SUBSKILLS.has(coreSkillId);
+}
+
+export function skillTargetKey(target: SkillTarget): string {
+  return `${target.kind}:${target.id}`;
+}
+
 export type TaxonomyEntry<TId extends string> = {
   id: TId;
   label: string;

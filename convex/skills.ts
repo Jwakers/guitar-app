@@ -1,6 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import {
+  coreSkillValidator,
+  subSkillValidator,
+  trainingAttributeValidator,
+} from "./lib/exerciseValidators";
+import {
   CORE_SKILL_DEFINITIONS,
   CORE_SKILLS,
   SUB_SKILL_DEFINITIONS,
@@ -8,41 +13,6 @@ import {
   TRAINING_ATTRIBUTE_DEFINITIONS,
   TRAINING_ATTRIBUTES,
 } from "../src/lib/skills/taxonomy";
-
-const coreSkillValidator = v.union(
-  v.literal("picking"),
-  v.literal("fretting_control"),
-  v.literal("synchronisation"),
-  v.literal("rhythm_timing"),
-  v.literal("muting_noise_control"),
-  v.literal("lead_articulation"),
-  v.literal("chord_changes"),
-);
-
-const subSkillValidator = v.union(
-  v.literal("alternate_picking"),
-  v.literal("string_crossing"),
-  v.literal("string_skipping"),
-  v.literal("finger_independence"),
-  v.literal("fretting_accuracy"),
-  v.literal("position_shifting"),
-  v.literal("legato"),
-  v.literal("bends"),
-  v.literal("vibrato"),
-  v.literal("slides"),
-  v.literal("palm_muting"),
-  v.literal("fret_hand_muting"),
-  v.literal("subdivision_control"),
-  v.literal("accent_control"),
-);
-
-const trainingAttributeValidator = v.union(
-  v.literal("speed"),
-  v.literal("endurance"),
-  v.literal("accuracy"),
-  v.literal("control"),
-  v.literal("consistency"),
-);
 
 export const listCoreSkills = query({
   args: {},
@@ -94,7 +64,15 @@ export const listSubSkills = query({
           ? true
           : skill.coreSkillId === args.coreSkillId,
       )
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+      .sort((a, b) => {
+        if (a.coreSkillId !== b.coreSkillId) {
+          return (
+            CORE_SKILL_DEFINITIONS[a.coreSkillId].sortOrder -
+            CORE_SKILL_DEFINITIONS[b.coreSkillId].sortOrder
+          );
+        }
+        return a.sortOrder - b.sortOrder;
+      });
   },
 });
 

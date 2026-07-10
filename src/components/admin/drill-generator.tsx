@@ -26,6 +26,35 @@ const EXERCISE_TYPES = [
 
 type WorkingMode = "generate" | "refine";
 
+function ToggleChip({
+  id,
+  label,
+  selected,
+  onToggle,
+}: {
+  id: string;
+  label: string;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <button
+      key={id}
+      type="button"
+      aria-pressed={selected}
+      onClick={() => onToggle(id)}
+      className={cn(
+        "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
+        selected
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border bg-card text-foreground hover:border-border/60 hover:bg-muted/50",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 const GENERATE_STAGES = [
   { afterSec: 0, label: "Sending request to the model…" },
   { afterSec: 8, label: "Drafting drill structure and coaching copy…" },
@@ -456,25 +485,15 @@ export function DrillGenerator() {
                   No sub-skill required for this core skill.
                 </p>
               ) : (
-                subSkillOptions.map((skill) => {
-                  const selected = effectiveSubSkillIds.includes(skill.id);
-                  return (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => toggleSubSkill(skill.id)}
-                      className={cn(
-                        "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
-                        selected
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border bg-card text-foreground hover:border-border/60 hover:bg-muted/50",
-                      )}
-                    >
-                      {skill.name}
-                    </button>
-                  );
-                })
+                subSkillOptions.map((skill) => (
+                  <ToggleChip
+                    key={skill.id}
+                    id={skill.id}
+                    label={skill.name}
+                    selected={effectiveSubSkillIds.includes(skill.id)}
+                    onToggle={toggleSubSkill}
+                  />
+                ))
               )}
             </div>
           </div>
@@ -484,25 +503,15 @@ export function DrillGenerator() {
               TRAINING ATTRIBUTES (OPTIONAL)
             </span>
             <div className="flex flex-wrap gap-2">
-              {trainingAttributeOptions.map((attribute) => {
-                const selected = trainingAttributes.includes(attribute.id);
-                return (
-                  <button
-                    key={attribute.id}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => toggleTrainingAttribute(attribute.id)}
-                    className={cn(
-                      "rounded-md border px-3 py-1.5 font-mono text-xs font-semibold transition-colors",
-                      selected
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-foreground hover:border-border/60 hover:bg-muted/50",
-                    )}
-                  >
-                    {attribute.name}
-                  </button>
-                );
-              })}
+              {trainingAttributeOptions.map((attribute) => (
+                <ToggleChip
+                  key={attribute.id}
+                  id={attribute.id}
+                  label={attribute.name}
+                  selected={trainingAttributes.includes(attribute.id)}
+                  onToggle={toggleTrainingAttribute}
+                />
+              ))}
             </div>
             <span className="block text-xs text-muted-foreground">
               Leave all unselected to auto-infer from library gaps for this

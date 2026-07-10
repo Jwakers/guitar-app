@@ -4,6 +4,7 @@ import {
   SUB_SKILLS,
   TRAINING_ATTRIBUTES,
 } from "@/lib/skills/taxonomy";
+import { PATTERN_TYPES } from "@/lib/exercises/exercise-schema";
 
 const tabNoteSchema = z.object({
   string: z.union([
@@ -100,12 +101,7 @@ const feedbackQuestionSchema = z.object({
 const coreSkillSchema = z.enum(CORE_SKILLS);
 const subSkillSchema = z.enum(SUB_SKILLS);
 const trainingAttributeSchema = z.enum(TRAINING_ATTRIBUTES);
-const patternTypeZodSchema = z.enum([
-  "micro_drill",
-  "standard_loop",
-  "musical_sequence",
-  "benchmark",
-]);
+const patternTypeZodSchema = z.enum(PATTERN_TYPES);
 
 export const exerciseSeedZodSchema = z.object({
   title: z.string().min(1),

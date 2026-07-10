@@ -26,11 +26,14 @@ export type PrimaryProgressMetric =
 
 export type ExerciseStatus = "active" | "deprecated" | "replaced";
 
-export type PatternType =
-  | "micro_drill"
-  | "standard_loop"
-  | "musical_sequence"
-  | "benchmark";
+export const PATTERN_TYPES = [
+  "micro_drill",
+  "standard_loop",
+  "musical_sequence",
+  "benchmark",
+] as const;
+
+export type PatternType = (typeof PATTERN_TYPES)[number];
 
 /**
  * Shape used in seed files.

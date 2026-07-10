@@ -14,11 +14,11 @@
  *   pnpm migrate:exercises --slug foo     # single exercise by slug
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-type ExerciseSeed = Record<string, unknown>;
+type RawExerciseExport = Record<string, unknown>;
 
 type ImportResult = {
   inserted: number;
@@ -64,19 +64,23 @@ function requireDeployKey(name: string): string {
   return value;
 }
 
+const CONVEX_RUN_TIMEOUT_MS = 120_000;
+
 function convexRun(
   functionPath: string,
   args: unknown,
   deployKey: string,
 ): string {
   const argsJson = JSON.stringify(args);
-  const output = execSync(
-    `npx convex run ${functionPath} '${argsJson.replace(/'/g, "'\\''")}'`,
+  const output = execFileSync(
+    "npx",
+    ["convex", "run", functionPath, argsJson],
     {
       env: { ...process.env, CONVEX_DEPLOY_KEY: deployKey },
       encoding: "utf8",
       stdio: ["pipe", "pipe", "pipe"],
       maxBuffer: 50 * 1024 * 1024,
+      timeout: CONVEX_RUN_TIMEOUT_MS,
     },
   );
   return output.trim();
@@ -164,7 +168,7 @@ async function main() {
 
   console.log("Exporting active exercises from dev...");
   const exportRaw = convexRun("exercises:exportExerciseSeeds", {}, devKey);
-  let exercises = parseConvexJson<ExerciseSeed[]>(exportRaw);
+  let exercises = parseConvexJson<RawExerciseExport[]>(exportRaw);
 
   if (slug) {
     exercises = exercises.filter((ex) => ex.slug === slug);

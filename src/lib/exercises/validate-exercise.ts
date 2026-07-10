@@ -5,6 +5,7 @@ import type {
   PatternType,
   PrimaryProgressMetric,
 } from "./exercise-schema";
+import { PATTERN_TYPES } from "./exercise-schema";
 import type { FeedbackQuestion, FeedbackQuestionType } from "./feedback-schema";
 import type { TabData, TabNote } from "../tabs/internal-schema";
 import {
@@ -12,6 +13,7 @@ import {
   SUB_SKILLS,
   TRAINING_ATTRIBUTES,
   coreSkillForSubSkill,
+  coreSkillRequiresSubSkills,
   isCoreSkill,
   isSubSkill,
   isTrainingAttribute,
@@ -45,12 +47,7 @@ const VALID_STATUSES = new Set<ExerciseStatus>([
   "replaced",
 ]);
 
-const VALID_PATTERN_TYPES = new Set<PatternType>([
-  "micro_drill",
-  "standard_loop",
-  "musical_sequence",
-  "benchmark",
-]);
+const VALID_PATTERN_TYPES = new Set(PATTERN_TYPES);
 
 const VALID_FEEDBACK_TYPES = new Set<FeedbackQuestionType>([
   "segmented",
@@ -292,11 +289,7 @@ export function validateExercise(data: unknown): ExerciseSeed {
   }
 
   const subSkillIds = requireStringArray(data.subSkillIds, "subSkillIds");
-  if (
-    coreSkillId !== "synchronisation" &&
-    coreSkillId !== "chord_changes" &&
-    subSkillIds.length === 0
-  ) {
+  if (coreSkillRequiresSubSkills(coreSkillId) && subSkillIds.length === 0) {
     throw new Error(
       'validateExercise: "subSkillIds" must contain at least one sub-skill for this core skill',
     );

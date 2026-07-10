@@ -18,6 +18,15 @@ const TARGET_WEIGHTS: Record<number, number> = {
 
 export type DifficultyHistogram = Record<number, number>;
 
+function matchesSubSkillFilter(
+  drillSubSkillIds: string[] | undefined,
+  filterSubSkillIds: string[] | undefined,
+): boolean {
+  if (!filterSubSkillIds || filterSubSkillIds.length === 0) return true;
+  if (!drillSubSkillIds || drillSubSkillIds.length === 0) return false;
+  return filterSubSkillIds.some((id) => drillSubSkillIds.includes(id));
+}
+
 export function countDifficulties(
   drills: Array<{
     difficultyLevel: number;
@@ -25,7 +34,7 @@ export function countDifficulties(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): DifficultyHistogram {
   const counts: DifficultyHistogram = {};
   for (let d = 1; d <= 10; d++) counts[d] = 0;
@@ -38,11 +47,7 @@ export function countDifficulties(
     ) {
       continue;
     }
-    if (
-      subSkillId &&
-      drill.subSkillIds &&
-      !drill.subSkillIds.includes(subSkillId)
-    ) {
+    if (!matchesSubSkillFilter(drill.subSkillIds, subSkillIds)) {
       continue;
     }
     const level = drill.difficultyLevel;
@@ -65,9 +70,9 @@ export function inferDifficultyLevel(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): number {
-  const counts = countDifficulties(drills, coreSkillId, subSkillId);
+  const counts = countDifficulties(drills, coreSkillId, subSkillIds);
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
   if (total === 0) return 5;
@@ -103,9 +108,9 @@ export function formatDifficultyDistribution(
     subSkillIds?: string[];
   }>,
   coreSkillId?: string,
-  subSkillId?: string,
+  subSkillIds?: string[],
 ): string {
-  const counts = countDifficulties(drills, coreSkillId, subSkillId);
+  const counts = countDifficulties(drills, coreSkillId, subSkillIds);
   return Array.from({ length: 10 }, (_, i) => {
     const level = i + 1;
     return `${level}: ${counts[level] ?? 0}`;

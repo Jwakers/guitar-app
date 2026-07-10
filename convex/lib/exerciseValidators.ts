@@ -1,4 +1,9 @@
 import { v } from "convex/values";
+import {
+  CORE_SKILLS,
+  SUB_SKILLS,
+  TRAINING_ATTRIBUTES,
+} from "../../src/lib/skills/taxonomy";
 
 export const exerciseTypeValidator = v.union(
   v.literal("warmup"),
@@ -27,38 +32,15 @@ export const exerciseStatusValidator = v.union(
 );
 
 export const coreSkillValidator = v.union(
-  v.literal("picking"),
-  v.literal("fretting_control"),
-  v.literal("synchronisation"),
-  v.literal("rhythm_timing"),
-  v.literal("muting_noise_control"),
-  v.literal("lead_articulation"),
-  v.literal("chord_changes"),
+  ...CORE_SKILLS.map((id) => v.literal(id)),
 );
 
 export const subSkillValidator = v.union(
-  v.literal("alternate_picking"),
-  v.literal("string_crossing"),
-  v.literal("string_skipping"),
-  v.literal("finger_independence"),
-  v.literal("fretting_accuracy"),
-  v.literal("position_shifting"),
-  v.literal("legato"),
-  v.literal("bends"),
-  v.literal("vibrato"),
-  v.literal("slides"),
-  v.literal("palm_muting"),
-  v.literal("fret_hand_muting"),
-  v.literal("subdivision_control"),
-  v.literal("accent_control"),
+  ...SUB_SKILLS.map((id) => v.literal(id)),
 );
 
 export const trainingAttributeValidator = v.union(
-  v.literal("speed"),
-  v.literal("endurance"),
-  v.literal("accuracy"),
-  v.literal("control"),
-  v.literal("consistency"),
+  ...TRAINING_ATTRIBUTES.map((id) => v.literal(id)),
 );
 
 export const patternTypeValidator = v.union(
