@@ -68,7 +68,7 @@ Do not generate drills that classify `speed` or `endurance` as skills. Do not cl
 
 ### Noise control principle
 
-> Noise control should usually be trained inside meaningful musical or technical context, not as an isolated tab pattern.
+> Noise control should usually be trained inside a meaningful musical or technical context, not as an isolated tab pattern.
 
 Reject or heavily revise drills where:
 

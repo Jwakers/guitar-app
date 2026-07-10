@@ -6,6 +6,7 @@ import type {
   TabNote,
   TabNoteTechnique,
 } from "./internal-schema";
+import { bendQuarterTones } from "./pitch-helpers";
 
 // ---------------------------------------------------------------------------
 // Duration mapping
@@ -21,55 +22,6 @@ const DURATION_MAP: Record<TabBeatDuration, number> = {
 
 // Standard guitar octaves for TabData.tuning ordered string 6 → string 1.
 const STANDARD_GUITAR_OCTAVES = ["E2", "A2", "D3", "G3", "B3", "E4"] as const;
-
-/** Pitch-class → 0–11. */
-const PITCH_CLASS: Record<string, number> = {
-  C: 0,
-  "C#": 1,
-  Db: 1,
-  D: 2,
-  "D#": 3,
-  Eb: 3,
-  E: 4,
-  F: 5,
-  "F#": 6,
-  Gb: 6,
-  G: 7,
-  "G#": 8,
-  Ab: 8,
-  A: 9,
-  "A#": 10,
-  Bb: 10,
-  B: 11,
-};
-
-/** AlphaTeX bend values are quarter-tones (2 = half step, 4 = whole step). */
-function bendQuarterTones(note: TabNote, tuning: string[]): number {
-  if (!note.targetPitch?.trim()) {
-    throw new Error(
-      `Bend note on string ${note.string} fret ${note.fret} requires targetPitch`,
-    );
-  }
-  const from = frettedMidi(tuning, note.string, note.fret);
-  if (from === null) {
-    throw new Error(
-      `Cannot resolve fretted pitch for bend on string ${note.string} fret ${note.fret}`,
-    );
-  }
-  const to = targetMidiAtOrAbove(note.targetPitch, from);
-  if (to === null) {
-    throw new Error(
-      `Invalid targetPitch "${note.targetPitch}" for bend on string ${note.string} fret ${note.fret}`,
-    );
-  }
-  const semitones = to - from;
-  if (semitones <= 0) {
-    throw new Error(
-      `targetPitch "${note.targetPitch}" must be above fretted pitch for bend on string ${note.string} fret ${note.fret}`,
-    );
-  }
-  return Math.min(24, semitones * 2);
-}
 
 const TECHNIQUE_EFFECTS: Partial<
   Record<Exclude<TabNoteTechnique, "bend" | "release" | "picked">, string>
@@ -99,60 +51,12 @@ function resolveEmitFlags(hints: DisplayHints | undefined): EmitFlags {
 }
 
 // ---------------------------------------------------------------------------
-// Pitch helpers
+// Pitch helpers (tuning display only)
 // ---------------------------------------------------------------------------
-
-function parsePitchToken(raw: string): { pc: number; octave: number | null } | null {
-  const m = raw.trim().match(/^([A-Ga-g])([#b]?)(\d+)?$/);
-  if (!m) return null;
-  const letter = m[1]!.toUpperCase();
-  const accidental = m[2] ?? "";
-  const key = `${letter}${accidental}`;
-  const pc = PITCH_CLASS[key];
-  if (pc === undefined) return null;
-  const octave = m[3] !== undefined ? Number(m[3]) : null;
-  return { pc, octave };
-}
-
-function pitchToMidi(raw: string): number | null {
-  const parsed = parsePitchToken(raw);
-  if (!parsed || parsed.octave === null) return null;
-  return (parsed.octave + 1) * 12 + parsed.pc;
-}
 
 function resolveOpenStringPitch(tuningNote: string, tuningIndex: number): string {
   if (/\d$/.test(tuningNote)) return tuningNote;
   return STANDARD_GUITAR_OCTAVES[tuningIndex] ?? tuningNote;
-}
-
-/** TabData.tuning is string 6 → 1; note.string 1 = high E = last tuning entry. */
-function frettedMidi(
-  tuning: string[],
-  stringNum: TabNote["string"],
-  fret: number,
-): number | null {
-  const tuningIndex = 6 - stringNum;
-  const openRaw = tuning[tuningIndex];
-  if (openRaw === undefined) return null;
-  const openMidi = pitchToMidi(resolveOpenStringPitch(openRaw, tuningIndex));
-  if (openMidi === null) return null;
-  return openMidi + fret;
-}
-
-/**
- * Resolve targetPitch to a MIDI note at or above `fromMidi`.
- * Accepts bare names ("G", "F#") or octave-qualified ("G4").
- */
-function targetMidiAtOrAbove(targetPitch: string, fromMidi: number): number | null {
-  const parsed = parsePitchToken(targetPitch);
-  if (!parsed) return null;
-  if (parsed.octave !== null) {
-    return (parsed.octave + 1) * 12 + parsed.pc;
-  }
-  const fromPc = ((fromMidi % 12) + 12) % 12;
-  let delta = parsed.pc - fromPc;
-  if (delta <= 0) delta += 12;
-  return fromMidi + delta;
 }
 
 // ---------------------------------------------------------------------------
@@ -160,10 +64,7 @@ function targetMidiAtOrAbove(targetPitch: string, fromMidi: number): number | nu
 // ---------------------------------------------------------------------------
 
 function tuningToAlphaTex(tuning: string[]): string {
-  const pitches = tuning.map((note, index) => {
-    if (/\d$/.test(note)) return note;
-    return STANDARD_GUITAR_OCTAVES[index] ?? note;
-  });
+  const pitches = tuning.map((note, index) => resolveOpenStringPitch(note, index));
   // AlphaTeX expects string 1 (high) first through string 6 (low).
   return `\\tuning (${[...pitches].reverse().join(" ")})`;
 }

@@ -96,6 +96,32 @@ describe("tabDataToAlphaTex", () => {
     ).toThrow(/targetPitch/);
   });
 
+  it("throws when bend targetPitch exceeds supported range", () => {
+    expect(() =>
+      tabDataToAlphaTex(
+        baseTab({
+          bars: [
+            {
+              beats: [
+                {
+                  duration: "quarter",
+                  notes: [
+                    {
+                      string: 2,
+                      fret: 7,
+                      technique: "bend",
+                      targetPitch: "G6",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    ).toThrow(/exceeds maximum supported bend/);
+  });
+
   it("infers half-step bend amount from targetPitch", () => {
     const tex = tabDataToAlphaTex(
       baseTab({

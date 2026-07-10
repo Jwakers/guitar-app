@@ -2,18 +2,19 @@ import { v } from "convex/values";
 import { internalMutation } from "./_generated/server";
 
 const RESET_CONFIRMATION = "RESET_LEGACY_TAXONOMY_DATA" as const;
+const RESET_ENV_FLAG = "ALLOW_TAXONOMY_RESET" as const;
 
 function assertSafeToReset() {
-  const deployment = process.env.CONVEX_DEPLOYMENT ?? "";
-  if (/prod/i.test(deployment)) {
+  if (process.env[RESET_ENV_FLAG] !== "true") {
     throw new Error(
-      `resetLegacyTaxonomyData refused: deployment "${deployment}" looks like production`,
+      `resetLegacyTaxonomyData refused: set ${RESET_ENV_FLAG}=true on this deployment via \`npx convex env set ${RESET_ENV_FLAG} true\` (dev only — never on production). Verify the target deployment before invoking.`,
     );
   }
 }
 
 /**
  * Wipes legacy taxonomy data so the new schema can deploy cleanly.
+ * Prerequisites: ALLOW_TAXONOMY_RESET=true on the dev deployment only.
  * Run once: npx convex run devReset:resetLegacyTaxonomyData '{"confirm":"RESET_LEGACY_TAXONOMY_DATA"}'
  */
 export const resetLegacyTaxonomyData = internalMutation({
