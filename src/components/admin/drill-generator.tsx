@@ -150,6 +150,9 @@ type GenerateResponse = {
   description?: string;
   error?: string;
   validationError?: string;
+  subSkillIds?: string[];
+  subSkillIdsInferred?: boolean;
+  subSkillDistribution?: string;
   difficultyLevel?: number;
   difficultyInferred?: boolean;
   difficultyDistribution?: string;
@@ -157,6 +160,18 @@ type GenerateResponse = {
   trainingAttributesInferred?: boolean;
   trainingAttributeDistribution?: string;
 };
+
+type ApiErrorBody = {
+  error?: string;
+  details?: { message: string; path: (string | number)[] }[];
+};
+
+function formatApiError(data: ApiErrorBody, status: number): string {
+  if (data.details?.length) {
+    return data.details.map((d) => d.message).join(" ");
+  }
+  return data.error ?? `Request failed (${status})`;
+}
 
 const PATTERN_TYPE_LABELS: Record<
   NonNullable<GenerateResponse["patternType"]>,
@@ -351,12 +366,10 @@ export function DrillGenerator() {
         body: JSON.stringify(payload),
       });
 
-      const data = (await res.json()) as GenerateResponse & {
-        error?: string;
-      };
+      const data = (await res.json()) as GenerateResponse & ApiErrorBody;
 
       if (!res.ok && data.validationStatus !== "failed") {
-        throw new Error(data.error ?? `Request failed (${res.status})`);
+        throw new Error(formatApiError(data, res.status));
       }
 
       if (data.validationStatus === "failed") {
@@ -477,7 +490,7 @@ export function DrillGenerator() {
 
           <div className="space-y-2">
             <span className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              SUB-SKILLS
+              SUB-SKILLS (OPTIONAL)
             </span>
             <div className="flex flex-wrap gap-2">
               {subSkillOptions.length === 0 ? (
@@ -496,6 +509,13 @@ export function DrillGenerator() {
                 ))
               )}
             </div>
+            {subSkillOptions.length > 0 && (
+              <span className="block text-xs text-muted-foreground">
+                Leave all unselected to auto-infer from library gaps for this
+                core skill. Muting tags supplement another movement — they do
+                not drive standalone drills.
+              </span>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -640,6 +660,23 @@ export function DrillGenerator() {
                   ? " · AUTO-INFERRED FROM LIBRARY GAPS"
                   : ""}
               </p>
+              {result.subSkillIds && result.subSkillIds.length > 0 && (
+                <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+                  SUB-SKILLS{" "}
+                  {result.subSkillIds
+                    .map((id) => id.replaceAll("_", " ").toUpperCase())
+                    .join(" · ")}
+                  {result.subSkillIdsInferred
+                    ? " · AUTO-INFERRED FROM LIBRARY GAPS"
+                    : ""}
+                </p>
+              )}
+              {result.subSkillIdsInferred && result.subSkillDistribution && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sub-skill distribution before this candidate:{" "}
+                  {result.subSkillDistribution}
+                </p>
+              )}
               {result.trainingAttributes && (
                 <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
                   ATTRIBUTES{" "}
