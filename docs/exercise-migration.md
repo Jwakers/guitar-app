@@ -2,6 +2,8 @@
 
 Exercises are authored in the **dev** Convex deployment via the drill generator, reviewed against the knowledge checklist, then promoted to **production** with a migration script. Convex is the source of truth for runtime exercise data.
 
+There are no exercise TypeScript files in the repo. `ExerciseSeed` is the payload shape for authoring, validation, and cross-environment migration — not a code-based seed directory.
+
 ## Stable identifiers
 
 Convex `_id` values differ across deployments. Migration uses:

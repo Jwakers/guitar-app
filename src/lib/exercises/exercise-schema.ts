@@ -36,10 +36,13 @@ export const PATTERN_TYPES = [
 export type PatternType = (typeof PATTERN_TYPES)[number];
 
 /**
- * Shape used in seed files.
+ * Authoring and migration payload shape for exercises.
  *
- * Differences from the Convex `exercises` table:
+ * Differences from the persisted Convex `exercises` table:
  * - `updatedAt` is omitted; it is stamped at insertion time.
+ *
+ * Exercises are not stored as TypeScript files in the repo. They are authored
+ * in dev Convex (drill generator) and promoted via `pnpm migrate:exercises`.
  */
 export type ExerciseSeed = {
   title: string;

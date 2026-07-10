@@ -90,7 +90,7 @@ Drills may be drafted by AI, written manually, or produced by an internal genera
 
 However, generated drills are only candidates.
 
-A generated drill must not enter seed data unless it passes:
+A generated drill must not be saved to Convex or promoted to production unless it passes:
 
 1. Schema validation
 2. Tab data validation
@@ -260,9 +260,11 @@ Validation
         ↓
 Human Review
         ↓
-Seed Data
+Validated ExerciseSeed
         ↓
-Convex Exercise Row
+Convex Exercise Row (dev)
+        ↓
+Production promotion (migrate:exercises)
 ```
 
 A drill should be traceable back to a knowledge document or skill taxonomy entry.
@@ -271,7 +273,7 @@ A drill should be traceable back to a knowledge document or skill taxonomy entry
 
 ## 5. Drill Brief Format
 
-Before a drill becomes seed data, it should exist as a human-readable drill brief.
+Before a drill is saved to dev Convex, it should exist as a human-readable drill brief.
 
 Each brief must include:
 
@@ -330,7 +332,7 @@ Focus on whether the bend reaches pitch before vibrato starts.
 Feel whether the fretting hand releases cleanly between chords.
 ```
 
-The brief is for understanding and review. The seed object is for runtime use.
+The brief is for understanding and review. The `ExerciseSeed` payload is what gets validated and saved to Convex.
 
 ---
 
@@ -428,7 +430,7 @@ Thresholds:
 0–15: reject
 ```
 
-A drill should not be seeded unless it scores at least 24/30.
+A drill should not be promoted to production unless it scores at least 24/30.
 
 For the initial MVP library, aim for 26+ wherever possible.
 
@@ -737,7 +739,7 @@ feedbackSchema: [
 
 ## 12. Human Playability Review
 
-Before seeding a drill, a human should play or inspect it.
+Before promoting a drill to production, a human should play or inspect it.
 
 The reviewer should answer:
 
@@ -751,7 +753,7 @@ The reviewer should answer:
 - Is anything painful, awkward, or unclear?
 - Is this suitable for an intermediate electric guitarist?
 
-If the reviewer cannot confidently answer these questions, the drill should be revised before seeding.
+If the reviewer cannot confidently answer these questions, the drill should be revised before saving to dev or migrating to production.
 
 ---
 

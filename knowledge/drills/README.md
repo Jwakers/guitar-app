@@ -52,7 +52,7 @@ Organised by core skill and sub-skill:
 **Rhythm & Timing / Palm Muting**
 - `palm-muting-control-l1.md` (rhythm riff with palm muting + rests — not standalone open-string noise drill)
 
-*(Remaining drills to be authored before exercise seed work begins.)*
+*(Remaining drills to be authored in dev Convex before production migration.)*
 
 ---
 

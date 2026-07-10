@@ -79,7 +79,7 @@ The operational source of truth is [`practice-methodology.md`](./practice-method
 - "You lost progress."
 - "Just repeat until clean."
 - "Play this 100 times."
-- "No pain no gain."
+- "No pain, no gain."
 
 ---
 

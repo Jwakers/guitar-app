@@ -792,24 +792,11 @@ getMonthlyReview
 
 ## 17. Content Management
 
-MVP exercises may be seeded from code.
+Exercises are **not** authored as TypeScript files in the repo. They are created in the **dev** Convex deployment (drill generator or `saveGeneratedExercise`), validated, reviewed, then promoted to production via `pnpm migrate:exercises`. See [`docs/exercise-migration.md`](exercise-migration.md).
 
-Recommended seed structure:
+Runtime exercise data lives in the Convex `exercises` table. Each row must satisfy the full `ExerciseSeed` quality contract and pass the checklist in `## Tab Rendering & Exercise Quality Architecture`.
 
-```txt
-/seed
-  skills.ts
-  exercises/
-    alternate-picking.ts
-    rhythm.ts
-    bends.ts
-    vibrato.ts
-    muting.ts
-```
-
-Each exercise must satisfy the full `Exercise` type and pass the quality contract checklist defined in `## Tab Rendering & Exercise Quality Architecture`. See that section for the complete list of required fields and validation rules.
-
-An admin interface is not required for MVP.
+An admin drill generator is the primary authoring path for MVP.
 
 ---
 
@@ -949,8 +936,8 @@ Do not build in MVP:
 * Auth
 * Convex schema
 * User profile
-* Skill taxonomy
-* Seed exercises
+* Skill taxonomy (`src/lib/skills/taxonomy.ts`)
+* Exercise authoring workflow (dev Convex + `pnpm migrate:exercises`)
 * Basic app shell
 
 ### Phase 2 — Onboarding
@@ -1062,7 +1049,7 @@ alphaTab is the MVP tab rendering layer. Its responsibilities are:
 
 ### 3. Internal Tab Schema
 
-The following types define the canonical internal representation for tab data. These types live in `/lib/tabs/internal-schema.ts` and are imported by exercise seed files, validation functions, and the alphaTab adapter.
+The following types define the canonical internal representation for tab data. These types live in `/lib/tabs/internal-schema.ts` and are used by exercise validation, the alphaTab adapter, and Convex exercise payloads.
 
 ```ts
 type TabData = {
@@ -1158,10 +1145,12 @@ Valid tab data        — A complete, validated TabData object.
 
 ### 6. Exercise Schema
 
-The full `Exercise` type definition. This is the authoritative contract for exercise seed files and the Convex `exercises` table.
+Two related types: **`ExerciseSeed`** (authoring and migration payloads — not repo files) and the persisted **`exercises`** table document (adds server metadata).
+
+`ExerciseSeed` matches `src/lib/exercises/exercise-schema.ts` and `exerciseSeedValidator` in Convex. `updatedAt` is **not** part of authoring input — it is stamped at insert/patch time in `buildExerciseDocument`.
 
 ```ts
-type Exercise = {
+type ExerciseSeed = {
   title: string;
   slug: string;
   description: string;
@@ -1204,12 +1193,20 @@ type Exercise = {
   attentionFocus?: string;
   troubleshootingPrompts?: TroubleshootingPrompt[];
 
-  // Seed data versioning
+  // Catalog versioning
   version: number;
   status: "active" | "deprecated" | "replaced";
   replacedBySlug?: string;
-  updatedAt: number;
 };
+```
+
+Persisted Convex `exercises` documents extend `ExerciseSeed` with server-generated metadata:
+
+```ts
+type ExerciseDocument = ExerciseSeed & {
+  updatedAt: number; // stamped by buildExerciseDocument on insert/patch — not in authoring input
+};
+```
 
 type PracticeStep = {
   title: string;
@@ -1235,7 +1232,7 @@ type TroubleshootingPrompt = {
 };
 ```
 
-Optional evidence-informed fields are documented in [`knowledge/principles/practice-methodology.md`](../knowledge/principles/practice-methodology.md). They are not yet enforced in Convex validators or seed validation — use when they improve practice quality.
+Optional evidence-informed fields are documented in [`knowledge/principles/practice-methodology.md`](../knowledge/principles/practice-methodology.md). They are not yet enforced in Convex validators or authoring validation — use when they improve practice quality.
 
 The `tabData` field is the canonical internal representation. Exercise data should not be authored as renderer-specific notation.
 
@@ -1243,7 +1240,7 @@ The `tabData` field is the canonical internal representation. Exercise data shou
 
 ### 7. Exercise Validation Rules
 
-The following rules must be enforced at seed time and at any future write path that creates or updates an exercise. Implement these in `/lib/exercises/validate-exercise.ts`.
+The following rules must be enforced before an exercise is saved to Convex and at any future write path that creates or updates an exercise. Implement these in `/lib/exercises/validate-exercise.ts`.
 
 * Exercises cannot be saved without a `purpose`.
 * Exercises cannot be saved without a valid `coreSkillId`.
@@ -1286,7 +1283,7 @@ Quality over quantity is a hard constraint, not a preference.
 
 ### 9. Exercise Review Checklist
 
-Every new exercise must be reviewed against this checklist before it is committed to the seed data.
+Every new exercise must be reviewed against this checklist before it is saved to dev Convex or promoted to production.
 
 * What skill does this train?
 * What weakness does it target?
@@ -1302,7 +1299,7 @@ Every new exercise must be reviewed against this checklist before it is committe
 * What happens if the user fails — is there a troubleshooting or regression path?
 * Does this drill avoid masked practice (mindless repetition without attention)?
 
-An exercise that cannot answer all twelve questions should not be added.
+An exercise that cannot answer all thirteen questions should not be added.
 
 ---
 
@@ -1311,7 +1308,7 @@ An exercise that cannot answer all twelve questions should not be added.
 The following are explicitly out of scope for this architecture:
 
 * Do not store raw ASCII tab as canonical exercise data.
-* Do not allow unreviewed or auto-generated exercises into the MVP seed.
+* Do not allow unreviewed or auto-generated exercises into the production exercise library.
 * Do not treat tab display and exercise quality as the same concern.
 * Do not optimise for a large exercise library at the expense of training value.
 
@@ -1353,12 +1350,12 @@ Runtime exercise data lives in Convex, versioned using `slug` + `version` as sta
 
 ### 12. Testing Requirements
 
-The following tests must be written and must pass before any exercise seed data is merged.
+The following tests must be written and must pass before exercises are promoted to production.
 
 * Unit tests for `validate-tab-data.ts`: valid and invalid `TabData` objects, including edge cases for string/fret ranges, beat durations, and tuning length.
 * Unit tests for `validate-exercise.ts`: every validation rule must have a test for a passing case and a failing case.
 * Snapshot or output tests for `alphatab-adapter.ts`: given a known `TabData` input, the adapter must produce stable, expected alphaTab-compatible output.
-* Integration tests asserting that invalid exercises cannot be seeded — the seed process must throw on validation failure.
+* Integration tests asserting that invalid exercises cannot be saved — `validateExercise` and Convex write paths must reject validation failures.
 * Unit tests for progression and regression rule parsing and application in `progression-paths.ts`.
 
 ---
@@ -1397,7 +1394,7 @@ tab: v.object({
 })
 ```
 
-This field must be replaced with a `tabData` field matching the structured `TabData` schema before exercise seed data is written. This is a breaking schema change and requires a Convex migration. The migration should be planned and executed as part of the exercise seed implementation task, not deferred.
+The exercises table now uses structured `tabData` per the `TabData` schema. Legacy ASCII `notation` fields are not canonical.
 
 ---
 
@@ -2571,7 +2568,7 @@ Product Principles
         ↓
 Knowledge Documents
         ↓
-Structured Seed Data
+Structured Exercise Data
         ↓
 Deterministic Training Engine
         ↓
@@ -2586,7 +2583,7 @@ AI Explanation Layer
 
 **Structured Exercise Data** (Convex `exercises` table) implements reviewed knowledge. Exercise payloads must satisfy the Exercise Quality Contract and must be traceable to a knowledge document or taxonomy entry. Dev is the authoring environment; production is promoted via [`docs/exercise-migration.md`](exercise-migration.md).
 
-**Deterministic Training Engine** (`/lib/training-engine`) applies structured data to each user's state and produces training decisions. It must not contain embedded guitar expertise — that lives in knowledge documents and seed data.
+**Deterministic Training Engine** (`/lib/training-engine`) applies structured data to each user's state and produces training decisions. It must not contain embedded guitar expertise — that lives in knowledge documents and the Convex exercise catalog.
 
 **UI** presents the engine's output to the user. It must not make training decisions. It must not bypass the engine.
 
@@ -2715,8 +2712,8 @@ These rules apply to every Convex query, mutation, and action in the application
 
 * Every user-scoped Convex query or mutation must derive the authenticated user from the server auth context (`ctx.auth.getUserIdentity()`). Client-provided user IDs must never be trusted.
 * Users may only read and write their own sessions, logs, skill ratings, exercise state, achievements, monthly reviews, user profile, and subscription state.
-* Global seed data — skills, exercises, progression paths, training block definitions — is readable by all authenticated users. It is not user-scoped.
-* Exercise seed data is not user-editable in MVP. Write access to the exercises table is restricted to seeding operations.
+* Global catalog data — skill taxonomy, exercises, progression paths, training block definitions — is readable by all authenticated users. It is not user-scoped.
+* Exercise catalog data is not user-editable in MVP. Write access to the `exercises` table is restricted to super-user authoring and migration operations.
 * Subscription tier gating must be enforced server-side. Client-reported tier values must not gate features.
 * All Convex functions must validate inputs using Convex validators. Unvalidated input must never reach the handler.
 
@@ -2786,7 +2783,7 @@ AI is a presentation layer. It must not be a decision layer.
 * If AI is unavailable, a deterministic fallback copy must be shown. The app must remain fully functional.
 * AI-generated coaching text may be cached by `sessionId`, `exerciseId`, or `monthlyReviewId` to avoid redundant API calls.
 * Personal data sent to external AI services must be minimised. User identifiers, detailed health information, and raw performance logs must not be sent unless strictly necessary for the feature.
-* AI-generated drill or exercise content must never enter the MVP seed library without human review, quality-contract validation, and tab data validation. Unreviewed AI content is not an acceptable shortcut.
+* AI-generated drill or exercise content must never enter the production exercise library without human review, quality-contract validation, and tab data validation. Unreviewed AI content is not an acceptable shortcut.
 
 **AI explains. Deterministic code decides.**
 
@@ -2820,10 +2817,10 @@ Before implementing advanced scoring, AI coaching, subscription features, or gam
 
 1. **Validated exercise schema** — `TabData`, `Exercise`, and all validation functions in `/lib/tabs` and `/lib/exercises`
 2. **Tab rendering adapter** — `alphatab-adapter.ts` converting `TabData` to alphaTab input, with fallback components
-3. **Seed skill taxonomy** — 3–5 skills seeded and queryable (not all 13; see First Implementation Milestone below)
+3. **Skill taxonomy** — static taxonomy in `src/lib/skills/taxonomy.ts`, queryable via Convex (start with 3–5 focus areas; see First Implementation Milestone below)
 4. **10–15 excellent MVP drills** — fully validated exercises covering the first 3–5 skills, with real tab data, passing the quality contract checklist
 5. **Onboarding** — goal selection, schedule, initial skill assessment producing initial skill ratings
-6. **Today session generation** — engine generating a valid `PracticeSession` from user state (interleaved, edge-of-ability, chunked per duration preset)
+6. **Today session generation** — engine generating a valid `PracticeSession` from user state (edge-of-ability, chunked per duration preset; interleaved practice when session type and user state warrant it, blocked practice when first learning or repairing a movement — per [`practice-methodology.md`](../knowledge/principles/practice-methodology.md))
 7. **Exercise logging** — `logExerciseResult` writing an `ExerciseLog` with `TrainingVerdict`, `feedbackResponses`, and optional `breakdown_cause`
 8. **Derived `UserExerciseState`** — updated after each log, consumed by the engine for next-session decisions
 
@@ -2833,7 +2830,7 @@ This sequence validates the core training loop before any further investment. If
 
 ## First Implementation Milestone
 
-Do not attempt to seed all 13 MVP skills before proving the full loop. Seed 3–5 skills and 10–15 drills, prove the loop works, then expand.
+Do not attempt to author exercises for every sub-skill before proving the full loop. Author 10–15 drills covering 3–5 skill areas in dev Convex, prove the loop works, then expand.
 
 Recommended first skill areas:
 
@@ -2847,17 +2844,26 @@ These five provide enough variety to exercise the session generation, feedback, 
 
 ---
 
-# Seed Data Versioning
+# Exercise Catalog Versioning
 
-Exercises, skills, progression paths, and training block definitions are versioned domain data. They must be treated with the same care as a database migration: a change that breaks existing meaning requires a new version, not an overwrite.
+Exercises, progression paths, and training block definitions are versioned domain data in Convex. They must be treated with the same care as a database migration: a change that breaks existing meaning requires a new version, not an overwrite.
+
+Skill taxonomy lives in code (`src/lib/skills/taxonomy.ts`) and is deployed with the app — not authored as per-exercise repo files.
 
 ## Required versioning fields on exercises
+
+**Authoring input (`ExerciseSeed`):**
 
 ```ts
 version: number;
 status: "active" | "deprecated" | "replaced";
 replacedBySlug?: string;  // cross-env stable link (implementation uses slug, not Convex _id)
-updatedAt: number;
+```
+
+**Persisted document (server-generated):**
+
+```ts
+updatedAt: number;  // stamped on insert/patch — not authored in drill generator or migration export payloads
 ```
 
 ## Rules

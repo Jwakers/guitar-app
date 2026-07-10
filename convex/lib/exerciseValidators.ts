@@ -146,7 +146,7 @@ export const feedbackSchemaValidator = v.array(
   }),
 );
 
-/** ExerciseSeed-shaped payload (no Convex metadata). */
+/** ExerciseSeed-shaped payload for authoring and migration (no Convex metadata). */
 export const exerciseSeedValidator = v.object({
   title: v.string(),
   slug: v.string(),

@@ -13,7 +13,7 @@ Training blocks are multi-week structured programmes. Each block type represents
 Training blocks must respect evidence-informed practice design:
 
 - **Interleaving** — weekly sessions should rotate complementary skills, not prescribe one technical idea for an entire session unless explicitly a repair micro-session.
-- **Session chunking** — block templates should define how 15–45 minute sessions divide into warm-up, primary focus, interleaved support, benchmark, and reflection sections.
+- **Session chunking** — block templates should define how 15–45-minute sessions divide into warm-up, primary focus, interleaved support, benchmark, and reflection sections.
 - **Edge-of-ability** — block progression should calibrate targets from Reliable Performance + small steps, not peak scores.
 - **Deload / light sessions** — align with troubleshooting and control work when recent logs show repeated failure or fatigue.
 

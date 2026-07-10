@@ -17,7 +17,7 @@ const DEFAULT_TARGET_WEIGHTS: Record<TrainingAttribute, number> = {
   noise_control: 0.1,
 };
 
-/** Typical attribute emphasis per sub-skill (from seed library patterns). */
+/** Typical attribute emphasis per sub-skill (from existing exercise library patterns). */
 const SUB_SKILL_TARGET_WEIGHTS: Partial<
   Record<SubSkill, Partial<Record<TrainingAttribute, number>>>
 > = {
