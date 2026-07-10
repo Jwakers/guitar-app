@@ -5,17 +5,15 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
 import { Activity, AlertCircle } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import type { Doc } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import type { WizardData } from "../onboarding-wizard";
+import type { CoreSkillOption, WizardData } from "../onboarding-wizard";
 
 interface CompletingStepProps {
   data: WizardData;
-  skills: Doc<"skills">[];
+  coreSkills: CoreSkillOption[];
 }
 
-export function CompletingStep({ data, skills }: CompletingStepProps) {
+export function CompletingStep({ data, coreSkills }: CompletingStepProps) {
   const router = useRouter();
   const saveOnboardingAnswers = useMutation(api.onboarding.saveOnboardingAnswers);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +23,10 @@ export function CompletingStep({ data, skills }: CompletingStepProps) {
     setError(null);
     hasFired.current = true;
 
-    // Default any unrated skills to 3
-    const skillRatingsArray = skills.map((skill) => ({
-      skillId: skill._id as Id<"skills">,
-      rating: data.skillRatings[skill._id] ?? 3,
+    // Default any unrated core skill areas to 3.
+    const skillRatingsArray = coreSkills.map((skill) => ({
+      skillTarget: { kind: "core" as const, id: skill.id },
+      rating: data.skillRatings[`core:${skill.id}`] ?? 3,
     }));
 
     try {
@@ -37,7 +35,8 @@ export function CompletingStep({ data, skills }: CompletingStepProps) {
           experienceLevel: "intermediate",
           guitarType: "electric",
           primaryGoals: data.primaryGoals,
-          focusSkills: data.focusSkillIds,
+          focusCoreSkillIds: data.focusCoreSkillIds,
+          focusSubSkillIds: data.focusSubSkillIds,
           availableDays: data.availableDays,
           defaultSessionLengthMinutes: data.defaultSessionLengthMinutes,
           preferredIntensity: data.preferredIntensity,

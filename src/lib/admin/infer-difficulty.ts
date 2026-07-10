@@ -18,19 +18,36 @@ const TARGET_WEIGHTS: Record<number, number> = {
 
 export type DifficultyHistogram = Record<number, number>;
 
+function matchesSubSkillFilter(
+  drillSubSkillIds: string[] | undefined,
+  filterSubSkillIds: string[] | undefined,
+): boolean {
+  if (!filterSubSkillIds || filterSubSkillIds.length === 0) return true;
+  if (!drillSubSkillIds || drillSubSkillIds.length === 0) return false;
+  return filterSubSkillIds.some((id) => drillSubSkillIds.includes(id));
+}
+
 export function countDifficulties(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillIds?: string[],
 ): DifficultyHistogram {
   const counts: DifficultyHistogram = {};
   for (let d = 1; d <= 10; d++) counts[d] = 0;
 
   for (const drill of drills) {
     if (
-      primarySkillSlug &&
-      drill.primarySkillSlug &&
-      drill.primarySkillSlug !== primarySkillSlug
+      coreSkillId &&
+      drill.coreSkillId &&
+      drill.coreSkillId !== coreSkillId
     ) {
+      continue;
+    }
+    if (!matchesSubSkillFilter(drill.subSkillIds, subSkillIds)) {
       continue;
     }
     const level = drill.difficultyLevel;
@@ -47,10 +64,15 @@ export function countDifficulties(
  * When the library is empty, prefers 5 (centre of the 4–8 focus band).
  */
 export function inferDifficultyLevel(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillIds?: string[],
 ): number {
-  const counts = countDifficulties(drills, primarySkillSlug);
+  const counts = countDifficulties(drills, coreSkillId, subSkillIds);
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
   if (total === 0) return 5;
@@ -80,10 +102,15 @@ export function inferDifficultyLevel(
 }
 
 export function formatDifficultyDistribution(
-  drills: Array<{ difficultyLevel: number; primarySkillSlug?: string }>,
-  primarySkillSlug?: string,
+  drills: Array<{
+    difficultyLevel: number;
+    coreSkillId?: string;
+    subSkillIds?: string[];
+  }>,
+  coreSkillId?: string,
+  subSkillIds?: string[],
 ): string {
-  const counts = countDifficulties(drills, primarySkillSlug);
+  const counts = countDifficulties(drills, coreSkillId, subSkillIds);
   return Array.from({ length: 10 }, (_, i) => {
     const level = i + 1;
     return `${level}: ${counts[level] ?? 0}`;

@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import {
+  CORE_SKILL_DEFINITIONS,
+  CORE_SKILLS,
+  SUB_SKILL_DEFINITIONS,
+  SUB_SKILLS,
+  type CoreSkill,
+  type SubSkill,
+} from "@/lib/skills/taxonomy";
 import { WelcomeStep } from "./steps/welcome-step";
 import { AboutYouStep } from "./steps/about-you-step";
 import { GoalsStep } from "./steps/goals-step";
@@ -14,17 +19,34 @@ import { CompletingStep } from "./steps/completing-step";
 export type WizardData = {
   dataTonePreference: string;
   primaryGoals: string[];
-  focusSkillIds: string[]; // stable skill IDs, not display names
+  focusCoreSkillIds: CoreSkill[];
+  focusSubSkillIds: SubSkill[];
   availableDays: string[];
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
-  skillRatings: Record<string, 1 | 2 | 3 | 4 | 5>; // skillId → 1–5
+  skillRatings: Record<string, 1 | 2 | 3 | 4 | 5>; // core:{id} → 1–5
+};
+
+export type CoreSkillOption = {
+  id: CoreSkill;
+  name: string;
+  description: string;
+  sortOrder: number;
+};
+
+export type SubSkillOption = {
+  id: SubSkill;
+  coreSkillId: CoreSkill;
+  name: string;
+  description: string;
+  sortOrder: number;
 };
 
 const DEFAULT_DATA: WizardData = {
   dataTonePreference: "factual",
   primaryGoals: [],
-  focusSkillIds: [],
+  focusCoreSkillIds: [],
+  focusSubSkillIds: [],
   availableDays: ["Monday", "Wednesday", "Friday"],
   defaultSessionLengthMinutes: 45,
   preferredIntensity: "moderate",
@@ -46,9 +68,25 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
   const [data, setData] = useState<WizardData>(DEFAULT_DATA);
 
-  const skillsResult = useQuery(api.skills.listSkills);
-  const skillsLoading = skillsResult === undefined;
-  const skills = skillsResult ?? [];
+  const coreSkills: CoreSkillOption[] = CORE_SKILLS.map((id) => {
+    const skill = CORE_SKILL_DEFINITIONS[id];
+    return {
+      id,
+      name: skill.label,
+      description: skill.description,
+      sortOrder: skill.sortOrder,
+    };
+  });
+  const subSkills: SubSkillOption[] = SUB_SKILLS.map((id) => {
+    const skill = SUB_SKILL_DEFINITIONS[id];
+    return {
+      id,
+      coreSkillId: skill.coreSkillId,
+      name: skill.label,
+      description: skill.description,
+      sortOrder: skill.sortOrder,
+    };
+  });
 
   function update(updates: Partial<WizardData>) {
     setData((prev) => ({ ...prev, ...updates }));
@@ -97,8 +135,8 @@ export function OnboardingWizard() {
         {currentStep === "goals" && (
           <GoalsStep
             data={data}
-            skills={skills as Doc<"skills">[]}
-            skillsLoading={skillsLoading}
+            coreSkills={coreSkills}
+            subSkills={subSkills}
             onUpdate={update}
             onNext={next}
             onBack={back}
@@ -110,15 +148,14 @@ export function OnboardingWizard() {
         {currentStep === "skill-assessment" && (
           <SkillAssessmentStep
             data={data}
-            skills={skills as Doc<"skills">[]}
-            skillsLoading={skillsLoading}
+            coreSkills={coreSkills}
             onUpdate={update}
             onNext={next}
             onBack={back}
           />
         )}
         {currentStep === "completing" && (
-          <CompletingStep data={data} skills={skills as Doc<"skills">[]} />
+          <CompletingStep data={data} coreSkills={coreSkills} />
         )}
       </div>
     </div>

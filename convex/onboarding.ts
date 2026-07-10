@@ -1,8 +1,18 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
+import {
+  coreSkillValidator,
+  subSkillValidator,
+} from "./lib/exerciseValidators";
+import { skillTargetKey } from "../src/lib/skills/taxonomy";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
+
+const skillTargetValidator = v.union(
+  v.object({ kind: v.literal("core"), id: coreSkillValidator }),
+  v.object({ kind: v.literal("sub"), id: subSkillValidator }),
+);
 
 function deriveStatus(rating: 1 | 2 | 3 | 4 | 5): SkillRatingStatus {
   if (rating <= 2) return "weak";
@@ -25,7 +35,8 @@ export const saveOnboardingAnswers = mutation({
       experienceLevel: v.string(),
       guitarType: v.string(),
       primaryGoals: v.array(v.string()),
-      focusSkills: v.array(v.string()),
+      focusCoreSkillIds: v.array(coreSkillValidator),
+      focusSubSkillIds: v.array(subSkillValidator),
       availableDays: v.array(v.string()),
       defaultSessionLengthMinutes: v.number(),
       preferredIntensity: v.string(),
@@ -33,7 +44,7 @@ export const saveOnboardingAnswers = mutation({
     }),
     skillRatings: v.array(
       v.object({
-        skillId: v.id("skills"),
+        skillTarget: skillTargetValidator,
         rating: v.union(
           v.literal(1),
           v.literal(2),
@@ -68,17 +79,19 @@ export const saveOnboardingAnswers = mutation({
     }
 
     // Upsert userSkillRatings
-    for (const { skillId, rating } of args.skillRatings) {
+    for (const { skillTarget, rating } of args.skillRatings) {
+      const key = skillTargetKey(skillTarget);
       const existing = await ctx.db
         .query("userSkillRatings")
-        .withIndex("by_userId_skillId", (q) =>
-          q.eq("userId", user._id).eq("skillId", skillId),
+        .withIndex("by_userId_skillTargetKey", (q) =>
+          q.eq("userId", user._id).eq("skillTargetKey", key),
         )
         .unique();
 
       const ratingData = {
         userId: user._id,
-        skillId,
+        skillTargetKey: key,
+        skillTarget,
         rating: rating * 20, // 1–5 → 20–100
         confidence: 0.5,
         lastAssessedAt: now,

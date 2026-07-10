@@ -19,25 +19,25 @@ type ExerciseListItem = FunctionReturnType<
   typeof api.exercises.listExercises
 >[number];
 
-type SkillGroup = {
+type CoreSkillGroup = {
   slug: string;
   name: string;
   sortOrder: number;
   drills: ExerciseListItem[];
 };
 
-function groupBySkill(exercises: ExerciseListItem[]): SkillGroup[] {
-  const groups = new Map<string, SkillGroup>();
+function groupByCoreSkill(exercises: ExerciseListItem[]): CoreSkillGroup[] {
+  const groups = new Map<string, CoreSkillGroup>();
 
   for (const ex of exercises) {
-    const existing = groups.get(ex.primarySkillSlug);
+    const existing = groups.get(ex.coreSkillId);
     if (existing) {
       existing.drills.push(ex);
       continue;
     }
-    groups.set(ex.primarySkillSlug, {
-      slug: ex.primarySkillSlug,
-      name: ex.primarySkillName,
+    groups.set(ex.coreSkillId, {
+      slug: ex.coreSkillId,
+      name: ex.coreSkillName,
       sortOrder: ex.skillSortOrder,
       drills: [ex],
     });
@@ -48,17 +48,17 @@ function groupBySkill(exercises: ExerciseListItem[]): SkillGroup[] {
 
 export function DrillList() {
   const exercises = useQuery(api.exercises.listExercises);
-  const [selectedSkill, setSelectedSkill] = useState<string>("all");
+  const [selectedCoreSkill, setSelectedCoreSkill] = useState<string>("all");
 
   const skillGroups = useMemo(
-    () => (exercises ? groupBySkill(exercises) : []),
+    () => (exercises ? groupByCoreSkill(exercises) : []),
     [exercises],
   );
 
   const visibleGroups = useMemo(() => {
-    if (selectedSkill === "all") return skillGroups;
-    return skillGroups.filter((g) => g.slug === selectedSkill);
-  }, [skillGroups, selectedSkill]);
+    if (selectedCoreSkill === "all") return skillGroups;
+    return skillGroups.filter((g) => g.slug === selectedCoreSkill);
+  }, [skillGroups, selectedCoreSkill]);
 
   if (exercises === undefined) {
     return (
@@ -77,14 +77,14 @@ export function DrillList() {
     return (
       <div className="rounded-lg border border-border bg-card px-6 py-10 text-center">
         <p className="font-mono text-sm text-muted-foreground">
-          No exercises seeded yet.
+          No exercises in this deployment yet.
         </p>
         <p className="mt-2 font-mono text-xs text-muted-foreground/60">
-          Run{" "}
+          Author drills in the admin generator (dev), then run{" "}
           <code className="rounded bg-muted px-1 py-0.5">
-            npx convex run exercises:seedExercises
+            pnpm migrate:exercises
           </code>{" "}
-          to seed exercises.
+          to promote to production.
         </p>
       </div>
     );
@@ -95,14 +95,14 @@ export function DrillList() {
       <div
         className="flex flex-wrap gap-2"
         role="group"
-        aria-label="Filter drills by skill"
+        aria-label="Filter drills by core skill"
       >
         <button
           type="button"
-          aria-pressed={selectedSkill === "all"}
-          onClick={() => setSelectedSkill("all")}
+          aria-pressed={selectedCoreSkill === "all"}
+          onClick={() => setSelectedCoreSkill("all")}
           className={`font-mono text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-md border transition-colors ${
-            selectedSkill === "all"
+            selectedCoreSkill === "all"
               ? "border-foreground bg-foreground text-background"
               : "border-border bg-card text-muted-foreground hover:border-border/60 hover:text-foreground"
           }`}
@@ -113,10 +113,10 @@ export function DrillList() {
           <button
             key={group.slug}
             type="button"
-            aria-pressed={selectedSkill === group.slug}
-            onClick={() => setSelectedSkill(group.slug)}
+            aria-pressed={selectedCoreSkill === group.slug}
+            onClick={() => setSelectedCoreSkill(group.slug)}
             className={`font-mono text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-md border transition-colors ${
-              selectedSkill === group.slug
+              selectedCoreSkill === group.slug
                 ? "border-foreground bg-foreground text-background"
                 : "border-border bg-card text-muted-foreground hover:border-border/60 hover:text-foreground"
             }`}
@@ -158,8 +158,13 @@ export function DrillList() {
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
-                    {ex.primarySkillName.toUpperCase()}
+                    {ex.coreSkillName.toUpperCase()}
                   </span>
+                  {ex.subSkillNames.length > 0 && (
+                    <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
+                      {ex.subSkillNames.join(", ").toUpperCase()}
+                    </span>
+                  )}
                   <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
                     DIFFICULTY {ex.difficultyLevel}/10
                   </span>

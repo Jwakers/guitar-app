@@ -15,7 +15,7 @@ Do **not** treat simple adjacent string changes as string skipping.
 | 1→2, 2→3, 3→4, 4→5, 5→6 (and reverse) | **String crossing** |
 | 1→3, 2→4, 3→5, 1→4, 2→6, etc. | **String skipping** |
 
-If every string change in the pattern is adjacent, the drill belongs under string crossing (often with alternate picking as a secondary skill), not string skipping.
+If every string change in the pattern is adjacent, the drill belongs under the `string_crossing` sub-skill, not `string_skipping`.
 
 ## Why It Matters
 

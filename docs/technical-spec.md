@@ -95,7 +95,7 @@ Recommended route structure:
     today/page.tsx
     train/[sessionId]/page.tsx
     progress/page.tsx
-    progress/skills/[skillId]/page.tsx
+    progress/targets/[skillTarget]/page.tsx
     training/page.tsx
     exercises/page.tsx
     exercises/[exerciseId]/page.tsx
@@ -171,7 +171,8 @@ userId
 experienceLevel // intermediate for MVP
 guitarType // electric only for MVP
 primaryGoals[]
-focusSkills[]
+focusCoreSkillIds[]
+focusSubSkillIds[]
 availableDays[]
 defaultSessionLengthMinutes
 preferredIntensity
@@ -182,48 +183,73 @@ updatedAt
 
 ---
 
-### Skill
+### Skill Taxonomy
 
-A skill is a trainable guitar capability.
-
-Initial MVP skills:
+The canonical taxonomy is:
 
 ```txt
-alternate_picking
-fretting_accuracy
-synchronisation
-rhythm
-string_crossing
-string_skipping
-legato
-bends
-vibrato
-muting
-chord_changes
-endurance
-speed
+Core Skill Area
+  -> Sub-skill
+    -> Drill
 ```
 
-Each skill has:
+Training attributes are layered on top of a core skill or sub-skill. They are not standalone skills.
 
 ```ts
-skillId
-name
-description
-category
-isMvp
-sortOrder
+type CoreSkill =
+  | "picking"
+  | "fretting_control"
+  | "synchronisation"
+  | "rhythm_timing"
+  | "muting_noise_control"
+  | "lead_articulation"
+  | "chord_changes";
+
+type SubSkill =
+  | "alternate_picking"
+  | "string_crossing"
+  | "string_skipping"
+  | "finger_independence"
+  | "fretting_accuracy"
+  | "position_shifting"
+  | "legato"
+  | "bends"
+  | "vibrato"
+  | "slides"
+  | "palm_muting"
+  | "fret_hand_muting"
+  | "subdivision_control"
+  | "accent_control";
+
+type TrainingAttribute =
+  | "speed"
+  | "endurance"
+  | "accuracy"
+  | "control"
+  | "consistency";
 ```
+
+Examples:
+
+```txt
+Picking + Speed
+Lead Articulation + Control
+Rhythm & Timing + Consistency
+Chord Changes + Endurance
+Muting & Noise Control + Accuracy
+```
+
+`speed` and `endurance` must never be classified as skills. Techniques such as `bends`, `vibrato`, and `legato` are sub-skills under `lead_articulation`, not top-level categories.
 
 ---
 
 ### User Skill Rating
 
-Stores a user's current rating per skill.
+Stores a user's current rating per core skill or sub-skill target.
 
 ```ts
 userId
-skillId
+skillTarget // { kind: "core" | "sub"; id: CoreSkill | SubSkill }
 rating // 0-100
 confidence // 0-1
 lastAssessedAt
@@ -247,8 +273,9 @@ title
 slug
 description
 purpose
-primarySkillId
-secondarySkillIds[]
+coreSkillId
+subSkillIds[]
+trainingAttributes[]
 targetWeaknesses[]
 difficultyLevel // 1-10
 exerciseType // warmup | primary | secondary | accessory | isolation | test
@@ -258,6 +285,8 @@ defaultTargetBpm
 minimumCleanStandard
 measurementInstructions
 tabData // structured TabData — see Tab Rendering & Exercise Quality Architecture
+patternType // micro_drill | standard_loop | musical_sequence | benchmark
+microDrillJustification
 successCriteria[]
 commonMistakes[]
 coachingNotes[]
@@ -305,7 +334,7 @@ Fields:
 
 ```ts
 progressionId
-skillId
+skillTarget
 title
 description
 exerciseIds[]
@@ -326,8 +355,10 @@ startDate
 endDate
 durationWeeks
 primaryGoal
-focusSkillIds[]
-supportSkillIds[]
+focusCoreSkillIds[]
+focusSubSkillIds[]
+supportCoreSkillIds[]
+supportSubSkillIds[]
 status // active | completed | abandoned
 currentWeek
 intensity
@@ -340,8 +371,8 @@ Block types:
 ```txt
 foundation
 precision
-speed
-rhythm
+speed // training emphasis, not a skill
+rhythm_timing
 lead_technique
 maintenance
 weakness_focus
@@ -486,8 +517,8 @@ practiceDays
 totalMinutes
 sessionsCompleted
 exercisesCompleted
-mostImprovedSkillId
-weakestSkillId
+mostImprovedSkillTarget
+weakestSkillTarget
 personalBestCount
 achievementsUnlocked[]
 consistencyPercent
@@ -509,14 +540,14 @@ Examples:
 users.by_authProviderId
 userProfiles.by_userId
 userSkillRatings.by_userId
-userSkillRatings.by_userId_skillId
+userSkillRatings.by_userId_skillTargetKey
 trainingBlocks.by_userId_status
 weeklyPlans.by_userId_startDate
 practiceSessions.by_userId_date
 practiceSessions.by_userId_status
 exerciseLogs.by_userId_date
 exerciseLogs.by_userId_exerciseId
-exerciseLogs.by_userId_skillId
+exerciseLogs.by_userId_coreSkillId
 achievements.by_triggerType
 userAchievements.by_userId
 monthlyReviews.by_userId_month
@@ -1091,8 +1122,10 @@ Every exercise added to the app must define the following fields. An exercise th
 
 ```txt
 Purpose               — What is the training goal of this exercise?
-Primary skill         — Which single skill does this primarily develop?
-Secondary skills      — Which supporting skills does it touch?
+Core skill            — Which broad trainable area does this drill develop?
+Sub-skills            — Which specific techniques does it train?
+Training attributes   — Which modifiers apply (speed, endurance, accuracy,
+                        control, consistency)?
 Target weakness       — What specific weakness or gap does it address?
 Success criteria      — What does successful execution look like?
 Common mistakes       — What errors do players typically make on this exercise?
@@ -1121,8 +1154,9 @@ type Exercise = {
   slug: string;
   description: string;
   purpose: string;
-  primarySkillId: SkillId;
-  secondarySkillIds: SkillId[];
+  coreSkillId: CoreSkill;
+  subSkillIds: SubSkill[];
+  trainingAttributes: TrainingAttribute[];
   targetWeaknesses: string[];
   difficultyLevel: number; // 1-10
   exerciseType: "warmup" | "primary" | "secondary" | "accessory" | "isolation" | "test";
@@ -1145,6 +1179,8 @@ type Exercise = {
   progressionRule: string;
   regressionRule: string;
   tabData: TabData;
+  patternType: "micro_drill" | "standard_loop" | "musical_sequence" | "benchmark";
+  microDrillJustification?: string;
   feedbackSchema: FeedbackQuestion[];
   estimatedMinutes: number;
   isMvp: boolean;
@@ -1157,7 +1193,7 @@ type Exercise = {
 };
 ```
 
-The `tabData` field replaces the previous `tab.notation: string` field. The Convex `exercises` table must be migrated accordingly before exercise seed data is written. See the schema migration note at the end of this section.
+The `tabData` field is the canonical internal representation. Exercise data should not be authored as renderer-specific notation.
 
 ---
 
@@ -1166,7 +1202,12 @@ The `tabData` field replaces the previous `tab.notation: string` field. The Conv
 The following rules must be enforced at seed time and at any future write path that creates or updates an exercise. Implement these in `/lib/exercises/validate-exercise.ts`.
 
 * Exercises cannot be saved without a `purpose`.
-* Exercises cannot be saved without a `primarySkillId`.
+* Exercises cannot be saved without a valid `coreSkillId`.
+* Exercises cannot claim obsolete top-level skills such as `alternate_picking`, `string_crossing`, `legato`, `bends`, or `vibrato` as core skills.
+* Exercises cannot classify `speed` or `endurance` as skills; they are training attributes only.
+* Exercises must include `trainingAttributes`.
+* Exercises must include at least one `subSkillId` where the core skill has relevant sub-skills.
+* Sub-skills must belong to the declared `coreSkillId`.
 * Exercises cannot be saved without at least one entry in `successCriteria`.
 * Exercises cannot be saved without at least one entry in `commonMistakes`.
 * Exercises cannot be saved without a `progressionRule`.
@@ -1174,6 +1215,8 @@ The following rules must be enforced at seed time and at any future write path t
 * Exercises cannot be saved without a `primaryProgressMetric`.
 * Exercises cannot be saved without a valid, fully structured `tabData` object.
 * `tabData` must be validated against the `TabData` schema (tuning length, fret range, string range, beat duration values).
+* Tiny isolated patterns must declare `patternType: "micro_drill"` and include `microDrillJustification`.
+* Lead articulation drills using bends, vibrato, or legato should use musical context unless they are explicit micro-drills or benchmarks.
 * Exercises where `supportsBpm` is `true` must include a `defaultTargetBpm`.
 * Exercises where `supportsBpm` is `false` must include `measurementInstructions` describing exactly how performance is quantified.
 
@@ -1233,20 +1276,25 @@ The following folders and files define the implementation boundary for tab and e
   render-config.ts        — Rendering configuration and display options
 
 /lib/exercises
-  exercise-schema.ts      — Exercise type definition and SkillId union
+  exercise-schema.ts      — Exercise type definition
   validate-exercise.ts    — Enforces exercise quality contract rules
   quality-contract.ts     — ExerciseQualityContract type and checklist helpers
+
+/lib/skills
+  taxonomy.ts             — Core Skill -> Sub-skill taxonomy and training attributes
   progression-paths.ts    — Progression path definitions linking exercise sequences
 
-/seed/exercises
-  alternate-picking.ts
-  rhythm.ts
-  bends.ts
-  vibrato.ts
-  muting.ts
+/convex/lib
+  upsertExercise.ts       — Idempotent slug+version upsert helper
+  exerciseValidators.ts   — Shared Convex validators for exercise payloads
+
+/scripts
+  migrate-exercises.ts    — Dev → prod migration CLI
 ```
 
-Each file in `/seed/exercises` exports an array of `Exercise` objects that are validated against the full quality contract before being inserted into Convex.
+Exercises are authored in the **dev** Convex deployment (drill generator), validated against the quality contract, then promoted to **production** via `pnpm migrate:exercises`. See [`docs/exercise-migration.md`](exercise-migration.md).
+
+Runtime exercise data lives in Convex, versioned using `slug` + `version` as stable cross-environment identifiers.
 
 ---
 
@@ -1742,8 +1790,8 @@ Before selecting exercises, the engine must determine the purpose of the session
 
 ```ts
 type SessionPurpose = {
-  primaryFocusSkillId: SkillId;
-  secondaryFocusSkillIds: SkillId[];
+  primaryFocus: SkillTarget;
+  secondaryFocuses: SkillTarget[];
   sessionType: "standard" | "light" | "test" | "deload" | "maintenance";
   intensity: "low" | "moderate" | "high";
   estimatedMinutes: number;
@@ -1811,7 +1859,8 @@ type SessionSlot = {
     | "isolation"
     | "test"
     | "maintenance";
-  targetSkillIds: SkillId[];
+  targetCoreSkillIds: CoreSkill[];
+  targetSubSkillIds: SubSkill[];
   minDifficulty: number;
   maxDifficulty: number;
   estimatedMinutes: number;
@@ -2022,7 +2071,7 @@ Minimum workload model:
 
 ```ts
 type SkillWorkload = {
-  skillId: SkillId;
+  skillTarget: SkillTarget;
   sessionsLast7Days: number;
   minutesLast7Days: number;
   highIntensitySessionsLast7Days: number;
@@ -2369,7 +2418,7 @@ AI Explanation Layer
 
 **Knowledge Documents** (`knowledge/skills/`, `knowledge/drills/`, `knowledge/whitepapers/`) define the guitar training expertise that powers the platform. They are the source of truth for training methodology.
 
-**Structured Seed Data** (`seed/exercises/`, `seed/skills.ts`) implements reviewed knowledge. Seed data must satisfy the Exercise Quality Contract and must be traceable to a knowledge document.
+**Structured Exercise Data** (Convex `exercises` table) implements reviewed knowledge. Exercise payloads must satisfy the Exercise Quality Contract and must be traceable to a knowledge document or taxonomy entry. Dev is the authoring environment; production is promoted via [`docs/exercise-migration.md`](exercise-migration.md).
 
 **Deterministic Training Engine** (`/lib/training-engine`) applies structured data to each user's state and produces training decisions. It must not contain embedded guitar expertise — that lives in knowledge documents and seed data.
 
@@ -2419,7 +2468,9 @@ type ExerciseLog = {
   userId: Id<"users">;
   sessionId: Id<"practiceSessions">;
   exerciseId: Id<"exercises">;
-  skillId: SkillId;
+  coreSkillId: CoreSkill;
+  subSkillIds: SubSkill[];
+  trainingAttributes: TrainingAttribute[];
   date: number;
 
   trainingVerdict: TrainingVerdict;
@@ -2447,7 +2498,8 @@ Derived state maintained per user per exercise. The training engine reads from t
 type UserExerciseState = {
   userId: Id<"users">;
   exerciseId: Id<"exercises">;
-  skillId: SkillId;
+  coreSkillId: CoreSkill;
+  subSkillIds: SubSkill[];
 
   currentLevel: number;
 
@@ -2632,9 +2684,8 @@ Exercises, skills, progression paths, and training block definitions are version
 
 ```ts
 version: number;
-status: "active" | "deprecated" | "archived";
-replacedByExerciseId?: Id<"exercises">;
-createdAt: number;
+status: "active" | "deprecated" | "replaced";
+replacedBySlug?: string;  // cross-env stable link (implementation uses slug, not Convex _id)
 updatedAt: number;
 ```
 
@@ -2642,7 +2693,7 @@ updatedAt: number;
 
 * Historical `ExerciseLog` records must continue to reference the exact exercise version that was active at the time of logging. Log data must not be retroactively invalidated by exercise changes.
 * Do not mutate the meaning of an existing exercise in a way that makes previous logs uninterpretable — for example, changing the primary metric, substantially rewriting the tab, or altering the progression level.
-* If a drill changes substantially, create a new exercise entry with an incremented version and set `replacedByExerciseId` on the old entry. Mark the old entry as `deprecated`.
+* If a drill changes substantially, create a new exercise entry with an incremented version and set `replacedBySlug` on the old entry. Mark the old entry as `deprecated`.
 * Minor corrections (typos, coaching note rewording, description improvements) that do not affect logging semantics are acceptable as in-place updates.
 * Skill definitions, progression paths, and training block types should follow the same principle: significant changes to meaning warrant a new version.
 

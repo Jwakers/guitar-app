@@ -43,8 +43,33 @@ const PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-/** Default bend when amount cannot be inferred: full step (4 quarter-tones). */
-const DEFAULT_BEND_QUARTER_TONES = 4;
+/** AlphaTeX bend values are quarter-tones (2 = half step, 4 = whole step). */
+function bendQuarterTones(note: TabNote, tuning: string[]): number {
+  if (!note.targetPitch?.trim()) {
+    throw new Error(
+      `Bend note on string ${note.string} fret ${note.fret} requires targetPitch`,
+    );
+  }
+  const from = frettedMidi(tuning, note.string, note.fret);
+  if (from === null) {
+    throw new Error(
+      `Cannot resolve fretted pitch for bend on string ${note.string} fret ${note.fret}`,
+    );
+  }
+  const to = targetMidiAtOrAbove(note.targetPitch, from);
+  if (to === null) {
+    throw new Error(
+      `Invalid targetPitch "${note.targetPitch}" for bend on string ${note.string} fret ${note.fret}`,
+    );
+  }
+  const semitones = to - from;
+  if (semitones <= 0) {
+    throw new Error(
+      `targetPitch "${note.targetPitch}" must be above fretted pitch for bend on string ${note.string} fret ${note.fret}`,
+    );
+  }
+  return Math.min(24, semitones * 2);
+}
 
 const TECHNIQUE_EFFECTS: Partial<
   Record<Exclude<TabNoteTechnique, "bend" | "release" | "picked">, string>
@@ -128,21 +153,6 @@ function targetMidiAtOrAbove(targetPitch: string, fromMidi: number): number | nu
   let delta = parsed.pc - fromPc;
   if (delta <= 0) delta += 12;
   return fromMidi + delta;
-}
-
-/**
- * AlphaTeX bend values are quarter-tones (2 = half step, 4 = whole step).
- * Prefer targetPitch vs fretted pitch; fall back to a full-step default.
- */
-function bendQuarterTones(note: TabNote, tuning: string[]): number {
-  if (!note.targetPitch) return DEFAULT_BEND_QUARTER_TONES;
-  const from = frettedMidi(tuning, note.string, note.fret);
-  if (from === null) return DEFAULT_BEND_QUARTER_TONES;
-  const to = targetMidiAtOrAbove(note.targetPitch, from);
-  if (to === null) return DEFAULT_BEND_QUARTER_TONES;
-  const semitones = to - from;
-  if (semitones <= 0) return DEFAULT_BEND_QUARTER_TONES;
-  return Math.min(24, semitones * 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -303,7 +313,7 @@ function barToAlphaTex(bar: TabBar, tuning: string[], flags: EmitFlags): string 
  *
  * AlphaTeX note format: {fret}.{string}{noteEffects}.{duration}{beatEffects}
  * Bend amounts use quarter-tones (2 = half step, 4 = whole step), inferred from
- * `targetPitch` when present.
+ * `targetPitch` (required for bend notes).
  *
  * `displayHints` gates optional annotations:
  * - showPicking: opt-in

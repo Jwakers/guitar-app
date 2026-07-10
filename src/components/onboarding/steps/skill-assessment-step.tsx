@@ -1,12 +1,10 @@
 import { cn } from "@/lib/utils";
-import type { Doc } from "@/convex/_generated/dataModel";
-import type { WizardData } from "../onboarding-wizard";
+import type { CoreSkillOption, WizardData } from "../onboarding-wizard";
 import { StepNav } from "./step-nav";
 
 interface SkillAssessmentStepProps {
   data: WizardData;
-  skills: Doc<"skills">[];
-  skillsLoading: boolean;
+  coreSkills: CoreSkillOption[];
   onUpdate: (updates: Partial<WizardData>) => void;
   onNext: () => void;
   onBack: () => void;
@@ -20,53 +18,21 @@ const RATING_LABELS: Record<number, string> = {
   5: "Strong",
 };
 
-const CATEGORY_ORDER = [
-  "picking",
-  "fretting",
-  "expression",
-  "rhythm",
-  "conditioning",
-];
-
 export function SkillAssessmentStep({
   data,
-  skills,
-  skillsLoading,
+  coreSkills,
   onUpdate,
   onNext,
   onBack,
 }: SkillAssessmentStepProps) {
-  function setRating(skillId: string, rating: 1 | 2 | 3 | 4 | 5) {
+  function setRating(coreSkillId: string, rating: 1 | 2 | 3 | 4 | 5) {
     onUpdate({
-      skillRatings: { ...data.skillRatings, [skillId]: rating },
+      skillRatings: { ...data.skillRatings, [`core:${coreSkillId}`]: rating },
     });
   }
 
   const ratedCount = Object.keys(data.skillRatings).length;
-  const canProceed = ratedCount === skills.length && skills.length > 0;
-
-  const skillsByCategory = skills.reduce<Record<string, Doc<"skills">[]>>(
-    (acc, skill) => {
-      if (!acc[skill.category]) acc[skill.category] = [];
-      acc[skill.category].push(skill);
-      return acc;
-    },
-    {},
-  );
-
-  const orderedCategories = CATEGORY_ORDER.filter(
-    (c) => skillsByCategory[c],
-  );
-
-  if (skillsLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
-          LOADING SKILLS...
-        </p>
-      </div>
-    );
-  }
+  const canProceed = ratedCount === coreSkills.length && coreSkills.length > 0;
 
   return (
     <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-10">
@@ -79,49 +45,40 @@ export function SkillAssessmentStep({
           any time.
         </p>
         <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
-          {ratedCount} / {skills.length} RATED
+          {ratedCount} / {coreSkills.length} RATED
         </p>
       </div>
 
       <div className="flex flex-col gap-6">
-        {orderedCategories.map((category) => (
-          <div key={category} className="flex flex-col gap-3">
-            <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground/60">
-              {category}
-            </span>
-            <div className="flex flex-col gap-3">
-              {skillsByCategory[category].map((skill) => {
-                const rating = data.skillRatings[skill._id];
-                return (
-                  <div
-                    key={skill._id}
-                    className="rounded-lg border border-border bg-card p-4"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {skill.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {skill.description}
-                        </p>
-                      </div>
-                      {rating !== undefined && (
-                        <span className="shrink-0 font-mono text-[10px] tracking-widest text-primary">
-                          {RATING_LABELS[rating]}
-                        </span>
-                      )}
-                    </div>
-                    <RatingPicker
-                      value={rating}
-                      onChange={(r) => setRating(skill._id, r)}
-                    />
-                  </div>
-                );
-              })}
+        {coreSkills.map((skill) => {
+          const rating = data.skillRatings[`core:${skill.id}`];
+          return (
+          <div
+            key={skill.id}
+            className="rounded-lg border border-border bg-card p-4"
+          >
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {skill.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {skill.description}
+                </p>
+              </div>
+              {rating !== undefined && (
+                <span className="shrink-0 font-mono text-[10px] tracking-widest text-primary">
+                  {RATING_LABELS[rating]}
+                </span>
+              )}
             </div>
+            <RatingPicker
+              value={rating}
+              onChange={(r) => setRating(skill.id, r)}
+            />
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <StepNav

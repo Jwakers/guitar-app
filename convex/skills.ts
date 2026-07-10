@@ -1,93 +1,100 @@
 import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
-import { SKILLS_SEED } from "../seed/skills";
+import { query } from "./_generated/server";
+import {
+  coreSkillValidator,
+  subSkillValidator,
+  trainingAttributeValidator,
+} from "./lib/exerciseValidators";
+import {
+  CORE_SKILL_DEFINITIONS,
+  CORE_SKILLS,
+  SUB_SKILL_DEFINITIONS,
+  SUB_SKILLS,
+  TRAINING_ATTRIBUTE_DEFINITIONS,
+  TRAINING_ATTRIBUTES,
+} from "../src/lib/skills/taxonomy";
 
-export const listSkills = query({
+export const listCoreSkills = query({
   args: {},
   returns: v.array(
     v.object({
-      _id: v.id("skills"),
-      _creationTime: v.number(),
+      id: coreSkillValidator,
       name: v.string(),
       description: v.string(),
-      category: v.string(),
-      isMvp: v.boolean(),
       sortOrder: v.number(),
     }),
   ),
-  handler: async (ctx) => {
-    const skills = await ctx.db.query("skills").collect();
-    return skills.sort((a, b) => a.sortOrder - b.sortOrder);
+  handler: async () => {
+    return CORE_SKILLS.map((id) => {
+      const skill = CORE_SKILL_DEFINITIONS[id];
+      return {
+        id,
+        name: skill.label,
+        description: skill.description,
+        sortOrder: skill.sortOrder,
+      };
+    });
   },
 });
 
-export const getSkill = query({
-  args: { skillId: v.id("skills") },
-  returns: v.union(
+export const listSubSkills = query({
+  args: { coreSkillId: v.optional(coreSkillValidator) },
+  returns: v.array(
     v.object({
-      _id: v.id("skills"),
-      _creationTime: v.number(),
+      id: subSkillValidator,
+      coreSkillId: coreSkillValidator,
       name: v.string(),
       description: v.string(),
-      category: v.string(),
-      isMvp: v.boolean(),
       sortOrder: v.number(),
     }),
-    v.null(),
   ),
-  handler: async (ctx, args) => {
-    return await ctx.db.get("skills", args.skillId);
+  handler: async (_ctx, args) => {
+    return SUB_SKILLS.map((id) => {
+      const skill = SUB_SKILL_DEFINITIONS[id];
+      return {
+        id,
+        coreSkillId: skill.coreSkillId,
+        name: skill.label,
+        description: skill.description,
+        sortOrder: skill.sortOrder,
+      };
+    })
+      .filter((skill) =>
+        args.coreSkillId === undefined
+          ? true
+          : skill.coreSkillId === args.coreSkillId,
+      )
+      .sort((a, b) => {
+        if (a.coreSkillId !== b.coreSkillId) {
+          return (
+            CORE_SKILL_DEFINITIONS[a.coreSkillId].sortOrder -
+            CORE_SKILL_DEFINITIONS[b.coreSkillId].sortOrder
+          );
+        }
+        return a.sortOrder - b.sortOrder;
+      });
   },
 });
 
-/**
- * Seed / refresh the skills table from SKILLS_SEED.
- * Idempotent — inserts missing skills; patches description/category/flags for
- * existing rows matched by name so taxonomy copy can evolve.
- * Run via: npx convex run skills:seedSkills
- */
-export const seedSkills = internalMutation({
+export const listTrainingAttributes = query({
   args: {},
-  returns: v.object({
-    inserted: v.number(),
-    updated: v.number(),
-    skipped: v.number(),
-  }),
-  handler: async (ctx) => {
-    const existing = await ctx.db.query("skills").collect();
-    const byName = new Map(existing.map((s) => [s.name, s]));
-
-    let inserted = 0;
-    let updated = 0;
-    let skipped = 0;
-
-    for (const skill of SKILLS_SEED) {
-      const row = byName.get(skill.name);
-      if (!row) {
-        await ctx.db.insert("skills", skill);
-        inserted++;
-        continue;
-      }
-
-      const unchanged =
-        row.description === skill.description &&
-        row.category === skill.category &&
-        row.isMvp === skill.isMvp &&
-        row.sortOrder === skill.sortOrder;
-
-      if (unchanged) {
-        skipped++;
-      } else {
-        await ctx.db.patch(row._id, {
-          description: skill.description,
-          category: skill.category,
-          isMvp: skill.isMvp,
-          sortOrder: skill.sortOrder,
-        });
-        updated++;
-      }
-    }
-
-    return { inserted, updated, skipped };
+  returns: v.array(
+    v.object({
+      id: trainingAttributeValidator,
+      name: v.string(),
+      description: v.string(),
+      sortOrder: v.number(),
+    }),
+  ),
+  handler: async () => {
+    return TRAINING_ATTRIBUTES.map((id) => {
+      const attribute = TRAINING_ATTRIBUTE_DEFINITIONS[id];
+      return {
+        id,
+        name: attribute.label,
+        description: attribute.description,
+        sortOrder: attribute.sortOrder,
+      };
+    });
   },
 });

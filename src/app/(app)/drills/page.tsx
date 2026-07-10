@@ -12,7 +12,7 @@ export default function DrillsPage() {
           DRILLS
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Browse by skill. Each drill opens at its own URL.
+          Browse by core skill. Each drill opens at its own URL.
         </p>
       </div>
       <DrillList />

@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  CORE_SKILLS,
+  SUB_SKILLS,
+  TRAINING_ATTRIBUTES,
+} from "@/lib/skills/taxonomy";
+import { PATTERN_TYPES } from "@/lib/exercises/exercise-schema";
 
 const tabNoteSchema = z.object({
   string: z.union([
@@ -92,6 +98,11 @@ const feedbackQuestionSchema = z.object({
     .optional(),
 });
 
+const coreSkillSchema = z.enum(CORE_SKILLS);
+const subSkillSchema = z.enum(SUB_SKILLS);
+const trainingAttributeSchema = z.enum(TRAINING_ATTRIBUTES);
+const patternTypeZodSchema = z.enum(PATTERN_TYPES);
+
 export const exerciseSeedZodSchema = z.object({
   title: z.string().min(1),
   slug: z
@@ -104,8 +115,9 @@ export const exerciseSeedZodSchema = z.object({
   minimumCleanStandard: z.string().min(1),
   measurementInstructions: z.string().min(1),
   coachingNotes: z.array(z.string().min(1)).min(1),
-  primarySkillId: z.string().min(1),
-  secondarySkillIds: z.array(z.string()),
+  coreSkillId: coreSkillSchema,
+  subSkillIds: z.array(subSkillSchema),
+  trainingAttributes: z.array(trainingAttributeSchema).min(1),
   difficultyLevel: z.number().int().min(1).max(10),
   exerciseType: z.enum([
     "warmup",
@@ -132,6 +144,8 @@ export const exerciseSeedZodSchema = z.object({
   progressionRule: z.string().min(1),
   regressionRule: z.string().min(1),
   tabData: tabDataSchema,
+  patternType: patternTypeZodSchema,
+  microDrillJustification: z.string().min(1).nullable().optional(),
   feedbackSchema: z.array(feedbackQuestionSchema).min(1),
   estimatedMinutes: z.number().positive(),
   isMvp: z.boolean(),
@@ -150,18 +164,11 @@ export const qualityScoreZodSchema = z.object({
   total: z.number().int().min(0).max(30),
 });
 
-export const patternTypeZodSchema = z.enum([
-  "micro_drill",
-  "standard_loop",
-  "musical_sequence",
-  "benchmark",
-]);
-
 export const drillGeneratorOutputSchema = z.object({
   exercise: exerciseSeedZodSchema,
   briefMarkdown: z.string().min(1),
   qualityScore: qualityScoreZodSchema,
-  patternType: patternTypeZodSchema,
+  patternType: patternTypeZodSchema.optional(),
   redFlags: z.array(z.string()),
   missingFields: z.array(z.string()),
   reviewerChecklist: z.array(z.string()).min(1),
@@ -223,8 +230,9 @@ export function normalizeExerciseSeed(
     minimumCleanStandard: raw.minimumCleanStandard,
     measurementInstructions: raw.measurementInstructions,
     coachingNotes: raw.coachingNotes,
-    primarySkillId: raw.primarySkillId,
-    secondarySkillIds: raw.secondarySkillIds,
+    coreSkillId: raw.coreSkillId,
+    subSkillIds: raw.subSkillIds,
+    trainingAttributes: raw.trainingAttributes,
     difficultyLevel: raw.difficultyLevel,
     exerciseType: raw.exerciseType,
     primaryProgressMetric: raw.primaryProgressMetric,
@@ -248,6 +256,10 @@ export function normalizeExerciseSeed(
         ? { displayHints: cleanedHints }
         : {}),
     },
+    patternType: raw.patternType,
+    ...(raw.microDrillJustification != null
+      ? { microDrillJustification: raw.microDrillJustification }
+      : {}),
     feedbackSchema: raw.feedbackSchema.map((q) => ({
       id: q.id,
       label: q.label,
