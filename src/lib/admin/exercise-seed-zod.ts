@@ -20,18 +20,12 @@ const tabNoteSchema = z.object({
     .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)])
     .nullable()
     .optional(),
+  articulationFromPrevious: z
+    .enum(["picked", "hammer_on", "pull_off", "slide"])
+    .nullable()
+    .optional(),
   technique: z
-    .enum([
-      "picked",
-      "hammer_on",
-      "pull_off",
-      "slide",
-      "bend",
-      "release",
-      "vibrato",
-      "mute",
-      "harmonic",
-    ])
+    .enum(["bend", "release", "vibrato", "mute", "harmonic"])
     .nullable()
     .optional(),
   targetPitch: z.string().nullable().optional(),
@@ -190,6 +184,9 @@ export function normalizeExerciseSeed(
       string: n.string,
       fret: n.fret,
       ...(n.finger != null ? { finger: n.finger } : {}),
+      ...(n.articulationFromPrevious != null
+        ? { articulationFromPrevious: n.articulationFromPrevious }
+        : {}),
       ...(n.technique != null ? { technique: n.technique } : {}),
       ...(n.targetPitch != null ? { targetPitch: n.targetPitch } : {}),
     })),

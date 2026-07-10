@@ -81,12 +81,16 @@ export const tabDataValidator = v.object({
               finger: v.optional(
                 v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
               ),
-              technique: v.optional(
+              articulationFromPrevious: v.optional(
                 v.union(
                   v.literal("picked"),
                   v.literal("hammer_on"),
                   v.literal("pull_off"),
                   v.literal("slide"),
+                ),
+              ),
+              technique: v.optional(
+                v.union(
                   v.literal("bend"),
                   v.literal("release"),
                   v.literal("vibrato"),

@@ -660,16 +660,87 @@ Examples:
 
 #### Bends, target pitch, and fingering
 
-Bend notes must set `technique: "bend"` and a correct `targetPitch` (octave-qualified preferred, e.g. `"G4"`).
+Bend notes must set `technique: "bend"` and a correct octave-qualified `targetPitch` (e.g. `"G4"`).
 
-The AlphaTab adapter infers bend amount from fretted pitch → `targetPitch` and emits AlphaTeX quarter-tones:
+**MVP rule: only half-step and whole-step bends are valid.** The interval from fretted pitch to `targetPitch` must be exactly **1 semitone** (half step) or **2 semitones** (whole step). All other intervals are rejected at validation.
 
-- `2` = half step (renders as `1/2`)
-- `4` = whole step (renders as `full`)
+| Semitones | Quarter-tones | AlphaTeX render | Name |
+| --- | --- | --- | --- |
+| 1 | 2 | `1/2` | Half step |
+| 2 | 4 | `full` | Whole step |
+
+The AlphaTab adapter infers bend amount from fretted pitch → `targetPitch` and emits AlphaTeX quarter-tones. Do not emit arbitrary `targetPitch` values — compute the interval from the fretted note.
+
+**Good examples** (standard tuning, B string fret 7 = F#4):
+
+```json
+{ "string": 2, "fret": 7, "technique": "bend", "targetPitch": "G4" }
+{ "string": 2, "fret": 7, "technique": "bend", "targetPitch": "G#4" }
+```
+
+**Bad examples** (reject):
+
+```json
+{ "string": 2, "fret": 7, "technique": "bend", "targetPitch": "A4" }
+{ "string": 2, "fret": 7, "technique": "bend", "targetPitch": "G6" }
+```
+
+Common generator failure: wrong octave on `targetPitch` creating absurd multi-semitone bends.
+
+Hard rejection message:
+
+```txt
+targetPitch: bend must be exactly half step (1 semitone) or whole step (2 semitones), got N semitones
+```
+
+```txt
+Invalid bend: only half-step and whole-step bends are supported.
+```
 
 Bend notes without a valid `targetPitch` fail tab validation and must not be rendered — the adapter throws rather than defaulting to a whole step.
 
 Do not rely on tab fingering glyphs. The AlphaTab adapter never emits left-hand fingering (`lf`), even when `note.finger` or `displayHints.showFingering` is set — finger numbers collide with bend tip labels and are too prescriptive. Put finger guidance in coaching notes or the description instead. Optional `note.finger` may still be stored for future use, but it is not rendered.
+
+#### Legato articulation (hammer-on, pull-off, slide)
+
+Legato techniques connect notes on the **same string**. Use `articulationFromPrevious` on the destination note — not `technique`.
+
+| Articulation | Valid when |
+| --- | --- |
+| `hammer_on` | Previous note on same string; current fret > previous fret; current fret > 0 |
+| `pull_off` | Previous note on same string; current fret < previous fret; previous fret > 0 (open destination OK) |
+| `slide` | Previous note on same string; frets differ |
+
+**Reject** cross-string hammer-ons and pull-offs. String changes are picked unless another explicitly supported technique applies (none for MVP).
+
+```txt
+Valid:   e|--5h7--|     (same string, ascending)
+Invalid: e|--5-- B|----7h--|   (cross-string hammer-on)
+```
+
+Hard rejection message:
+
+```txt
+Invalid legato: hammer-on or pull-off connects notes on different strings.
+```
+
+A hammer-on is not merely “a note after another note”. A pull-off is not merely “a descending phrase”. Legato markings must correspond to physically valid same-string movement.
+
+Hammer-ons from nowhere are advanced and out of scope for MVP. If introduced later, use a separate explicit value (`hammer_on_from_nowhere`) with its own validation — do not silently interpret cross-string hammer-ons as hammer-ons from nowhere.
+
+**AlphaTab adapter rule:** emit `h` / `sl` only when internal legato validation has passed. Never infer legato from proximity.
+
+Example tab JSON:
+
+```json
+{
+  "string": 1,
+  "fret": 7,
+  "articulationFromPrevious": "hammer_on"
+}
+```
+
+Note-local effects (`bend`, `vibrato`, `mute`, etc.) remain on `technique`.
 
 ### 3. Training-Value Validation
 

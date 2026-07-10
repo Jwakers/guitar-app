@@ -131,6 +131,7 @@ TabData:
 - For triplets use duration + tuplet: 3 (e.g. duration "eighth", tuplet 3)
 - loopStartBar / loopEndBar are 0-based bar indexes within bars.length
 - Prefer 2–4 bars for MVP drills; keep patterns clear and playable
+- Bends: technique "bend" + octave-qualified targetPitch; ONLY half-step (1 semitone) or whole-step (2 semitones) — see Bend guidance below
 
 Quality scoring:
 - Score each of the 6 categories 0–5; total must equal the sum
@@ -166,6 +167,28 @@ Noise control is assessed inside meaningful musical or technical context, not as
 
 Good: alternate picking across strings where unused strings may ring; rhythm riffs with palm muting and rests; chord changes with clean releases.
 Bad: repeated 0-0-0-0 open-string picking with no rhythm, accent, or palm-muting purpose; drills where the only instruction is "keep it clean".
+`.trim();
+
+const BEND_GUIDANCE = `
+## Bends (lead articulation — strict MVP rules)
+
+Only **half-step** and **whole-step** bends are supported. No minor thirds, perfect fourths, or multi-semitone bends.
+
+- Set technique: "bend" and octave-qualified targetPitch (e.g. "G4" — never bare "G")
+- Compute interval from fretted pitch → targetPitch; do not guess arbitrary pitch names
+- If unsure, pick the nearest half or whole step **above** the fretted note
+
+Examples (standard tuning):
+- B string fret 7 = F#4 → targetPitch "G4" (half step), "G#4" (whole step)
+- G string fret 5 = C4 → targetPitch "C#4" (half step), "D4" (whole step)
+
+Invalid (will fail validation):
+- Minor 3rd: F#4 → A4
+- Wrong octave: F#4 → G6 (absurd interval)
+- Any targetPitch more than 2 semitones above the fretted note
+
+Hard rejection:
+Invalid bend: only half-step and whole-step bends are supported.
 `.trim();
 
 function formatSkillDocSection(label: string, slug: SubSkill): string {
@@ -327,10 +350,16 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     "- refinePrompt: a ready-to-use continuation prompt if the reviewer wants to iterate further",
     "",
     "Tab patterns MUST obey sub-skill boundaries (e.g. string_crossing = adjacent only; string_skipping = must include non-adjacent jumps).",
+    "Legato (hammer-on, pull-off, slide): use articulationFromPrevious on the destination note — NOT technique. Legato only connects notes on the SAME string. String changes are picked. Reject cross-string hammer-ons/pull-offs.",
+    "Invalid legato: hammer-on or pull-off connects notes on different strings.",
+    "Valid legato example: e|--5h7p5--| on one string. Invalid: marking hammer_on on a note after a note on a different string.",
+    "Bends must pass half/whole-step validation: compute targetPitch from fretted note — only 1 or 2 semitones above. Invalid bend: only half-step and whole-step bends are supported.",
     "Prefer complete 1–2 bar loops (8–16+ notes for picking/sync) over tiny fragments unless patternType is micro_drill with a clear isolation justification.",
     "Do not create full drills for techniques that are only useful in isolation. For lead articulation, prefer musical-context phrases such as pentatonic phrase → bend → hold → vibrato, or legato fragment → target note → controlled vibrato.",
     "",
     NOISE_CONTROL_GUIDANCE,
+    "",
+    BEND_GUIDANCE,
   );
 
   return { system, prompt: parts.join("\n") };

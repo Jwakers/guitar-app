@@ -1,0 +1,101 @@
+{
+  "title": "Legato Hammer-Pull Loop",
+  "slug": "legato-hammer-pull-loop",
+  "description": "Same-string 5h7p5 hammer-pull fragment in musical context.",
+  "purpose": "Train even hammer-ons and pull-offs on one string.",
+  "targetWeaknesses": ["Uneven legato volume", "Weak pull-offs"],
+  "minimumCleanStandard": "All hammered and pulled notes are clean and evenly timed.",
+  "measurementInstructions": "Log the highest clean BPM.",
+  "coachingNotes": ["Keep fingers close to the fretboard after pull-offs."],
+  "coreSkillId": "lead_articulation",
+  "subSkillIds": ["legato"],
+  "trainingAttributes": ["speed", "control"],
+  "difficultyLevel": 3,
+  "exerciseType": "primary",
+  "primaryProgressMetric": "clean_bpm",
+  "supportsBpm": true,
+  "defaultTargetBpm": 80,
+  "successCriteria": ["Hammer-ons and pull-offs stay even in volume."],
+  "commonMistakes": ["Pull-offs dying out", "Hammer-ons that buzz"],
+  "progressionRule": "Increase by 5 BPM after three clean sessions.",
+  "regressionRule": "Reduce by 5 BPM after two needs-work sessions.",
+  "patternType": "standard_loop",
+  "tabData": {
+    "tuning": ["E", "A", "D", "G", "B", "E"],
+    "tempo": 80,
+    "timeSignature": { "beats": 4, "beatValue": 4 },
+    "bars": [
+      {
+        "beats": [
+          { "duration": "eighth", "notes": [{ "string": 1, "fret": 5 }] },
+          {
+            "duration": "eighth",
+            "notes": [
+              {
+                "string": 1,
+                "fret": 7,
+                "articulationFromPrevious": "hammer_on"
+              }
+            ]
+          },
+          {
+            "duration": "eighth",
+            "notes": [
+              {
+                "string": 1,
+                "fret": 5,
+                "articulationFromPrevious": "pull_off"
+              }
+            ]
+          },
+          { "duration": "eighth", "notes": [{ "string": 1, "fret": 5 }] },
+          {
+            "duration": "eighth",
+            "notes": [
+              {
+                "string": 1,
+                "fret": 8,
+                "articulationFromPrevious": "hammer_on"
+              }
+            ]
+          },
+          {
+            "duration": "eighth",
+            "notes": [
+              {
+                "string": 1,
+                "fret": 5,
+                "articulationFromPrevious": "pull_off"
+              }
+            ]
+          },
+          { "duration": "eighth", "notes": [{ "string": 2, "fret": 8 }] },
+          { "duration": "eighth", "notes": [{ "string": 2, "fret": 8 }] }
+        ]
+      }
+    ]
+  },
+  "feedbackSchema": [
+    {
+      "id": "actual_bpm",
+      "label": "Clean BPM",
+      "type": "number",
+      "required": true
+    },
+    {
+      "id": "training_verdict",
+      "label": "Training Verdict",
+      "type": "segmented",
+      "required": true,
+      "options": [
+        { "id": "nailed_it", "label": "Nailed It" },
+        { "id": "nearly_there", "label": "Nearly There" },
+        { "id": "needs_work", "label": "Needs Work" }
+      ]
+    }
+  ],
+  "estimatedMinutes": 5,
+  "isMvp": true,
+  "version": 1,
+  "status": "active"
+}

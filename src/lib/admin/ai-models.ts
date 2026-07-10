@@ -5,7 +5,7 @@ import type { GatewayModelId } from "ai";
  * Change this constant to switch models — `GatewayModelId` gives autocomplete.
  */
 export const DEFAULT_DRILL_GENERATOR_MODEL =
-  "anthropic/claude-sonnet-4.5" satisfies GatewayModelId;
+  "anthropic/claude-opus-4.8" satisfies GatewayModelId;
 
 export type DrillGeneratorModel = GatewayModelId;
 

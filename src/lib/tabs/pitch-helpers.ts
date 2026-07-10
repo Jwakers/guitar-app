@@ -24,8 +24,17 @@ const PITCH_CLASS: Record<string, number> = {
   B: 11,
 };
 
-/** AlphaTeX maximum bend in quarter-tones (12 semitones). */
-export const MAX_BEND_QUARTER_TONES = 24;
+/** MVP drills: only half-step (2 qt) and whole-step (4 qt) bends. */
+export const ALLOWED_BEND_SEMITONES = [1, 2] as const;
+export const ALLOWED_BEND_QUARTER_TONES = [2, 4] as const;
+
+export function bendSemitones(fromMidi: number, toMidi: number): number {
+  return toMidi - fromMidi;
+}
+
+export function isAllowedBendSemitones(semitones: number): boolean {
+  return (ALLOWED_BEND_SEMITONES as readonly number[]).includes(semitones);
+}
 
 export function parsePitchToken(
   raw: string,
@@ -124,10 +133,10 @@ export function validateBendTargetPitch(
     );
   }
 
-  const quarterTones = (to - from) * 2;
-  if (quarterTones > MAX_BEND_QUARTER_TONES) {
+  const semitones = to - from;
+  if (!isAllowedBendSemitones(semitones)) {
     throw new Error(
-      `${path}.targetPitch: bend of ${(to - from)} semitones exceeds maximum supported bend of ${MAX_BEND_QUARTER_TONES / 2} semitones`,
+      `${path}.targetPitch: bend must be exactly half step (1 semitone) or whole step (2 semitones), got ${semitones} semitones`,
     );
   }
 }

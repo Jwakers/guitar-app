@@ -96,7 +96,7 @@ describe("tabDataToAlphaTex", () => {
     ).toThrow(/targetPitch/);
   });
 
-  it("throws when bend targetPitch exceeds supported range", () => {
+  it("throws when bend targetPitch is not half or whole step", () => {
     expect(() =>
       tabDataToAlphaTex(
         baseTab({
@@ -110,7 +110,7 @@ describe("tabDataToAlphaTex", () => {
                       string: 2,
                       fret: 7,
                       technique: "bend",
-                      targetPitch: "G6",
+                      targetPitch: "A4",
                     },
                   ],
                 },
@@ -119,7 +119,7 @@ describe("tabDataToAlphaTex", () => {
           ],
         }),
       ),
-    ).toThrow(/exceeds maximum supported bend/);
+    ).toThrow(/half step \(1 semitone\) or whole step \(2 semitones\)/);
   });
 
   it("infers half-step bend amount from targetPitch", () => {
@@ -173,6 +173,90 @@ describe("tabDataToAlphaTex", () => {
     expect(tex).toContain("7.2{b (0 4)}.4");
   });
 
+  it("emits hammer-on from articulationFromPrevious on same string", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              {
+                duration: "eighth",
+                notes: [{ string: 1, fret: 5, finger: 1 }],
+              },
+              {
+                duration: "eighth",
+                notes: [
+                  {
+                    string: 1,
+                    fret: 7,
+                    finger: 1,
+                    articulationFromPrevious: "hammer_on",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("7.1{h}.8");
+    expect(tex).not.toContain("lf");
+  });
+
+  it("does not emit hammer-on for invalid cross-string articulation", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              {
+                duration: "eighth",
+                notes: [{ string: 1, fret: 5 }],
+              },
+              {
+                duration: "eighth",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 7,
+                    articulationFromPrevious: "hammer_on",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("7.2.8");
+    expect(tex).not.toMatch(/7\.2\{h\}/);
+  });
+
+  it("emits pull-off from articulationFromPrevious on same string", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              { duration: "eighth", notes: [{ string: 1, fret: 7 }] },
+              {
+                duration: "eighth",
+                notes: [
+                  {
+                    string: 1,
+                    fret: 5,
+                    articulationFromPrevious: "pull_off",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("5.1{h}.8");
+  });
+
   it("never emits left-hand fingering in AlphaTeX", () => {
     const tex = tabDataToAlphaTex(
       baseTab({
@@ -182,9 +266,7 @@ describe("tabDataToAlphaTex", () => {
             beats: [
               {
                 duration: "eighth",
-                notes: [
-                  { string: 4, fret: 5, technique: "hammer_on", finger: 1 },
-                ],
+                notes: [{ string: 4, fret: 5, finger: 1 }],
               },
               {
                 duration: "quarter",
@@ -203,7 +285,6 @@ describe("tabDataToAlphaTex", () => {
         ],
       }),
     );
-    expect(tex).toContain("5.4{h}.8");
     expect(tex).toContain("7.2{b (0 2)}.4");
     expect(tex).not.toContain("lf");
   });
@@ -281,13 +362,17 @@ describe("tabDataToAlphaTex", () => {
             beats: [
               {
                 duration: "eighth",
+                notes: [{ string: 2, fret: 8 }],
+              },
+              {
+                duration: "eighth",
                 picking: "down",
                 notes: [
                   {
                     string: 2,
                     fret: 10,
                     finger: 3,
-                    technique: "slide",
+                    articulationFromPrevious: "slide",
                   },
                 ],
               },
@@ -310,10 +395,16 @@ describe("tabDataToAlphaTex", () => {
         bars: [
           {
             beats: [
+              { duration: "eighth", notes: [{ string: 2, fret: 5 }] },
               {
                 duration: "eighth",
-                picking: "down",
-                notes: [{ string: 2, fret: 10, technique: "slide" }],
+                notes: [
+                  {
+                    string: 2,
+                    fret: 10,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
               },
             ],
           },

@@ -22,6 +22,8 @@ Muting-related sub-skills (`palm_muting`, `fret_hand_muting`, `release_control`)
 
 - `string-crossing.md`
 - `string-skipping.md`
+- `legato.md`
+- `bends.md`
 
 ### Planned
 
@@ -29,8 +31,6 @@ Muting-related sub-skills (`palm_muting`, `fret_hand_muting`, `release_control`)
 - `finger-independence.md`
 - `fretting-accuracy.md`
 - `position-shifting.md`
-- `legato.md`
-- `bends.md`
 - `vibrato.md`
 - `slides.md`
 - `palm-muting.md`
