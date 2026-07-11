@@ -85,6 +85,7 @@ type OptionPadProps = {
   onClick: () => void;
   children: React.ReactNode;
   className?: string;
+  pressable?: boolean;
 };
 
 function OptionPad({
@@ -94,12 +95,14 @@ function OptionPad({
   onClick,
   children,
   className,
+  pressable = false,
 }: OptionPadProps) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
+      {...(pressable ? { "aria-pressed": selected } : {})}
       className={cn(padClass({ selected, unanswered }), className)}
     >
       {children}
@@ -147,6 +150,7 @@ export function FeedbackQuestionField({
               key={option.id}
               selected={value === option.id}
               unanswered={unanswered}
+              pressable
               disabled={disabled}
               onClick={() => onChange(option.id)}
               className={cn(
@@ -170,6 +174,7 @@ export function FeedbackQuestionField({
                 key={rating}
                 selected={value === rating}
                 unanswered={unanswered}
+                pressable
                 disabled={disabled}
                 onClick={() => onChange(rating)}
                 className="flex-1"
@@ -234,6 +239,7 @@ export function FeedbackQuestionField({
           <OptionPad
             selected={value === true}
             unanswered={unanswered}
+            pressable
             disabled={disabled}
             onClick={() => onChange(true)}
             className="flex-1 text-sm font-semibold"
@@ -243,6 +249,7 @@ export function FeedbackQuestionField({
           <OptionPad
             selected={value === false}
             unanswered={unanswered}
+            pressable
             disabled={disabled}
             onClick={() => onChange(false)}
             className="flex-1 text-sm font-semibold"

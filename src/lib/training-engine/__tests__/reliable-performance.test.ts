@@ -60,6 +60,22 @@ describe("reliable-performance", () => {
         consecutiveNeedsWork: 2,
       }),
     ).toEqual({ progressionReady: false, regressionRecommended: true });
+
+    expect(
+      evaluateProgressionSignal({
+        recentVerdicts: ["needs_work", "nailed_it"],
+        consecutiveNailed: 0,
+        consecutiveNeedsWork: 1,
+      }),
+    ).toEqual({ progressionReady: false, regressionRecommended: true });
+
+    expect(
+      evaluateProgressionSignal({
+        recentVerdicts: ["nearly_there"],
+        consecutiveNailed: 0,
+        consecutiveNeedsWork: 0,
+      }),
+    ).toEqual({ progressionReady: false, regressionRecommended: false });
   });
 
   it("computeNextTargetBpm steps from reliable baseline, not peak", () => {

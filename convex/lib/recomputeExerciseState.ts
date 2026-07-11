@@ -118,7 +118,7 @@ export async function recomputeExerciseState(
   };
 
   if (existing) {
-    await ctx.db.patch(existing._id, fields);
+    await ctx.db.patch("userExerciseState", existing._id, fields);
     return existing._id;
   }
 

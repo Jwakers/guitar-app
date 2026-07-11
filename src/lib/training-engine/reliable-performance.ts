@@ -126,13 +126,10 @@ export function countConsecutiveVerdict(
 export function evaluateProgressionSignal(
   input: ProgressionSignalInput,
 ): ProgressionSignal {
-  const latest = input.recentVerdicts[0];
-  const progressionReady =
-    latest === "nailed_it" && input.consecutiveNailed >= 1;
-  const regressionRecommended =
-    latest === "needs_work" || input.consecutiveNeedsWork >= 2;
-
-  return { progressionReady, regressionRecommended };
+  return {
+    progressionReady: input.consecutiveNailed >= 1,
+    regressionRecommended: input.consecutiveNeedsWork >= 1,
+  };
 }
 
 export function computeNextTargetBpm(input: ComputeNextTargetBpmInput): number {
