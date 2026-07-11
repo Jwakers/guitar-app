@@ -14,6 +14,7 @@ import {
   buildResponsesFromAnswers,
   extractActualBpm,
   extractTrainingVerdict,
+  FEEDBACK_QUESTION_ID,
   getRenderableQuestions,
   getVisibleQuestions,
   isBpmExercise,
@@ -74,7 +75,9 @@ export function FeedbackStep({
 
   const usesBpm =
     isBpmExercise(exercise) && schemaHasBpmQuestion(schema);
-  const needsBpmStep = usesBpm && visibleQuestions.some((q) => q.id === "actual_bpm");
+  const needsBpmStep =
+    usesBpm &&
+    visibleQuestions.some((q) => q.id === FEEDBACK_QUESTION_ID.ACTUAL_BPM);
 
   function setAnswer(questionId: string, value: FeedbackAnswers[string]) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -142,7 +145,7 @@ export function FeedbackStep({
   async function submitWithBpm(actualBpm: number) {
     const finalAnswers: FeedbackAnswers = {
       ...answers,
-      actual_bpm: actualBpm,
+      [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: actualBpm,
     };
     await submitWithAnswers(finalAnswers);
   }
@@ -383,7 +386,9 @@ export function FeedbackStep({
       <div className="mt-8 flex flex-col gap-3">
         <Button
           type="button"
-          disabled={submitting || renderableQuestions.length === 0}
+          disabled={
+            submitting || (renderableQuestions.length === 0 && !needsBpmStep)
+          }
           onClick={handleContinue}
         >
           Continue

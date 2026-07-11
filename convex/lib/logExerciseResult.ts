@@ -1,5 +1,9 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import {
+  FEEDBACK_QUESTION_ID,
+  normalizeClientFeedbackResponse,
+} from "../src/lib/practice/feedback-form";
 import type { SessionExerciseItem } from "./sessionLifecycle";
 
 export type FeedbackResponseEntry = {
@@ -88,7 +92,7 @@ export function buildFeedbackResponses(
 
   if (actualBpm !== undefined) {
     responses.push({
-      questionId: "actual_bpm",
+      questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
       value: actualBpm,
       category: "objective",
     });
@@ -96,7 +100,7 @@ export function buildFeedbackResponses(
 
   if (trainingVerdict !== undefined) {
     responses.push({
-      questionId: "training_verdict",
+      questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
       value: trainingVerdict,
       category: "subjective",
     });
@@ -104,7 +108,7 @@ export function buildFeedbackResponses(
 
   if (peakBpmAttempted !== undefined && peakBpmAttempted !== actualBpm) {
     responses.push({
-      questionId: "peak_bpm_attempted",
+      questionId: FEEDBACK_QUESTION_ID.PEAK_BPM_ATTEMPTED,
       value: peakBpmAttempted,
       category: "objective",
     });
@@ -122,7 +126,10 @@ export function mergeFeedbackResponses(
   const byId = new Map<string, FeedbackResponseEntry>();
 
   for (const response of clientResponses ?? []) {
-    byId.set(response.questionId, response);
+    const normalized = normalizeClientFeedbackResponse(response);
+    if (normalized) {
+      byId.set(normalized.questionId, normalized);
+    }
   }
 
   const serverDerived = buildFeedbackResponses(
@@ -132,7 +139,10 @@ export function mergeFeedbackResponses(
   );
 
   for (const response of serverDerived) {
-    if (response.category === "objective") {
+    if (
+      response.category === "objective" ||
+      response.questionId === FEEDBACK_QUESTION_ID.TRAINING_VERDICT
+    ) {
       byId.set(response.questionId, response);
     } else if (!byId.has(response.questionId)) {
       byId.set(response.questionId, response);
@@ -151,7 +161,7 @@ export function resolveTrainingVerdict(
   }
 
   const fromResponses = feedbackResponses?.find(
-    (response) => response.questionId === "training_verdict",
+    (response) => response.questionId === FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
   )?.value;
 
   if (

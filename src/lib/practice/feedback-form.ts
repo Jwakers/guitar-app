@@ -1,5 +1,13 @@
 import type { FeedbackQuestion } from "@/lib/exercises/feedback-schema";
 
+export const FEEDBACK_QUESTION_ID = {
+  ACTUAL_BPM: "actual_bpm",
+  TRAINING_VERDICT: "training_verdict",
+  PEAK_BPM_ATTEMPTED: "peak_bpm_attempted",
+  CLEAN_REPS: "clean_reps",
+  ENDURANCE_DURATION: "endurance_duration",
+} as const;
+
 export type FeedbackAnswerValue = string | number | boolean;
 
 export type FeedbackAnswers = Record<string, FeedbackAnswerValue | undefined>;
@@ -10,15 +18,40 @@ export type FeedbackResponseEntry = {
   category: "objective" | "subjective";
 };
 
-const OBJECTIVE_QUESTION_IDS = new Set([
-  "actual_bpm",
-  "peak_bpm_attempted",
-  "clean_reps",
-  "endurance_duration",
+const OBJECTIVE_QUESTION_IDS = new Set<string>([
+  FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+  FEEDBACK_QUESTION_ID.PEAK_BPM_ATTEMPTED,
+  FEEDBACK_QUESTION_ID.CLEAN_REPS,
+  FEEDBACK_QUESTION_ID.ENDURANCE_DURATION,
 ]);
 
+export const SERVER_MANAGED_QUESTION_CATEGORIES: Record<
+  string,
+  "objective" | "subjective"
+> = {
+  [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: "objective",
+  [FEEDBACK_QUESTION_ID.PEAK_BPM_ATTEMPTED]: "objective",
+  [FEEDBACK_QUESTION_ID.CLEAN_REPS]: "objective",
+  [FEEDBACK_QUESTION_ID.ENDURANCE_DURATION]: "objective",
+  [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "subjective",
+};
+
+export function normalizeClientFeedbackResponse(
+  response: FeedbackResponseEntry,
+): FeedbackResponseEntry | null {
+  const expectedCategory =
+    SERVER_MANAGED_QUESTION_CATEGORIES[response.questionId];
+  if (expectedCategory !== undefined) {
+    return { ...response, category: expectedCategory };
+  }
+  if (response.category === "subjective") {
+    return response;
+  }
+  return null;
+}
+
 export function isDeferredQuestion(questionId: string): boolean {
-  return questionId === "actual_bpm";
+  return questionId === FEEDBACK_QUESTION_ID.ACTUAL_BPM;
 }
 
 export function isBpmExercise(exercise: {
@@ -31,7 +64,7 @@ export function isBpmExercise(exercise: {
 }
 
 export function schemaHasBpmQuestion(schema: FeedbackQuestion[]): boolean {
-  return schema.some((q) => q.id === "actual_bpm");
+  return schema.some((q) => q.id === FEEDBACK_QUESTION_ID.ACTUAL_BPM);
 }
 
 export function getVisibleQuestions(
@@ -139,7 +172,7 @@ export function buildResponsesFromAnswers(
 export function extractTrainingVerdict(
   answers: FeedbackAnswers,
 ): "nailed_it" | "nearly_there" | "needs_work" | undefined {
-  const value = answers.training_verdict;
+  const value = answers[FEEDBACK_QUESTION_ID.TRAINING_VERDICT];
   if (
     value === "nailed_it" ||
     value === "nearly_there" ||
@@ -151,6 +184,6 @@ export function extractTrainingVerdict(
 }
 
 export function extractActualBpm(answers: FeedbackAnswers): number | undefined {
-  const value = answers.actual_bpm;
+  const value = answers[FEEDBACK_QUESTION_ID.ACTUAL_BPM];
   return typeof value === "number" ? value : undefined;
 }

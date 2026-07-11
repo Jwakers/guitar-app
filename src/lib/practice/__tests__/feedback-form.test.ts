@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import type { FeedbackQuestion } from "@/lib/exercises/feedback-schema";
 import {
   buildResponsesFromAnswers,
+  extractActualBpm,
+  extractTrainingVerdict,
+  FEEDBACK_QUESTION_ID,
   getVisibleQuestions,
+  isBpmExercise,
+  schemaHasBpmQuestion,
+  normalizeClientFeedbackResponse,
   validateRequired,
 } from "../feedback-form";
 
@@ -61,19 +67,94 @@ describe("feedback-form", () => {
 
   it("buildResponsesFromAnswers categorises objective vs subjective", () => {
     const visible = getVisibleQuestions(schema, {
-      training_verdict: "nailed_it",
-      actual_bpm: 92,
+      [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "nailed_it",
+      [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: 92,
     });
     expect(buildResponsesFromAnswers(visible, {
-      training_verdict: "nailed_it",
-      actual_bpm: 92,
+      [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "nailed_it",
+      [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: 92,
     })).toEqual([
       {
-        questionId: "training_verdict",
+        questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
         value: "nailed_it",
         category: "subjective",
       },
-      { questionId: "actual_bpm", value: 92, category: "objective" },
+      {
+        questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+        value: 92,
+        category: "objective",
+      },
     ]);
+  });
+
+  it("isBpmExercise detects BPM-capable exercises", () => {
+    expect(
+      isBpmExercise({ supportsBpm: true, primaryProgressMetric: "clean_reps" }),
+    ).toBe(true);
+    expect(
+      isBpmExercise({ supportsBpm: false, primaryProgressMetric: "clean_bpm" }),
+    ).toBe(true);
+    expect(
+      isBpmExercise({ supportsBpm: false, primaryProgressMetric: "clean_reps" }),
+    ).toBe(false);
+  });
+
+  it("schemaHasBpmQuestion detects actual_bpm in schema", () => {
+    expect(schemaHasBpmQuestion(schema)).toBe(true);
+    expect(
+      schemaHasBpmQuestion([
+        {
+          id: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
+          label: "Verdict",
+          type: "segmented",
+          required: true,
+        },
+      ]),
+    ).toBe(false);
+  });
+
+  it("extractTrainingVerdict returns valid verdicts only", () => {
+    expect(
+      extractTrainingVerdict({
+        [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "nearly_there",
+      }),
+    ).toBe("nearly_there");
+    expect(
+      extractTrainingVerdict({
+        [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "invalid",
+      }),
+    ).toBeUndefined();
+    expect(extractTrainingVerdict({})).toBeUndefined();
+  });
+
+  it("normalizeClientFeedbackResponse normalizes server-managed categories", () => {
+    expect(
+      normalizeClientFeedbackResponse({
+        questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+        value: 80,
+        category: "subjective",
+      }),
+    ).toEqual({
+      questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+      value: 80,
+      category: "objective",
+    });
+    expect(
+      normalizeClientFeedbackResponse({
+        questionId: "custom_metric",
+        value: 99,
+        category: "objective",
+      }),
+    ).toBeNull();
+  });
+
+  it("extractActualBpm returns numeric BPM only", () => {
+    expect(
+      extractActualBpm({ [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: 92 }),
+    ).toBe(92);
+    expect(
+      extractActualBpm({ [FEEDBACK_QUESTION_ID.ACTUAL_BPM]: "92" }),
+    ).toBeUndefined();
+    expect(extractActualBpm({})).toBeUndefined();
   });
 });

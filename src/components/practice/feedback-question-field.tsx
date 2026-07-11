@@ -2,7 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import type { FeedbackQuestion } from "@/lib/exercises/feedback-schema";
-import type { FeedbackAnswerValue } from "@/lib/practice/feedback-form";
+import {
+  type FeedbackAnswerValue,
+  FEEDBACK_QUESTION_ID,
+} from "@/lib/practice/feedback-form";
 import { TRAINING_VERDICT_LABEL } from "@/lib/practice/labels";
 
 type FeedbackQuestionFieldProps = {
@@ -13,7 +16,7 @@ type FeedbackQuestionFieldProps = {
 };
 
 function optionLabel(question: FeedbackQuestion, optionId: string): string {
-  if (question.id === "training_verdict") {
+  if (question.id === FEEDBACK_QUESTION_ID.TRAINING_VERDICT) {
     return TRAINING_VERDICT_LABEL[optionId] ?? optionId;
   }
   return question.options?.find((o) => o.id === optionId)?.label ?? optionId;
@@ -39,6 +42,7 @@ export function FeedbackQuestionField({
               key={option.id}
               type="button"
               variant={value === option.id ? "default" : "outline"}
+              aria-pressed={value === option.id}
               disabled={disabled}
               onClick={() => onChange(option.id)}
             >
@@ -56,6 +60,7 @@ export function FeedbackQuestionField({
               type="button"
               size="sm"
               variant={value === rating ? "default" : "outline"}
+              aria-pressed={value === rating}
               disabled={disabled}
               onClick={() => onChange(rating)}
             >
@@ -100,6 +105,7 @@ export function FeedbackQuestionField({
           <Button
             type="button"
             variant={value === true ? "default" : "outline"}
+            aria-pressed={value === true}
             disabled={disabled}
             onClick={() => onChange(true)}
           >
@@ -108,6 +114,7 @@ export function FeedbackQuestionField({
           <Button
             type="button"
             variant={value === false ? "default" : "outline"}
+            aria-pressed={value === false}
             disabled={disabled}
             onClick={() => onChange(false)}
           >

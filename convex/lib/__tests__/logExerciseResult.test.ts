@@ -3,7 +3,9 @@ import {
   buildFeedbackResponses,
   buildObjectiveResult,
   mergeFeedbackResponses,
+  resolveTrainingVerdict,
 } from "../../../convex/lib/logExerciseResult";
+import { FEEDBACK_QUESTION_ID } from "../../../src/lib/practice/feedback-form";
 import type { Doc } from "../../../convex/_generated/dataModel";
 
 const exercise = {
@@ -53,7 +55,7 @@ describe("logExerciseResult helpers", () => {
             category: "subjective",
           },
           {
-            questionId: "actual_bpm",
+            questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
             value: 70,
             category: "objective",
           },
@@ -64,16 +66,81 @@ describe("logExerciseResult helpers", () => {
       ),
     ).toEqual([
       { questionId: "cleanliness", value: 4, category: "subjective" },
-      { questionId: "actual_bpm", value: 88, category: "objective" },
       {
-        questionId: "training_verdict",
+        questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+        value: 88,
+        category: "objective",
+      },
+      {
+        questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
         value: "nearly_there",
         category: "subjective",
       },
       {
-        questionId: "peak_bpm_attempted",
+        questionId: FEEDBACK_QUESTION_ID.PEAK_BPM_ATTEMPTED,
         value: 95,
         category: "objective",
+      },
+    ]);
+  });
+
+  it("mergeFeedbackResponses overwrites conflicting client training_verdict with server verdict", () => {
+    const merged = mergeFeedbackResponses(
+      [
+        {
+          questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
+          value: "nailed_it",
+          category: "subjective",
+        },
+      ],
+      "needs_work",
+      80,
+    );
+
+    expect(merged).toEqual([
+      {
+        questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
+        value: "needs_work",
+        category: "subjective",
+      },
+      {
+        questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+        value: 80,
+        category: "objective",
+      },
+    ]);
+    expect(resolveTrainingVerdict("needs_work", merged)).toBe("needs_work");
+  });
+
+  it("mergeFeedbackResponses rejects unrecognized objective client entries", () => {
+    expect(
+      mergeFeedbackResponses(
+        [
+          {
+            questionId: "custom_metric",
+            value: 99,
+            category: "objective",
+          },
+          {
+            questionId: "cleanliness",
+            value: 3,
+            category: "subjective",
+          },
+        ],
+        "nearly_there",
+        80,
+      ),
+    ).toEqual([
+      { questionId: "cleanliness", value: 3, category: "subjective" },
+      {
+        questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,
+        value: 80,
+        category: "objective",
+      },
+      {
+        questionId: FEEDBACK_QUESTION_ID.TRAINING_VERDICT,
+        value: "nearly_there",
+        category: "subjective",
       },
     ]);
   });
