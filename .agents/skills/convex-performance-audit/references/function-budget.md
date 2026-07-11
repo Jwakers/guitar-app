@@ -212,7 +212,9 @@ export const createProject = mutation({
 ```
 
 Exception: components require `ctx.runQuery`/`ctx.runMutation`. Use them there,
-but prefer helpers everywhere else.
+but prefer helpers everywhere else. Keep `ctx.runMutation` when you need an
+isolated sub-transaction or partial rollback that should not share the caller's
+transaction scope.
 
 ### 7. Avoid unnecessary `runAction` calls
 

@@ -167,7 +167,9 @@ covering:
 - [ ] Update code to handle both formats when reading
 - [ ] Update code to write the new format for new documents
 - [ ] Deploy widened schema and updated code
-- [ ] Define migration using the `@convex-dev/migrations` component
+- [ ] Define migration using `@convex-dev/migrations` for non-trivial or
+      large tables; a single `internalMutation` is fine for small-table
+      backfills
 - [ ] Test with `npx convex run migrations:myMigration '{"dryRun": true}'`
 - [ ] Run migration directly with `npx convex run migrations:myMigration` and
       monitor status

@@ -235,7 +235,7 @@ export const list = query({
 // Good: use a digest table with only the fields the list needs
 export const listDigests = query({
   handler: async (ctx) => {
-    return await ctx.db.query("projectDigests").collect();
+    return await ctx.db.query("projectDigests").take(50);
   },
 });
 ```

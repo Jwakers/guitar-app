@@ -12,6 +12,7 @@ or in a workflow.
 ```ts
 // App side: create a handle and pass it to the component
 import { createFunctionHandle } from "convex/server";
+import { internal } from "./_generated/api";
 
 export const startJob = mutation({
   handler: async (ctx) => {
@@ -31,9 +32,11 @@ import { mutation } from "./_generated/server.js";
 
 export const enqueue = mutation({
   args: { callback: v.string() },
+  returns: v.null(),
   handler: async (ctx, args) => {
     const handle = args.callback as FunctionHandle<"mutation">;
     await ctx.scheduler.runAfter(0, handle, {});
+    return null;
   },
 });
 ```
@@ -134,6 +137,9 @@ export const send = mutation({
   args: { message: v.string() },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
     await notifications.send(ctx, { userId, message: args.message });
   },
 });

@@ -11,6 +11,7 @@ import { formatDateInTimezone } from "../../src/lib/training-engine/dates";
 
 export const RECENT_ACTIVITY_LIMIT = 10;
 export const RELIABLE_PERFORMANCE_LIMIT = 10;
+export const PERSONAL_BESTS_LIMIT = 20;
 
 export type ProgressObjectiveResult = {
   metric: string;
@@ -205,6 +206,7 @@ export function buildProgressOverview(
   const personalBests = logs
     .filter((log) => log.isPersonalBest)
     .sort((a, b) => b.date - a.date)
+    .slice(0, PERSONAL_BESTS_LIMIT)
     .map((log) => ({
       exerciseId: log.exerciseId,
       exerciseTitle: exerciseTitle(log.exerciseId, exerciseTitles),

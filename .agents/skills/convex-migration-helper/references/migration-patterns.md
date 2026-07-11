@@ -219,9 +219,15 @@ larger, use the migrations component.
 Query to check remaining unmigrated documents:
 
 ```typescript
-import { query } from "./_generated/server";
+import { v } from "convex/values";
+import { internalQuery } from "./_generated/server";
 
-export const verifyMigration = query({
+export const verifyMigration = internalQuery({
+  args: {},
+  returns: v.object({
+    complete: v.boolean(),
+    sampleRemaining: v.array(v.id("users")),
+  }),
   handler: async (ctx) => {
     const remaining = await ctx.db
       .query("users")

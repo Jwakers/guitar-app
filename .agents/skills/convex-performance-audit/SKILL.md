@@ -49,7 +49,7 @@ Start with the strongest signal available:
 2. If CLI insights are available, run `npx convex insights --details`. Use
    `--prod`, `--preview-name`, or `--deployment-name` when needed.
    - If the local repo's Convex CLI is too old to support `insights`, try
-     `npx -y convex@latest insights --details` before giving up.
+     `npx -y convex@1.42.1 insights --details` before giving up.
 3. If the repo already uses `convex-doctor`, you may treat its findings as
    hints. Do not require it, and do not treat it as the source of truth.
 4. If runtime signals are unavailable, audit from code anyway, but keep the

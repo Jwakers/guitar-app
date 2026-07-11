@@ -28,30 +28,33 @@ API.
 
 ## Workflow
 
-1. Ask the user what they are building and what the end goal is. If the repo
+1. Read `convex/_generated/ai/guidelines.md` before asking questions or
+   choosing a component shape. Follow the repository's current Convex
+   guidelines for validators, auth, and function patterns.
+2. Ask the user what they are building and what the end goal is. If the repo
    already makes the answer obvious, say so and confirm before proceeding.
-2. Choose the shape using the decision tree below and read the matching
+3. Choose the shape using the decision tree below and read the matching
    reference file.
-3. Decide whether a component is justified. Prefer normal app code or a regular
+4. Decide whether a component is justified. Prefer normal app code or a regular
    library if the feature does not need isolated tables, backend functions, or
    reusable persistent state.
-4. Make a short plan for:
+5. Make a short plan for:
    - what tables the component owns
    - what public functions it exposes
    - what data must be passed in from the app (auth, env vars, parent IDs)
    - what stays in the app as wrappers or HTTP mounts
-5. Create the component structure with `convex.config.ts`, `schema.ts`, and
+6. Create the component structure with `convex.config.ts`, `schema.ts`, and
    function files.
-6. Implement functions using the component's own `./_generated/server` imports,
+7. Implement functions using the component's own `./_generated/server` imports,
    not the app's generated files.
-7. Wire the component into the app with `app.use(...)`. If the app does not
+8. Wire the component into the app with `app.use(...)`. If the app does not
    already have `convex/convex.config.ts`, create it.
-8. Call the component from the app through `components.<name>` using
+9. Call the component from the app through `components.<name>` using
    `ctx.runQuery`, `ctx.runMutation`, or `ctx.runAction`.
-9. If React clients, HTTP callers, or public APIs need access, create wrapper
-   functions in the app instead of exposing component functions directly.
-10. Run `npx convex dev` and fix codegen, type, or boundary issues before
-    finishing.
+10. If React clients, HTTP callers, or public APIs need access, create wrapper
+    functions in the app instead of exposing component functions directly.
+11. Run `npx convex@1.42.1 dev` and fix codegen, type, or boundary issues
+    before finishing.
 
 ## Choose the Shape
 

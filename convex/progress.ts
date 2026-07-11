@@ -107,17 +107,17 @@ export const getProgressOverview = query({
           .collect(),
         ctx.db
           .query("practiceSessions")
-          .withIndex("by_userId_status", (q) =>
-            q.eq("userId", user._id).eq("status", "completed"),
+          .withIndex("by_userId_date", (q) =>
+            q
+              .eq("userId", user._id)
+              .gte("date", weekStartDate)
+              .lte("date", todayDate),
           )
           .collect(),
       ]);
 
     const completedSessionsThisWeek = completedSessions
-      .filter(
-        (session) =>
-          session.date >= weekStartDate && session.date <= todayDate,
-      )
+      .filter((session) => session.status === "completed")
       .map((session) => ({
         date: session.date,
         estimatedMinutes: session.estimatedMinutes,
