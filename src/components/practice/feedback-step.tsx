@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { TRAINING_VERDICT_LABEL, VERDICT_OPTIONS, type TrainingVerdict } from "@/lib/practice/labels";
+import type { FeedbackQuestion } from "@/lib/exercises/feedback-schema";
 import {
-  exerciseUsesBpmMetric,
   needsBpmConfirmation,
   suggestedCleanBpmOptions,
 } from "@/lib/practice/bpm-confirmation";
+import {
+  buildResponsesFromAnswers,
+  extractActualBpm,
+  extractTrainingVerdict,
+  getRenderableQuestions,
+  getVisibleQuestions,
+  isBpmExercise,
+  schemaHasBpmQuestion,
+  validateRequired,
+  type FeedbackAnswers,
+  type FeedbackResponseEntry,
+} from "@/lib/practice/feedback-form";
+import type { TrainingVerdict } from "@/lib/practice/labels";
+import { FeedbackQuestionField } from "./feedback-question-field";
 
 type FeedbackStepProps = {
   sessionId: Id<"practiceSessions">;
@@ -19,12 +32,7 @@ type FeedbackStepProps = {
   exercise: {
     supportsBpm: boolean;
     primaryProgressMetric: string;
-    feedbackSchema: Array<{
-      id: string;
-      label: string;
-      type: string;
-      required: boolean;
-    }>;
+    feedbackSchema: FeedbackQuestion[];
   };
   currentBpm: number;
   peakBpm: number;
@@ -33,7 +41,7 @@ type FeedbackStepProps = {
   onDone: (hasMore: boolean, nextOrder: number | null) => void | Promise<void>;
 };
 
-type BpmStep = "verdict" | "confirm_bpm" | "pick_higher" | "adjust";
+type Phase = "form" | "confirm_bpm" | "pick_higher" | "adjust";
 
 export function FeedbackStep({
   sessionId,
@@ -50,15 +58,27 @@ export function FeedbackStep({
   const completeExerciseItem = useMutation(api.sessions.completeExerciseItem);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [verdict, setVerdict] = useState<TrainingVerdict | null>(null);
-  const [bpmStep, setBpmStep] = useState<BpmStep>("verdict");
+  const [answers, setAnswers] = useState<FeedbackAnswers>({});
+  const [phase, setPhase] = useState<Phase>("form");
   const [manualBpm, setManualBpm] = useState(currentBpm);
 
-  const usesBpm = exerciseUsesBpmMetric(exercise);
-  const showBpmConfirm =
-    usesBpm && verdict !== null && needsBpmConfirmation(currentBpm, peakBpm);
-  const showSimpleBpmConfirm =
-    usesBpm && verdict !== null && !needsBpmConfirmation(currentBpm, peakBpm);
+  const schema = exercise.feedbackSchema;
+  const visibleQuestions = useMemo(
+    () => getVisibleQuestions(schema, answers),
+    [schema, answers],
+  );
+  const renderableQuestions = useMemo(
+    () => getRenderableQuestions(schema, answers),
+    [schema, answers],
+  );
+
+  const usesBpm =
+    isBpmExercise(exercise) && schemaHasBpmQuestion(schema);
+  const needsBpmStep = usesBpm && visibleQuestions.some((q) => q.id === "actual_bpm");
+
+  function setAnswer(questionId: string, value: FeedbackAnswers[string]) {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  }
 
   async function finish(
     outcome:
@@ -68,6 +88,7 @@ export function FeedbackStep({
       trainingVerdict?: TrainingVerdict;
       actualBpm?: number;
       peakBpmAttempted?: number;
+      feedbackResponses?: FeedbackResponseEntry[];
     },
   ) {
     setSubmitting(true);
@@ -77,7 +98,10 @@ export function FeedbackStep({
         await logExerciseResult({
           sessionId,
           order,
-          ...logArgs,
+          trainingVerdict: logArgs.trainingVerdict,
+          actualBpm: logArgs.actualBpm,
+          peakBpmAttempted: logArgs.peakBpmAttempted,
+          feedbackResponses: logArgs.feedbackResponses,
         });
       }
 
@@ -96,37 +120,62 @@ export function FeedbackStep({
     }
   }
 
-  async function submitWithBpm(
-    selectedVerdict: TrainingVerdict,
-    actualBpm: number,
-  ) {
+  async function submitWithAnswers(finalAnswers: FeedbackAnswers) {
+    const visible = getVisibleQuestions(schema, finalAnswers);
+    const trainingVerdict = extractTrainingVerdict(finalAnswers);
+    const actualBpm = extractActualBpm(finalAnswers);
+
     await finish(
       {
         kind: "placeholder_feedback",
-        trainingVerdict: selectedVerdict,
+        trainingVerdict,
       },
       {
-        trainingVerdict: selectedVerdict,
+        trainingVerdict,
         actualBpm,
         peakBpmAttempted: peakBpm,
+        feedbackResponses: buildResponsesFromAnswers(visible, finalAnswers),
       },
     );
   }
 
-  function handleVerdictSelect(selected: TrainingVerdict) {
-    setVerdict(selected);
-    if (!usesBpm) {
-      void finish(
-        { kind: "placeholder_feedback", trainingVerdict: selected },
-        { trainingVerdict: selected },
-      );
+  async function submitWithBpm(actualBpm: number) {
+    const finalAnswers: FeedbackAnswers = {
+      ...answers,
+      actual_bpm: actualBpm,
+    };
+    await submitWithAnswers(finalAnswers);
+  }
+
+  function handleContinue() {
+    const validationError = validateRequired(visibleQuestions, answers, {
+      excludeDeferred: true,
+    });
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
+
+    if (needsBpmStep) {
+      setPhase("confirm_bpm");
       return;
     }
 
-    setBpmStep("confirm_bpm");
+    void submitWithAnswers(answers);
   }
 
-  if (bpmStep === "confirm_bpm" && verdict && showBpmConfirm) {
+  const verdict = extractTrainingVerdict(answers);
+  const showBpmConfirm =
+    phase === "confirm_bpm" &&
+    verdict !== undefined &&
+    needsBpmConfirmation(currentBpm, peakBpm);
+  const showSimpleBpmConfirm =
+    phase === "confirm_bpm" &&
+    verdict !== undefined &&
+    !needsBpmConfirmation(currentBpm, peakBpm);
+
+  if (phase === "confirm_bpm" && verdict && showBpmConfirm) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
         <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
@@ -144,7 +193,7 @@ export function FeedbackStep({
           <Button
             type="button"
             disabled={submitting}
-            onClick={() => void submitWithBpm(verdict, currentBpm)}
+            onClick={() => void submitWithBpm(currentBpm)}
           >
             {currentBpm} BPM — yes, that was my highest clean
           </Button>
@@ -152,7 +201,7 @@ export function FeedbackStep({
             type="button"
             variant="outline"
             disabled={submitting}
-            onClick={() => setBpmStep("pick_higher")}
+            onClick={() => setPhase("pick_higher")}
           >
             I played cleaner higher
           </Button>
@@ -160,7 +209,7 @@ export function FeedbackStep({
             type="button"
             variant="ghost"
             disabled={submitting}
-            onClick={() => setBpmStep("adjust")}
+            onClick={() => setPhase("adjust")}
           >
             Adjust manually
           </Button>
@@ -171,9 +220,9 @@ export function FeedbackStep({
           variant="ghost"
           className="mt-6"
           disabled={submitting}
-          onClick={onBack}
+          onClick={() => setPhase("form")}
         >
-          Back to exercise
+          Back to feedback
         </Button>
         {error && (
           <p className="mt-4 font-mono text-sm text-destructive">{error}</p>
@@ -182,7 +231,7 @@ export function FeedbackStep({
     );
   }
 
-  if (bpmStep === "pick_higher" && verdict) {
+  if (phase === "pick_higher" && verdict) {
     const options = suggestedCleanBpmOptions(peakBpm, targetBpm);
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
@@ -199,7 +248,7 @@ export function FeedbackStep({
               type="button"
               variant="outline"
               disabled={submitting}
-              onClick={() => void submitWithBpm(verdict, bpm)}
+              onClick={() => void submitWithBpm(bpm)}
             >
               {bpm} BPM
             </Button>
@@ -210,7 +259,7 @@ export function FeedbackStep({
           variant="ghost"
           className="mt-6"
           disabled={submitting}
-          onClick={() => setBpmStep("confirm_bpm")}
+          onClick={() => setPhase("confirm_bpm")}
         >
           Back
         </Button>
@@ -218,7 +267,7 @@ export function FeedbackStep({
     );
   }
 
-  if (bpmStep === "adjust" && verdict) {
+  if (phase === "adjust" && verdict) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
         <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
@@ -250,7 +299,7 @@ export function FeedbackStep({
           type="button"
           className="mt-8"
           disabled={submitting}
-          onClick={() => void submitWithBpm(verdict, manualBpm)}
+          onClick={() => void submitWithBpm(manualBpm)}
         >
           Confirm {manualBpm} BPM
         </Button>
@@ -259,7 +308,7 @@ export function FeedbackStep({
           variant="ghost"
           className="mt-4"
           disabled={submitting}
-          onClick={() => setBpmStep("confirm_bpm")}
+          onClick={() => setPhase("confirm_bpm")}
         >
           Back
         </Button>
@@ -267,7 +316,7 @@ export function FeedbackStep({
     );
   }
 
-  if (bpmStep === "confirm_bpm" && verdict && showSimpleBpmConfirm) {
+  if (phase === "confirm_bpm" && verdict && showSimpleBpmConfirm) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
         <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
@@ -280,7 +329,7 @@ export function FeedbackStep({
           <Button
             type="button"
             disabled={submitting}
-            onClick={() => void submitWithBpm(verdict, currentBpm)}
+            onClick={() => void submitWithBpm(currentBpm)}
           >
             Yes
           </Button>
@@ -290,7 +339,7 @@ export function FeedbackStep({
             disabled={submitting}
             onClick={() => {
               setManualBpm(currentBpm);
-              setBpmStep("adjust");
+              setPhase("adjust");
             }}
           >
             Adjust
@@ -301,9 +350,9 @@ export function FeedbackStep({
           variant="ghost"
           className="mt-6"
           disabled={submitting}
-          onClick={onBack}
+          onClick={() => setPhase("form")}
         >
-          Back to exercise
+          Back to feedback
         </Button>
       </div>
     );
@@ -319,23 +368,29 @@ export function FeedbackStep({
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">{exerciseTitle}</p>
 
-      <div className="mt-8 flex flex-col gap-2">
-        {VERDICT_OPTIONS.map((option) => (
-          <Button
-            key={option}
-            type="button"
-            variant="outline"
+      <div className="mt-8 flex flex-col gap-6">
+        {renderableQuestions.map((question) => (
+          <FeedbackQuestionField
+            key={question.id}
+            question={question}
+            value={answers[question.id]}
+            onChange={(value) => setAnswer(question.id, value)}
             disabled={submitting}
-            onClick={() => handleVerdictSelect(option)}
-          >
-            {TRAINING_VERDICT_LABEL[option]}
-          </Button>
+          />
         ))}
       </div>
 
       <div className="mt-8 flex flex-col gap-3">
         <Button
           type="button"
+          disabled={submitting || renderableQuestions.length === 0}
+          onClick={handleContinue}
+        >
+          Continue
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
           disabled={submitting}
           onClick={() => void finish({ kind: "skipped_feedback" })}
         >

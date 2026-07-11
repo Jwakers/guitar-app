@@ -305,6 +305,15 @@ export const logExerciseResult = mutation({
     trainingVerdict: v.optional(trainingVerdict),
     actualBpm: v.optional(v.number()),
     peakBpmAttempted: v.optional(v.number()),
+    feedbackResponses: v.optional(
+      v.array(
+        v.object({
+          questionId: v.string(),
+          value: v.union(v.string(), v.number(), v.boolean()),
+          category: v.union(v.literal("objective"), v.literal("subjective")),
+        }),
+      ),
+    ),
   },
   returns: v.union(v.id("exerciseLogs"), v.null()),
   handler: async (ctx, args) => {
@@ -318,6 +327,7 @@ export const logExerciseResult = mutation({
       trainingVerdict: args.trainingVerdict,
       actualBpm: args.actualBpm,
       peakBpmAttempted: args.peakBpmAttempted,
+      feedbackResponses: args.feedbackResponses,
     });
 
     return result.logId;

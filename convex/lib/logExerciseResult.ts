@@ -2,6 +2,12 @@ import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import type { SessionExerciseItem } from "./sessionLifecycle";
 
+export type FeedbackResponseEntry = {
+  questionId: string;
+  value: string | number | boolean;
+  category: "objective" | "subjective";
+};
+
 export type LogExerciseResultInput = {
   userId: Id<"users">;
   session: Doc<"practiceSessions">;
@@ -9,6 +15,7 @@ export type LogExerciseResultInput = {
   trainingVerdict?: "nailed_it" | "nearly_there" | "needs_work";
   actualBpm?: number;
   peakBpmAttempted?: number;
+  feedbackResponses?: FeedbackResponseEntry[];
 };
 
 export type LogExerciseResultOutcome = {
@@ -106,6 +113,58 @@ export function buildFeedbackResponses(
   return responses;
 }
 
+export function mergeFeedbackResponses(
+  clientResponses: FeedbackResponseEntry[] | undefined,
+  trainingVerdict?: "nailed_it" | "nearly_there" | "needs_work",
+  actualBpm?: number,
+  peakBpmAttempted?: number,
+): Doc<"exerciseLogs">["feedbackResponses"] {
+  const byId = new Map<string, FeedbackResponseEntry>();
+
+  for (const response of clientResponses ?? []) {
+    byId.set(response.questionId, response);
+  }
+
+  const serverDerived = buildFeedbackResponses(
+    trainingVerdict,
+    actualBpm,
+    peakBpmAttempted,
+  );
+
+  for (const response of serverDerived) {
+    if (response.category === "objective") {
+      byId.set(response.questionId, response);
+    } else if (!byId.has(response.questionId)) {
+      byId.set(response.questionId, response);
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+export function resolveTrainingVerdict(
+  trainingVerdict?: "nailed_it" | "nearly_there" | "needs_work",
+  feedbackResponses?: Doc<"exerciseLogs">["feedbackResponses"],
+): "nailed_it" | "nearly_there" | "needs_work" {
+  if (trainingVerdict !== undefined) {
+    return trainingVerdict;
+  }
+
+  const fromResponses = feedbackResponses?.find(
+    (response) => response.questionId === "training_verdict",
+  )?.value;
+
+  if (
+    fromResponses === "nailed_it" ||
+    fromResponses === "nearly_there" ||
+    fromResponses === "needs_work"
+  ) {
+    return fromResponses;
+  }
+
+  return "nearly_there";
+}
+
 export async function isPersonalBestBpm(
   ctx: MutationCtx,
   userId: Id<"users">,
@@ -154,10 +213,15 @@ export async function applyLogExerciseResult(
     sessionItem,
     input.actualBpm,
   );
-  const feedbackResponses = buildFeedbackResponses(
+  const feedbackResponses = mergeFeedbackResponses(
+    input.feedbackResponses,
     input.trainingVerdict,
     input.actualBpm,
     input.peakBpmAttempted,
+  );
+  const trainingVerdict = resolveTrainingVerdict(
+    input.trainingVerdict,
+    feedbackResponses,
   );
 
   const isPersonalBest =
@@ -180,7 +244,7 @@ export async function applyLogExerciseResult(
     subSkillIds: exercise.subSkillIds,
     trainingAttributes: exercise.trainingAttributes,
     date: now,
-    trainingVerdict: input.trainingVerdict ?? "nearly_there",
+    trainingVerdict,
     objectiveResult,
     feedbackResponses,
     isPersonalBest,

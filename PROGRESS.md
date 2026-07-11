@@ -55,8 +55,8 @@ Track what is built and what remains. Update this file as features land.
 - [x] Today screen (`/today`) — shows today's session or generates one
 - [x] Practice player (`/train/[sessionId]`) — exercise-by-exercise flow
 - [x] Tab display component (monospace, mobile-readable) — AlphaTab in session context
-- [x] Exercise logging (cleanliness, difficulty, primary metric, BPM) — `logExerciseResult` + BPM confirmation; full dynamic `feedbackSchema` TBD
-- [x] Session completion screen with summary (stub — detailed feedback TBD)
+- [x] Exercise logging (cleanliness, difficulty, primary metric, BPM) — dynamic `feedbackSchema` renderer + BPM confirmation
+- [x] Session completion screen with detailed log summary
 - [x] Progressive save (logs each exercise item status immediately)
 - [x] Session resume after interruption
 - [x] Built-in metronome on exercise step (target BPM pre-set)
