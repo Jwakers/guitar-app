@@ -11,6 +11,7 @@
 import type * as devReset from "../devReset.js";
 import type * as exercises from "../exercises.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_buildProgressOverview from "../lib/buildProgressOverview.js";
 import type * as lib_exerciseValidators from "../lib/exerciseValidators.js";
 import type * as lib_logExerciseResult from "../lib/logExerciseResult.js";
 import type * as lib_provisionTraining from "../lib/provisionTraining.js";
@@ -20,6 +21,7 @@ import type * as lib_sessionValidators from "../lib/sessionValidators.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
 import type * as lib_weeklyPlanLookup from "../lib/weeklyPlanLookup.js";
 import type * as onboarding from "../onboarding.js";
+import type * as progress from "../progress.js";
 import type * as sessions from "../sessions.js";
 import type * as skills from "../skills.js";
 import type * as trainingBlocks from "../trainingBlocks.js";
@@ -36,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   devReset: typeof devReset;
   exercises: typeof exercises;
   "lib/auth": typeof lib_auth;
+  "lib/buildProgressOverview": typeof lib_buildProgressOverview;
   "lib/exerciseValidators": typeof lib_exerciseValidators;
   "lib/logExerciseResult": typeof lib_logExerciseResult;
   "lib/provisionTraining": typeof lib_provisionTraining;
@@ -45,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   "lib/upsertExercise": typeof lib_upsertExercise;
   "lib/weeklyPlanLookup": typeof lib_weeklyPlanLookup;
   onboarding: typeof onboarding;
+  progress: typeof progress;
   sessions: typeof sessions;
   skills: typeof skills;
   trainingBlocks: typeof trainingBlocks;
