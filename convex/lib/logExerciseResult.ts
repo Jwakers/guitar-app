@@ -3,7 +3,7 @@ import type { MutationCtx } from "../_generated/server";
 import {
   FEEDBACK_QUESTION_ID,
   normalizeClientFeedbackResponse,
-} from "../src/lib/practice/feedback-form";
+} from "../../src/lib/practice/feedback-form";
 import type { SessionExerciseItem } from "./sessionLifecycle";
 
 export type FeedbackResponseEntry = {

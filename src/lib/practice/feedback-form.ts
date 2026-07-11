@@ -1,4 +1,4 @@
-import type { FeedbackQuestion } from "@/lib/exercises/feedback-schema";
+import type { FeedbackQuestion } from "../exercises/feedback-schema";
 
 export const FEEDBACK_QUESTION_ID = {
   ACTUAL_BPM: "actual_bpm",
@@ -18,13 +18,6 @@ export type FeedbackResponseEntry = {
   category: "objective" | "subjective";
 };
 
-const OBJECTIVE_QUESTION_IDS = new Set<string>([
-  FEEDBACK_QUESTION_ID.ACTUAL_BPM,
-  FEEDBACK_QUESTION_ID.PEAK_BPM_ATTEMPTED,
-  FEEDBACK_QUESTION_ID.CLEAN_REPS,
-  FEEDBACK_QUESTION_ID.ENDURANCE_DURATION,
-]);
-
 export const SERVER_MANAGED_QUESTION_CATEGORIES: Record<
   string,
   "objective" | "subjective"
@@ -36,6 +29,12 @@ export const SERVER_MANAGED_QUESTION_CATEGORIES: Record<
   [FEEDBACK_QUESTION_ID.TRAINING_VERDICT]: "subjective",
 };
 
+const OBJECTIVE_QUESTION_IDS = new Set(
+  Object.entries(SERVER_MANAGED_QUESTION_CATEGORIES)
+    .filter(([, category]) => category === "objective")
+    .map(([questionId]) => questionId),
+);
+
 export function normalizeClientFeedbackResponse(
   response: FeedbackResponseEntry,
 ): FeedbackResponseEntry | null {
@@ -44,7 +43,10 @@ export function normalizeClientFeedbackResponse(
   if (expectedCategory !== undefined) {
     return { ...response, category: expectedCategory };
   }
-  if (response.category === "subjective") {
+  if (
+    response.category === "subjective" ||
+    response.category === "objective"
+  ) {
     return response;
   }
   return null;

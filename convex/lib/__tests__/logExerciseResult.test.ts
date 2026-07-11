@@ -112,7 +112,7 @@ describe("logExerciseResult helpers", () => {
     expect(resolveTrainingVerdict("needs_work", merged)).toBe("needs_work");
   });
 
-  it("mergeFeedbackResponses rejects unrecognized objective client entries", () => {
+  it("mergeFeedbackResponses preserves custom objective client entries", () => {
     expect(
       mergeFeedbackResponses(
         [
@@ -131,6 +131,11 @@ describe("logExerciseResult helpers", () => {
         80,
       ),
     ).toEqual([
+      {
+        questionId: "custom_metric",
+        value: 99,
+        category: "objective",
+      },
       { questionId: "cleanliness", value: 3, category: "subjective" },
       {
         questionId: FEEDBACK_QUESTION_ID.ACTUAL_BPM,

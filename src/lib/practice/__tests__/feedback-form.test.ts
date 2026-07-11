@@ -145,7 +145,11 @@ describe("feedback-form", () => {
         value: 99,
         category: "objective",
       }),
-    ).toBeNull();
+    ).toEqual({
+      questionId: "custom_metric",
+      value: 99,
+      category: "objective",
+    });
   });
 
   it("extractActualBpm returns numeric BPM only", () => {
