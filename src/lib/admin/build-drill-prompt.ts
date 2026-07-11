@@ -31,6 +31,8 @@ export type ExerciseSummaryForPrompt = {
 export type BuildDrillPromptInput = {
   coreSkillId: CoreSkill;
   subSkillIds: SubSkill[];
+  subSkillIdsInferred?: boolean;
+  subSkillDistribution?: string;
   trainingAttributes: TrainingAttribute[];
   trainingAttributesInferred?: boolean;
   trainingAttributeDistribution?: string;
@@ -261,6 +263,8 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     `Sub-skills: ${
       input.subSkillIds.map((id) => `${id} (${subSkillLabel(id)})`).join(", ") ||
       "(none)"
+    }${
+      input.subSkillIdsInferred ? " (AUTO-INFERRED — do not change these)" : ""
     }`,
     `Training attributes: ${input.trainingAttributes
       .map((id) => `${id} (${trainingAttributeLabel(id)})`)
@@ -269,6 +273,17 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     }`,
     `Exercise type: ${input.exerciseType}`,
   ];
+
+  if (input.subSkillIdsInferred) {
+    parts.push(
+      "Sub-skills were chosen to balance the library for this core skill.",
+      ...(input.subSkillDistribution
+        ? [
+            `Current sub-skill counts for this core skill: ${input.subSkillDistribution}`,
+          ]
+        : []),
+    );
+  }
 
   if (input.trainingAttributesInferred) {
     parts.push(

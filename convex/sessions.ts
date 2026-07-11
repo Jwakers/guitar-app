@@ -8,6 +8,7 @@ import {
   getSessionForUser,
 } from "./lib/sessionLifecycle";
 import { applyLogExerciseResult } from "./lib/logExerciseResult";
+import { getWeeklyPlanForBlockWeek } from "./lib/weeklyPlanLookup";
 import { sessionSlotTypeValidator, trainingVerdict } from "./lib/sessionValidators";
 import {
   blockDocToSnapshot,
@@ -187,13 +188,10 @@ export const generateSession = mutation({
     );
     if (!sessionMeta) return null;
 
-    const weeklyPlan = (
-      await ctx.db
-        .query("weeklyPlans")
-        .withIndex("by_userId_startDate", (q) => q.eq("userId", user._id))
-        .collect()
-    ).find(
-      (p) => p.blockId === block._id && p.weekNumber === block.currentWeek,
+    const weeklyPlan = await getWeeklyPlanForBlockWeek(
+      ctx,
+      block._id,
+      block.currentWeek,
     );
 
     if (!weeklyPlan) {
@@ -257,7 +255,7 @@ export const getSessionLogs = query({
   returns: v.array(
     v.object({
       _id: v.id("exerciseLogs"),
-      sessionItemOrder: v.number(),
+      sessionItemOrder: v.optional(v.number()),
       exerciseId: v.id("exercises"),
       trainingVerdict,
       objectiveResult: v.object({
@@ -307,7 +305,6 @@ export const logExerciseResult = mutation({
     trainingVerdict: v.optional(trainingVerdict),
     actualBpm: v.optional(v.number()),
     peakBpmAttempted: v.optional(v.number()),
-    skipped: v.optional(v.boolean()),
   },
   returns: v.union(v.id("exerciseLogs"), v.null()),
   handler: async (ctx, args) => {
@@ -321,7 +318,6 @@ export const logExerciseResult = mutation({
       trainingVerdict: args.trainingVerdict,
       actualBpm: args.actualBpm,
       peakBpmAttempted: args.peakBpmAttempted,
-      skipped: args.skipped,
     });
 
     return result.logId;
@@ -416,9 +412,10 @@ export const completeSession = mutation({
 
     const completedCount = countTerminalItems(session.exerciseItems);
 
-    const existingSummary = (
-      await ctx.db.query("sessionSummaries").collect()
-    ).find((s) => s.sessionId === session._id);
+    const existingSummary = await ctx.db
+      .query("sessionSummaries")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", session._id))
+      .first();
 
     if (!existingSummary) {
       await ctx.db.insert("sessionSummaries", {

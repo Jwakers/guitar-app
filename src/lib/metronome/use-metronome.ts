@@ -138,9 +138,18 @@ export function useMetronome(
   }, [getAudioContext, scheduleClick]);
 
   const start = useCallback(() => {
+    if (isPlayingRef.current) {
+      return;
+    }
+
     const ctx = getAudioContext();
     if (ctx.state === "suspended") {
       void ctx.resume();
+    }
+
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
     isPlayingRef.current = true;

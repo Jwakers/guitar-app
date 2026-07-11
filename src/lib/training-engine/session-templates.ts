@@ -46,12 +46,34 @@ function allocateMinutes(
   totalMinutes: number,
   weights: number[],
 ): number[] {
-  const sum = weights.reduce((a, b) => a + b, 0);
-  const raw = weights.map((w) => Math.max(2, Math.round((w / sum) * totalMinutes)));
-  const allocated = raw.reduce((a, b) => a + b, 0);
-  if (allocated !== totalMinutes && raw.length > 0) {
-    raw[0] += totalMinutes - allocated;
+  if (totalMinutes <= 0 || weights.length === 0) {
+    return weights.map(() => 0);
   }
+
+  const sum = weights.reduce((a, b) => a + b, 0);
+  if (sum <= 0) {
+    return weights.map(() => 0);
+  }
+
+  const raw = weights.map((w) => Math.max(1, Math.round((w / sum) * totalMinutes)));
+  let allocated = raw.reduce((a, b) => a + b, 0);
+
+  let index = 0;
+  while (allocated > totalMinutes && raw.some((value) => value > 1)) {
+    const i = index % raw.length;
+    if (raw[i]! > 1) {
+      raw[i]!--;
+      allocated--;
+    }
+    index++;
+  }
+
+  while (allocated < totalMinutes) {
+    raw[index % raw.length]!++;
+    allocated++;
+    index++;
+  }
+
   return raw;
 }
 

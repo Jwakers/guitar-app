@@ -35,6 +35,35 @@ export function isPracticeDay(
   return availableDays.includes(dayName);
 }
 
+/** Advance by whole calendar days in the target timezone (DST-safe). */
+export function addCalendarDaysInTimezone(
+  fromMs: number,
+  timezone: string,
+  dayOffset: number,
+): number {
+  if (dayOffset === 0) return fromMs;
+
+  let current = fromMs;
+  const step = dayOffset > 0 ? 1 : -1;
+  const steps = Math.abs(dayOffset);
+
+  for (let i = 0; i < steps; i++) {
+    const before = formatDateInTimezone(current, timezone);
+    let candidate = current + step * 24 * 60 * 60 * 1000;
+    const limit = 48;
+    let guard = 0;
+
+    while (formatDateInTimezone(candidate, timezone) === before && guard < limit) {
+      candidate += step * 60 * 60 * 1000;
+      guard++;
+    }
+
+    current = candidate;
+  }
+
+  return current;
+}
+
 /** Next practice day on or after `fromMs`, within `maxDaysAhead` days. */
 export function nextPracticeDay(
   fromMs: number,
@@ -45,7 +74,7 @@ export function nextPracticeDay(
   if (availableDays.length === 0) return null;
 
   for (let offset = 0; offset <= maxDaysAhead; offset++) {
-    const candidate = fromMs + offset * 24 * 60 * 60 * 1000;
+    const candidate = addCalendarDaysInTimezone(fromMs, timezone, offset);
     const dayName = getDayNameInTimezone(candidate, timezone);
     if (availableDays.includes(dayName)) {
       return {

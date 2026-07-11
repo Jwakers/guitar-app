@@ -7,12 +7,26 @@ export function suggestedCleanBpmOptions(
   targetBpm?: number,
 ): number[] {
   const floor = targetBpm ?? Math.max(20, peakBpm - 20);
-  const options: number[] = [];
-  for (let bpm = peakBpm; bpm >= floor; bpm -= 1) {
-    options.push(bpm);
-    if (options.length >= 12) break;
+  if (peakBpm <= floor) {
+    return [peakBpm];
   }
-  return options;
+
+  const span = peakBpm - floor;
+  if (span + 1 <= 12) {
+    const options: number[] = [];
+    for (let bpm = peakBpm; bpm >= floor; bpm -= 1) {
+      options.push(bpm);
+    }
+    return options;
+  }
+
+  const options = new Set<number>([peakBpm, floor]);
+  const step = span / 11;
+  for (let i = 1; i < 11; i++) {
+    options.add(Math.round(peakBpm - step * i));
+  }
+
+  return [...options].sort((a, b) => b - a).slice(0, 12);
 }
 
 export function exerciseUsesBpmMetric(exercise: {

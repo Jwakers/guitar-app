@@ -293,7 +293,8 @@ export default defineSchema({
     targetSessionCount: v.number(),
     plannedSessionIds: v.array(v.id("practiceSessions")),
     status: v.string(),
-  }).index("by_userId_startDate", ["userId", "startDate"]),
+  }).index("by_userId_startDate", ["userId", "startDate"])
+    .index("by_blockId_weekNumber", ["blockId", "weekNumber"]),
 
   // -------------------------------------------------------------------------
   // Practice sessions
@@ -368,7 +369,7 @@ export default defineSchema({
   exerciseLogs: defineTable({
     userId: v.id("users"),
     sessionId: v.id("practiceSessions"),
-    sessionItemOrder: v.number(),
+    sessionItemOrder: v.optional(v.number()),
     exerciseId: v.id("exercises"),
     coreSkillId: coreSkillValidator,
     subSkillIds: v.array(subSkillValidator),
@@ -507,7 +508,7 @@ export default defineSchema({
     xpAwarded: v.number(),
     achievementsUnlocked: v.array(v.id("achievements")),
     createdAt: v.number(),
-  }),
+  }).index("by_sessionId", ["sessionId"]),
 
   achievements: defineTable({
     title: v.string(),

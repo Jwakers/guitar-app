@@ -232,6 +232,8 @@ export async function POST(request: Request) {
     const { system, prompt } = buildDrillPrompt({
       coreSkillId: body.coreSkillId,
       subSkillIds,
+      subSkillIdsInferred,
+      subSkillDistribution,
       trainingAttributes,
       trainingAttributesInferred,
       trainingAttributeDistribution,
@@ -319,6 +321,27 @@ export async function POST(request: Request) {
           generated,
           generated.patternType ?? exercise.patternType,
           { ...exercise, trainingAttributes },
+        );
+      }
+    }
+
+    const subSkillIdsMatch =
+      exercise.subSkillIds.length === subSkillIds.length &&
+      subSkillIds.every((id) => exercise.subSkillIds.includes(id));
+    if (!subSkillIdsMatch) {
+      try {
+        exercise = validateExercise({
+          ...exercise,
+          subSkillIds,
+        });
+      } catch (err) {
+        const pinError = err instanceof Error ? err.message : String(err);
+        return validationFailureResponse(
+          "Generated drill failed validation after sub-skill pin",
+          pinError,
+          generated,
+          generated.patternType ?? exercise.patternType,
+          { ...exercise, subSkillIds },
         );
       }
     }

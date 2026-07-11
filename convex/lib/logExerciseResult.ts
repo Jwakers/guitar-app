@@ -9,7 +9,6 @@ export type LogExerciseResultInput = {
   trainingVerdict?: "nailed_it" | "nearly_there" | "needs_work";
   actualBpm?: number;
   peakBpmAttempted?: number;
-  skipped?: boolean;
 };
 
 export type LogExerciseResultOutcome = {
@@ -133,10 +132,6 @@ export async function applyLogExerciseResult(
   ctx: MutationCtx,
   input: LogExerciseResultInput,
 ): Promise<LogExerciseResultOutcome> {
-  if (input.skipped) {
-    return { logId: null, created: false };
-  }
-
   const sessionItem = findSessionItem(input.session, input.order);
   const exercise = await ctx.db.get("exercises", sessionItem.exerciseId);
   if (!exercise) {

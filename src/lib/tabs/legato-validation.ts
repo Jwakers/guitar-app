@@ -8,6 +8,9 @@ import type {
 export const INVALID_CROSS_STRING_LEGATO =
   "Invalid legato: hammer-on or pull-off connects notes on different strings.";
 
+export const NO_ANCHOR_NOTE_LEGATO =
+  "Invalid legato: hammer-on or pull-off requires a previous note on the same string.";
+
 const LEGATO_ARTICULATIONS = new Set<NoteArticulation>([
   "hammer_on",
   "pull_off",
@@ -73,13 +76,16 @@ function legatoErrorMessage(
   articulation: NoteArticulation,
   path: string,
   previous: PreviousNoteOnString | undefined,
-  current: TabNote,
+  anyNoteSeen: boolean,
 ): string {
   if (
     (articulation === "hammer_on" || articulation === "pull_off") &&
     previous === undefined
   ) {
-    return `${path}: ${INVALID_CROSS_STRING_LEGATO}`;
+    if (anyNoteSeen) {
+      return `${path}: ${INVALID_CROSS_STRING_LEGATO}`;
+    }
+    return `${path}: ${NO_ANCHOR_NOTE_LEGATO}`;
   }
 
   switch (articulation) {
@@ -96,6 +102,7 @@ function legatoErrorMessage(
 
 export function validateLegatoArticulations(tabData: TabData): void {
   const lastNoteOnString = new Map<TabNoteString, PreviousNoteOnString>();
+  let anyNoteSeen = false;
 
   for (const { path, note } of flattenNoteSequence(tabData)) {
     const articulation = note.articulationFromPrevious;
@@ -109,6 +116,7 @@ export function validateLegatoArticulations(tabData: TabData): void {
     }
 
     if (articulation === undefined) {
+      anyNoteSeen = true;
       lastNoteOnString.set(note.string, { fret: note.fret, path });
       continue;
     }
@@ -117,10 +125,11 @@ export function validateLegatoArticulations(tabData: TabData): void {
 
     if (!isValidArticulationFromPrevious(articulation, previous, note)) {
       throw new Error(
-        legatoErrorMessage(articulation, path, previous, note),
+        legatoErrorMessage(articulation, path, previous, anyNoteSeen),
       );
     }
 
+    anyNoteSeen = true;
     lastNoteOnString.set(note.string, { fret: note.fret, path });
   }
 }

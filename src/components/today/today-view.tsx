@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { canReplaySession } from "@/lib/practice/player-mode";
 import {
   SESSION_TYPE_LABEL,
   SLOT_LABEL,
 } from "@/lib/practice/labels";
+import { canReplaySession } from "@/lib/practice/player-mode";
 
 export function TodayView() {
   const schedule = useQuery(api.sessions.getScheduleStatus);
@@ -21,6 +21,22 @@ export function TodayView() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const generateAttempted = useRef(false);
+
+  const runGenerateSession = useCallback(() => {
+    setGenerating(true);
+    setError(null);
+
+    void generateSession({})
+      .catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Could not generate session",
+        );
+        generateAttempted.current = false;
+      })
+      .finally(() => {
+        setGenerating(false);
+      });
+  }, [generateSession]);
 
   useEffect(() => {
     if (
@@ -34,19 +50,8 @@ export function TodayView() {
     }
 
     generateAttempted.current = true;
-    setGenerating(true);
-    setError(null);
-
-    void generateSession({})
-      .catch((err) => {
-        setError(
-          err instanceof Error ? err.message : "Could not generate session",
-        );
-      })
-      .finally(() => {
-        setGenerating(false);
-      });
-  }, [schedule, session, generateSession]);
+    runGenerateSession();
+  }, [schedule, session, runGenerateSession]);
 
   if (
     schedule === undefined ||
@@ -114,6 +119,19 @@ export function TodayView() {
               {error ??
                 "No session available. Add MVP drills to your Convex deployment."}
             </p>
+            {error && (
+              <Button
+                type="button"
+                className="mt-4"
+                variant="outline"
+                onClick={() => {
+                  generateAttempted.current = true;
+                  runGenerateSession();
+                }}
+              >
+                Try again
+              </Button>
+            )}
           </div>
         </div>
       </main>

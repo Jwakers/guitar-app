@@ -5,14 +5,12 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { TRAINING_VERDICT_LABEL } from "@/lib/practice/labels";
+import { TRAINING_VERDICT_LABEL, VERDICT_OPTIONS, type TrainingVerdict } from "@/lib/practice/labels";
 import {
   exerciseUsesBpmMetric,
   needsBpmConfirmation,
   suggestedCleanBpmOptions,
 } from "@/lib/practice/bpm-confirmation";
-
-type TrainingVerdict = "nailed_it" | "nearly_there" | "needs_work";
 
 type FeedbackStepProps = {
   sessionId: Id<"practiceSessions">;
@@ -34,12 +32,6 @@ type FeedbackStepProps = {
   onBack: () => void;
   onDone: (hasMore: boolean, nextOrder: number | null) => void | Promise<void>;
 };
-
-const VERDICT_OPTIONS: TrainingVerdict[] = [
-  "nailed_it",
-  "nearly_there",
-  "needs_work",
-];
 
 type BpmStep = "verdict" | "confirm_bpm" | "pick_higher" | "adjust";
 
@@ -76,7 +68,6 @@ export function FeedbackStep({
       trainingVerdict?: TrainingVerdict;
       actualBpm?: number;
       peakBpmAttempted?: number;
-      skipped?: boolean;
     },
   ) {
     setSubmitting(true);
@@ -129,11 +120,6 @@ export function FeedbackStep({
         { kind: "placeholder_feedback", trainingVerdict: selected },
         { trainingVerdict: selected },
       );
-      return;
-    }
-
-    if (needsBpmConfirmation(currentBpm, peakBpm)) {
-      setBpmStep("confirm_bpm");
       return;
     }
 

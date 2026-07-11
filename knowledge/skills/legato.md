@@ -12,9 +12,9 @@ Do **not** mark string changes as hammer-ons or pull-offs.
 
 | Pattern | Valid? |
 | --- | --- |
-| `e|--5h7--` (same string, ascending) | **Yes** — hammer-on |
-| `e|--7p5--` or `e|--7p0--` (same string, descending) | **Yes** — pull-off |
-| `e|--5--` then `B|--7h--` (different strings) | **No** — cross-string legato |
+| `e\|--5h7--` (same string, ascending) | **Yes** — hammer-on |
+| `e\|--7p5--` or `e\|--7p0--` (same string, descending) | **Yes** — pull-off |
+| `e\|--5--` then `B\|--7h--` (different strings) | **No** — cross-string legato |
 | Descending phrase across strings with pull-off markings | **No** — string changes are picked |
 
 Hammer-ons from nowhere (no prior note on the same string) are advanced and out of MVP scope. If ever supported, they require an explicit separate technique value (`hammer_on_from_nowhere`) — never silent interpretation of cross-string hammer-ons.
@@ -109,7 +109,7 @@ e|--5h8--
 B|------7p5--
 ```
 
-if hammer-on or pull-off markings imply cross-string connection.
+This example is invalid because the hammer-on and pull-off markings imply a cross-string legato connection instead of separate picked string changes.
 
 ## Common Mistakes
 

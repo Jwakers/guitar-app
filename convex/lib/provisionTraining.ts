@@ -22,6 +22,7 @@ import type {
   SkillRatingSnapshot,
   UserProfileSnapshot,
 } from "../../src/lib/training-engine/types";
+import { getWeeklyPlanForBlockWeek } from "./weeklyPlanLookup";
 
 export function exerciseDocToCandidate(doc: Doc<"exercises">): ExerciseCandidate {
   return {
@@ -184,12 +185,7 @@ export async function provisionInitialTraining(
     block = (await ctx.db.get("trainingBlocks", blockId))!;
   }
 
-  let weeklyPlan = (
-    await ctx.db
-      .query("weeklyPlans")
-      .withIndex("by_userId_startDate", (q) => q.eq("userId", userId))
-      .collect()
-  ).find((p) => p.blockId === block._id && p.weekNumber === 1);
+  let weeklyPlan = await getWeeklyPlanForBlockWeek(ctx, block._id, 1);
 
   if (!weeklyPlan) {
     const config = getBlockConfig(block.blockType as BlockType);

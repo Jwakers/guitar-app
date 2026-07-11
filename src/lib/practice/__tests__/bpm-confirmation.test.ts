@@ -17,6 +17,14 @@ describe("bpm-confirmation", () => {
     ]);
   });
 
+  it("suggestedCleanBpmOptions spans large ranges and includes floor", () => {
+    const options = suggestedCleanBpmOptions(200, 80);
+    expect(options).toHaveLength(12);
+    expect(options[0]).toBe(200);
+    expect(options).toContain(80);
+    expect(options).toEqual([...options].sort((a, b) => b - a));
+  });
+
   it("exerciseUsesBpmMetric detects BPM exercises", () => {
     expect(
       exerciseUsesBpmMetric({

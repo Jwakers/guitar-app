@@ -17,6 +17,7 @@ import type * as lib_provisionTraining from "../lib/provisionTraining.js";
 import type * as lib_sessionLifecycle from "../lib/sessionLifecycle.js";
 import type * as lib_sessionValidators from "../lib/sessionValidators.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
+import type * as lib_weeklyPlanLookup from "../lib/weeklyPlanLookup.js";
 import type * as onboarding from "../onboarding.js";
 import type * as sessions from "../sessions.js";
 import type * as skills from "../skills.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sessionLifecycle": typeof lib_sessionLifecycle;
   "lib/sessionValidators": typeof lib_sessionValidators;
   "lib/upsertExercise": typeof lib_upsertExercise;
+  "lib/weeklyPlanLookup": typeof lib_weeklyPlanLookup;
   onboarding: typeof onboarding;
   sessions: typeof sessions;
   skills: typeof skills;

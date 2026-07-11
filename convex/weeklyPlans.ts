@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
 import { getActiveBlock } from "./lib/provisionTraining";
+import { getWeeklyPlanForBlockWeek } from "./lib/weeklyPlanLookup";
 
 export const getCurrentWeeklyPlan = query({
   args: {},
@@ -27,12 +28,11 @@ export const getCurrentWeeklyPlan = query({
     if (!block) return null;
 
     return (
-      await ctx.db
-        .query("weeklyPlans")
-        .withIndex("by_userId_startDate", (q) => q.eq("userId", user._id))
-        .collect()
-    ).find(
-      (p) => p.blockId === block._id && p.weekNumber === block.currentWeek,
-    ) ?? null;
+      (await getWeeklyPlanForBlockWeek(
+        ctx,
+        block._id,
+        block.currentWeek,
+      )) ?? null
+    );
   },
 });
