@@ -1,9 +1,21 @@
-import type { ExerciseCandidate, SessionExerciseItem } from "./types";
+import { computeNextTargetBpm } from "./reliable-performance";
+import type {
+  ExerciseCandidate,
+  SessionExerciseItem,
+  SessionType,
+  UserExerciseStateSnapshot,
+} from "./types";
 import type { ExerciseSelectionReasonCode } from "./types";
 import type { ExerciseSelectionScoreBreakdown } from "./types";
 
+export type GenerateTargetsOptions = {
+  sessionType: SessionType;
+  userState?: UserExerciseStateSnapshot;
+};
+
 export function generateTargets(
   exercise: ExerciseCandidate,
+  options: GenerateTargetsOptions,
 ): Pick<
   SessionExerciseItem,
   "targetMetric" | "targetValue" | "targetBpm" | "durationMinutes"
@@ -17,8 +29,22 @@ export function generateTargets(
     durationMinutes,
   };
 
-  if (exercise.supportsBpm && exercise.defaultTargetBpm !== undefined) {
-    result.targetBpm = exercise.defaultTargetBpm;
+  if (exercise.supportsBpm) {
+    const reliableBpm =
+      options.userState?.reliablePerformance?.metric === "clean_bpm"
+        ? options.userState.reliablePerformance.value
+        : undefined;
+    const baseBpm = reliableBpm ?? exercise.defaultTargetBpm;
+
+    if (baseBpm !== undefined) {
+      result.targetBpm = computeNextTargetBpm({
+        reliableBpm: baseBpm,
+        sessionType: options.sessionType,
+        progressionReady: options.userState?.progressionReady ?? false,
+        regressionRecommended:
+          options.userState?.regressionRecommended ?? false,
+      });
+    }
   }
 
   return result;

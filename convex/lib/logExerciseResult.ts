@@ -5,6 +5,7 @@ import {
   normalizeClientFeedbackResponse,
 } from "../../src/lib/practice/feedback-form";
 import type { SessionExerciseItem } from "./sessionLifecycle";
+import { recomputeExerciseState } from "./recomputeExerciseState";
 
 export type FeedbackResponseEntry = {
   questionId: string;
@@ -260,6 +261,13 @@ export async function applyLogExerciseResult(
     isPersonalBest,
     createdAt: now,
   });
+
+  await recomputeExerciseState(
+    ctx,
+    input.userId,
+    sessionItem.exerciseId,
+    now,
+  );
 
   return { logId, created: true };
 }

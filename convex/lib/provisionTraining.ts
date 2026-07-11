@@ -23,6 +23,7 @@ import type {
   UserProfileSnapshot,
 } from "../../src/lib/training-engine/types";
 import { getWeeklyPlanForBlockWeek } from "./weeklyPlanLookup";
+import { loadUserExerciseStates } from "./recomputeExerciseState";
 
 export function exerciseDocToCandidate(doc: Doc<"exercises">): ExerciseCandidate {
   return {
@@ -268,7 +269,15 @@ export async function createSessionForDate(
   exercises: ExerciseCandidate[],
   now: number,
 ): Promise<Id<"practiceSessions">> {
-  const built = buildSession(sessionType, profile, block, ratings, exercises);
+  const exerciseStates = await loadUserExerciseStates(ctx, userId);
+  const built = buildSession(
+    sessionType,
+    profile,
+    block,
+    ratings,
+    exercises,
+    exerciseStates,
+  );
 
   return await ctx.db.insert("practiceSessions", {
     userId,

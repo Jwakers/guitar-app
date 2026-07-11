@@ -371,7 +371,7 @@ export function FeedbackStep({
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">{exerciseTitle}</p>
 
-      <div className="mt-8 flex flex-col gap-6">
+      <div className="mt-8 flex flex-col gap-8">
         {renderableQuestions.map((question) => (
           <FeedbackQuestionField
             key={question.id}

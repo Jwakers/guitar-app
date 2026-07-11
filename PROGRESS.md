@@ -45,8 +45,8 @@ Track what is built and what remains. Update this file as features land.
 - [x] `convex/weeklyPlans.ts` — getWeeklyPlan, generateWeekPlan
 - [x] `lib/training-engine/` — session generation logic
 - [x] `convex/sessions.ts` — getTodaySession, generateSession
-- [ ] Basic progressive overload rules
-- [ ] Deload/light session logic
+- [x] Basic progressive overload rules
+- [x] Deload/light session logic
 
 ---
 

@@ -14,6 +14,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_exerciseValidators from "../lib/exerciseValidators.js";
 import type * as lib_logExerciseResult from "../lib/logExerciseResult.js";
 import type * as lib_provisionTraining from "../lib/provisionTraining.js";
+import type * as lib_recomputeExerciseState from "../lib/recomputeExerciseState.js";
 import type * as lib_sessionLifecycle from "../lib/sessionLifecycle.js";
 import type * as lib_sessionValidators from "../lib/sessionValidators.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   "lib/exerciseValidators": typeof lib_exerciseValidators;
   "lib/logExerciseResult": typeof lib_logExerciseResult;
   "lib/provisionTraining": typeof lib_provisionTraining;
+  "lib/recomputeExerciseState": typeof lib_recomputeExerciseState;
   "lib/sessionLifecycle": typeof lib_sessionLifecycle;
   "lib/sessionValidators": typeof lib_sessionValidators;
   "lib/upsertExercise": typeof lib_upsertExercise;
