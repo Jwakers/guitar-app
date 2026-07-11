@@ -67,10 +67,10 @@ Track what is built and what remains. Update this file as features land.
 ## Phase 5: Progress
 
 - [ ] Skill rating update logic (`convex/progression.ts`)
-- [ ] Progress dashboard (`/progress`)
+- [x] Progress dashboard (`/progress`)
 - [ ] Skill target detail page (`/progress/targets/[skillTarget]`)
 - [ ] Exercise history view
-- [ ] Personal best tracking
+- [x] Personal best tracking
 - [ ] Trend indicators (7-day, 30-day)
 
 ---
@@ -104,7 +104,7 @@ Track what is built and what remains. Update this file as features land.
 | Sign up | `/sign-up` | Done |
 | Today | `/today` | Done |
 | Practice player | `/train/[sessionId]` | Done |
-| Progress | `/progress` | Not built |
+| Progress | `/progress` | Done |
 | Skill target detail | `/progress/targets/[skillTarget]` | Not built |
 | Training blocks | `/training` | Not built |
 | Exercise library | `/exercises` | Not built |

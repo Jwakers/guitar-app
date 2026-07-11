@@ -102,3 +102,15 @@ export function practiceDayIndex(
 export function addWeeksMs(startMs: number, weeks: number): number {
   return startMs + weeks * 7 * 24 * 60 * 60 * 1000;
 }
+
+/** Monday of the calendar week containing `dateMs`, as YYYY-MM-DD in `timezone`. */
+export function getCalendarWeekStartDate(
+  dateMs: number,
+  timezone: string,
+): string {
+  const dayName = getDayNameInTimezone(dateMs, timezone);
+  const dayIndex = DAY_NAMES.indexOf(dayName as (typeof DAY_NAMES)[number]);
+  const daysFromMonday = dayIndex === 0 ? 6 : dayIndex - 1;
+  const mondayMs = addCalendarDaysInTimezone(dateMs, timezone, -daysFromMonday);
+  return formatDateInTimezone(mondayMs, timezone);
+}
