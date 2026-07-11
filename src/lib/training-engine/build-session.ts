@@ -1,3 +1,4 @@
+import type { Id } from "../../../convex/_generated/dataModel";
 import type { SessionType } from "./types";
 import type {
   BlockSnapshot,
@@ -7,6 +8,7 @@ import type {
   SessionSlot,
   SessionSlotType,
   SkillRatingSnapshot,
+  UserExerciseStateSnapshot,
   UserProfileSnapshot,
 } from "./types";
 import {
@@ -56,8 +58,13 @@ function appendExerciseItem(
   breakdown: ExerciseSelectionScoreBreakdown,
   slot: SessionSlot,
   order: number,
+  sessionType: SessionType,
+  exerciseStates?: Map<Id<"exercises">, UserExerciseStateSnapshot>,
 ) {
-  const targets = generateTargets(exercise);
+  const targets = generateTargets(exercise, {
+    sessionType,
+    userState: exerciseStates?.get(exercise._id),
+  });
   return {
     exerciseId: exercise._id,
     slotType: slot.slotType,
@@ -175,6 +182,7 @@ export function buildSession(
   block: BlockSnapshot,
   ratings: SkillRatingSnapshot[],
   exercises: ExerciseCandidate[],
+  exerciseStates?: Map<Id<"exercises">, UserExerciseStateSnapshot>,
 ): BuiltSession {
   if (!hasAnyMvpExercises(exercises)) {
     throw new SessionBuildError(
@@ -215,6 +223,8 @@ export function buildSession(
         selection.breakdown,
         selection.slot,
         order++,
+        sessionType,
+        exerciseStates,
       ),
     );
   }
@@ -247,6 +257,8 @@ export function buildSession(
           selection.breakdown,
           fallbackSlot,
           0,
+          sessionType,
+          exerciseStates,
         ),
       );
     }

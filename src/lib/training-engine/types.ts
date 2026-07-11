@@ -144,6 +144,25 @@ export type BuiltSession = {
   exerciseItems: SessionExerciseItem[];
 };
 
+export type UserExerciseStateSnapshot = {
+  exerciseId: Id<"exercises">;
+  reliablePerformance?: {
+    metric: string;
+    value: number;
+    unit: string;
+  };
+  peakPerformance?: {
+    metric: string;
+    value: number;
+    unit: string;
+  };
+  recentVerdicts: Array<"nailed_it" | "nearly_there" | "needs_work">;
+  consecutiveNailed: number;
+  consecutiveNeedsWork: number;
+  progressionReady: boolean;
+  regressionRecommended: boolean;
+};
+
 export type InitialBlockSelection = {
   blockType: BlockType;
   title: string;
