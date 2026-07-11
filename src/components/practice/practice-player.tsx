@@ -229,6 +229,7 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
       <SessionSummary
         session={session}
         exerciseTitleById={exerciseTitleById}
+        logsByOrder={logsByOrder}
       />
     );
   }
@@ -259,6 +260,7 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
       <SessionSummary
         session={session}
         exerciseTitleById={exerciseTitleById}
+        logsByOrder={logsByOrder}
       />
     );
   }

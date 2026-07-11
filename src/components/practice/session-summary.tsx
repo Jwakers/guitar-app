@@ -3,7 +3,18 @@
 import Link from "next/link";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { SLOT_LABEL, SESSION_TYPE_LABEL } from "@/lib/practice/labels";
+import {
+  SLOT_LABEL,
+  SESSION_TYPE_LABEL,
+  TRAINING_VERDICT_LABEL,
+} from "@/lib/practice/labels";
+import {
+  countVerdicts,
+  formatObjectiveMetric,
+  formatSubjectiveHighlights,
+  sessionBestBpm,
+  type SessionLogSummary,
+} from "@/lib/practice/session-log-display";
 
 type SessionSummaryProps = {
   session: {
@@ -21,16 +32,24 @@ type SessionSummaryProps = {
     }>;
   };
   exerciseTitleById: Map<Id<"exercises">, string>;
+  logsByOrder?: Map<number, SessionLogSummary>;
 };
 
 export function SessionSummary({
   session,
   exerciseTitleById,
+  logsByOrder,
 }: SessionSummaryProps) {
   const items = [...session.exerciseItems].sort((a, b) => a.order - b.order);
   const completedCount = items.filter(
     (item) => item.status === "completed" || item.status === "skipped",
   ).length;
+
+  const logs = items
+    .map((item) => logsByOrder?.get(item.order))
+    .filter((log): log is SessionLogSummary => log !== undefined);
+  const verdictCounts = countVerdicts(logs);
+  const bestBpm = sessionBestBpm(logs);
 
   return (
     <main className="flex flex-1 flex-col px-4 py-8">
@@ -56,31 +75,84 @@ export function SessionSummary({
           </p>
         </div>
 
-        <ul className="mt-6 flex flex-col gap-2">
-          {items.map((item) => (
-            <li
-              key={`${item.exerciseId}-${item.order}`}
-              className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
-            >
-              <div>
-                <p className="font-mono text-sm font-bold text-foreground">
-                  {exerciseTitleById.get(item.exerciseId) ?? "Exercise"}
-                </p>
-                <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
-                  {SLOT_LABEL[item.slotType]?.toUpperCase() ??
-                    item.slotType.toUpperCase()}
-                </span>
-              </div>
-              <span className="font-mono text-[10px] text-primary">
-                {item.status === "completed" ? "DONE" : item.status.toUpperCase()}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {logs.length > 0 && (
+          <div className="mt-4 rounded-lg border border-border bg-card p-4">
+            <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+              SESSION ROLLUP
+            </p>
+            <p className="mt-2 text-sm text-foreground">
+              {verdictCounts.nailed} nailed · {verdictCounts.nearly} nearly ·{" "}
+              {verdictCounts.needsWork} needs work
+            </p>
+            {bestBpm !== null && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Best clean BPM this session: {bestBpm}
+              </p>
+            )}
+          </div>
+        )}
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Detailed feedback summary coming soon.
-        </p>
+        <ul className="mt-6 flex flex-col gap-2">
+          {items.map((item) => {
+            const log = logsByOrder?.get(item.order);
+            const objectiveMetric = log
+              ? formatObjectiveMetric(log, item.targetBpm)
+              : null;
+            const subjectiveHighlights = log
+              ? formatSubjectiveHighlights(log)
+              : [];
+
+            return (
+              <li
+                key={`${item.exerciseId}-${item.order}`}
+                className="rounded-lg border border-border bg-card px-4 py-3"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-mono text-sm font-bold text-foreground">
+                      {exerciseTitleById.get(item.exerciseId) ?? "Exercise"}
+                    </p>
+                    <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
+                      {SLOT_LABEL[item.slotType]?.toUpperCase() ??
+                        item.slotType.toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="shrink-0 font-mono text-[10px] text-primary">
+                    {item.status === "completed"
+                      ? "DONE"
+                      : item.status.toUpperCase()}
+                  </span>
+                </div>
+
+                {log ? (
+                  <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                    <p>
+                      {TRAINING_VERDICT_LABEL[log.trainingVerdict] ??
+                        log.trainingVerdict}
+                      {log.isPersonalBest && (
+                        <span className="ml-2 font-mono text-[10px] font-bold tracking-widest text-primary">
+                          PERSONAL BEST
+                        </span>
+                      )}
+                    </p>
+                    {objectiveMetric && <p>{objectiveMetric}</p>}
+                    {subjectiveHighlights.map((highlight) => (
+                      <p key={highlight.label}>
+                        {highlight.label}: {highlight.value}
+                      </p>
+                    ))}
+                  </div>
+                ) : item.status === "skipped" ? (
+                  <p className="mt-3 text-sm text-muted-foreground">Skipped</p>
+                ) : (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    No feedback logged
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
 
         <Button asChild className="mt-6 w-full" size="lg">
           <Link href="/today">Back to Today</Link>
