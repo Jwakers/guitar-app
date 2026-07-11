@@ -5,7 +5,10 @@ import type {
   TabData,
   TabNote,
   TabNoteTechnique,
+  NoteArticulation,
+  TabNoteString,
 } from "./internal-schema";
+import { isValidArticulationFromPrevious } from "./legato-validation";
 import { bendQuarterTones, resolveOpenStringPitch } from "./pitch-helpers";
 
 // ---------------------------------------------------------------------------
@@ -20,12 +23,16 @@ const DURATION_MAP: Record<TabBeatDuration, number> = {
   sixteenth: 16,
 };
 
-const TECHNIQUE_EFFECTS: Partial<
-  Record<Exclude<TabNoteTechnique, "bend" | "release" | "picked">, string>
-> = {
+/** AlphaTeX uses `h` for both hammer-ons and pull-offs; fret direction defines which. */
+const ARTICULATION_EFFECTS: Partial<Record<NoteArticulation, string>> = {
   hammer_on: "h",
   pull_off: "h",
   slide: "sl",
+};
+
+const NOTE_TECHNIQUE_EFFECTS: Partial<
+  Record<Exclude<TabNoteTechnique, "bend" | "release">, string>
+> = {
   vibrato: "v",
   mute: "pm",
   harmonic: "nh",
@@ -36,6 +43,10 @@ type DisplayHints = NonNullable<TabData["displayHints"]>;
 type EmitFlags = {
   showAccents: boolean;
   showPicking: boolean;
+};
+
+type PreviousNoteOnString = {
+  fret: number;
 };
 
 function resolveEmitFlags(hints: DisplayHints | undefined): EmitFlags {
@@ -57,12 +68,28 @@ function tuningToAlphaTex(tuning: string[]): string {
   return `\\tuning (${[...pitches].reverse().join(" ")})`;
 }
 
-function techniqueEffect(
+function articulationEffect(
+  note: TabNote,
+  previousOnString: PreviousNoteOnString | undefined,
+): string | null {
+  const articulation = note.articulationFromPrevious;
+  if (articulation === undefined || articulation === "picked") {
+    return null;
+  }
+
+  if (!isValidArticulationFromPrevious(articulation, previousOnString, note)) {
+    return null;
+  }
+
+  return ARTICULATION_EFFECTS[articulation] ?? null;
+}
+
+function noteTechniqueEffect(
   note: TabNote,
   tuning: string[],
   previousBendQt: number | null,
 ): string | null {
-  if (note.technique === undefined || note.technique === "picked") return null;
+  if (note.technique === undefined) return null;
 
   if (note.technique === "bend") {
     const qt = bendQuarterTones(note, tuning);
@@ -74,7 +101,7 @@ function techniqueEffect(
     return `b (${qt} 0)`;
   }
 
-  return TECHNIQUE_EFFECTS[note.technique] ?? null;
+  return NOTE_TECHNIQUE_EFFECTS[note.technique] ?? null;
 }
 
 function noteEffects(
@@ -82,11 +109,15 @@ function noteEffects(
   tuning: string[],
   accented: boolean,
   previousBendQt: number | null,
+  previousOnString: PreviousNoteOnString | undefined,
   flags: EmitFlags,
 ): string[] {
   const effects: string[] = [];
 
-  const technique = techniqueEffect(note, tuning, previousBendQt);
+  const articulation = articulationEffect(note, previousOnString);
+  if (articulation !== null) effects.push(articulation);
+
+  const technique = noteTechniqueEffect(note, tuning, previousBendQt);
   if (technique !== null) effects.push(technique);
 
   // Left-hand fingering is intentionally never rendered in AlphaTeX.
@@ -136,10 +167,18 @@ function noteToAlphaTex(
   tuning: string[],
   accented: boolean,
   previousBendQt: number | null,
+  previousOnString: PreviousNoteOnString | undefined,
   flags: EmitFlags,
 ): string {
   return `${note.fret}.${note.string}${formatEffects(
-    noteEffects(note, tuning, accented, previousBendQt, flags),
+    noteEffects(
+      note,
+      tuning,
+      accented,
+      previousBendQt,
+      previousOnString,
+      flags,
+    ),
   )}`;
 }
 
@@ -147,6 +186,7 @@ function beatToAlphaTex(
   beat: TabBeat,
   tuning: string[],
   previousBendQt: number | null,
+  lastNoteOnString: Map<TabNoteString, PreviousNoteOnString>,
   flags: EmitFlags,
 ): { tex: string; bendQt: number | null } {
   const dur = DURATION_MAP[beat.duration];
@@ -168,24 +208,47 @@ function beatToAlphaTex(
 
   if (beat.notes.length === 1) {
     const note = beat.notes[0]!;
-    return {
-      tex: `${noteToAlphaTex(note, tuning, accented, previousBendQt, flags)}.${dur}${beatFx}`,
-      bendQt: nextBendQt,
-    };
+    const previousOnString = lastNoteOnString.get(note.string);
+    const tex = `${noteToAlphaTex(note, tuning, accented, previousBendQt, previousOnString, flags)}.${dur}${beatFx}`;
+    lastNoteOnString.set(note.string, { fret: note.fret });
+    return { tex, bendQt: nextBendQt };
   }
 
   // Chord: accent applies to each note; beat effects stay after duration.
   const noteStr = beat.notes
-    .map((n) => noteToAlphaTex(n, tuning, accented, previousBendQt, flags))
+    .map((n) => {
+      const previousOnString = lastNoteOnString.get(n.string);
+      const rendered = noteToAlphaTex(
+        n,
+        tuning,
+        accented,
+        previousBendQt,
+        previousOnString,
+        flags,
+      );
+      lastNoteOnString.set(n.string, { fret: n.fret });
+      return rendered;
+    })
     .join(" ");
   return { tex: `(${noteStr}).${dur}${beatFx}`, bendQt: nextBendQt };
 }
 
-function barToAlphaTex(bar: TabBar, tuning: string[], flags: EmitFlags): string {
+function barToAlphaTex(
+  bar: TabBar,
+  tuning: string[],
+  flags: EmitFlags,
+  lastNoteOnString: Map<TabNoteString, PreviousNoteOnString>,
+): string {
   let previousBendQt: number | null = null;
   const parts: string[] = [];
   for (const beat of bar.beats) {
-    const { tex, bendQt } = beatToAlphaTex(beat, tuning, previousBendQt, flags);
+    const { tex, bendQt } = beatToAlphaTex(
+      beat,
+      tuning,
+      previousBendQt,
+      lastNoteOnString,
+      flags,
+    );
     parts.push(tex);
     previousBendQt = bendQt;
   }
@@ -204,6 +267,10 @@ function barToAlphaTex(bar: TabBar, tuning: string[], flags: EmitFlags): string 
  * Bend amounts use quarter-tones (2 = half step, 4 = whole step), inferred from
  * `targetPitch` (required for bend notes).
  *
+ * Legato effects (`h`, `sl`) are emitted only from `articulationFromPrevious`
+ * when the transition passes legato validation — never from proximity or
+ * deprecated `technique` fields.
+ *
  * `displayHints` gates optional annotations:
  * - showPicking: opt-in
  * - showAccents: opt-out (emitted when unset)
@@ -213,6 +280,7 @@ function barToAlphaTex(bar: TabBar, tuning: string[], flags: EmitFlags): string 
  */
 export function tabDataToAlphaTex(data: TabData): string {
   const flags = resolveEmitFlags(data.displayHints);
+  const lastNoteOnString = new Map<TabNoteString, PreviousNoteOnString>();
 
   const header = [
     "\\staff{score tabs}",
@@ -226,7 +294,7 @@ export function tabDataToAlphaTex(data: TabData): string {
   ].join("\n");
 
   const bars = data.bars
-    .map((bar) => `| ${barToAlphaTex(bar, data.tuning, flags)}`)
+    .map((bar) => `| ${barToAlphaTex(bar, data.tuning, flags, lastNoteOnString)}`)
     .join("\n");
 
   return `${header}\n${bars}`;

@@ -8,7 +8,9 @@ import type {
   TabNoteFinger,
   TabNoteString,
   TabNoteTechnique,
+  NoteArticulation,
 } from "./internal-schema";
+import { validateLegatoArticulations } from "./legato-validation";
 import { validateBendTargetPitch } from "./pitch-helpers";
 
 const VALID_DURATIONS = new Set<TabBeatDuration>([
@@ -27,16 +29,26 @@ const VALID_PICKINGS = new Set<TabBeatPicking>([
   "sweep",
 ]);
 
-const VALID_TECHNIQUES = new Set<TabNoteTechnique>([
+const VALID_ARTICULATIONS = new Set<NoteArticulation>([
   "picked",
   "hammer_on",
   "pull_off",
   "slide",
+]);
+
+const VALID_TECHNIQUES = new Set<TabNoteTechnique>([
   "bend",
   "release",
   "vibrato",
   "mute",
   "harmonic",
+]);
+
+const DEPRECATED_CONNECTION_TECHNIQUES = new Set([
+  "picked",
+  "hammer_on",
+  "pull_off",
+  "slide",
 ]);
 
 const VALID_STRINGS = new Set<TabNoteString>([1, 2, 3, 4, 5, 6]);
@@ -53,7 +65,14 @@ function validateNote(note: unknown, path: string, tuning: string[]): TabNote {
     throw new Error(`${path}: expected an object`);
   }
 
-  const { string, fret, finger, technique, targetPitch } = note;
+  const {
+    string,
+    fret,
+    finger,
+    articulationFromPrevious,
+    technique,
+    targetPitch,
+  } = note;
 
   if (!VALID_STRINGS.has(string as TabNoteString)) {
     throw new Error(
@@ -70,6 +89,24 @@ function validateNote(note: unknown, path: string, tuning: string[]): TabNote {
   if (finger !== undefined && !VALID_FINGERS.has(finger as TabNoteFinger)) {
     throw new Error(
       `${path}.finger: must be 1–4 if set, got ${JSON.stringify(finger)}`,
+    );
+  }
+
+  if (
+    articulationFromPrevious !== undefined &&
+    !VALID_ARTICULATIONS.has(articulationFromPrevious as NoteArticulation)
+  ) {
+    throw new Error(
+      `${path}.articulationFromPrevious: unrecognised value ${JSON.stringify(articulationFromPrevious)}`,
+    );
+  }
+
+  if (
+    technique !== undefined &&
+    DEPRECATED_CONNECTION_TECHNIQUES.has(technique as string)
+  ) {
+    throw new Error(
+      `${path}.technique: use articulationFromPrevious for hammer_on, pull_off, slide, or picked — not technique`,
     );
   }
 
@@ -293,7 +330,7 @@ export function validateTabData(data: unknown): TabData {
     }
   }
 
-  return {
+  const tabData: TabData = {
     tuning: validatedTuning,
     ...(capo !== undefined ? { capo: capo as number } : {}),
     tempo: tempo as number,
@@ -303,4 +340,8 @@ export function validateTabData(data: unknown): TabData {
       ? { displayHints: displayHints as TabData["displayHints"] }
       : {}),
   };
+
+  validateLegatoArticulations(tabData);
+
+  return tabData;
 }

@@ -18,6 +18,10 @@ import {
   inferDifficultyLevel,
 } from "@/lib/admin/infer-difficulty";
 import {
+  formatSubSkillDistribution,
+  inferSubSkillIds,
+} from "@/lib/admin/infer-sub-skills";
+import {
   formatTrainingAttributeDistribution,
   inferTrainingAttributes,
 } from "@/lib/admin/infer-training-attributes";
@@ -58,17 +62,6 @@ const requestSchema = z
     model: z.string().min(1).optional(),
   })
   .superRefine((data, ctx) => {
-    if (
-      coreSkillRequiresSubSkills(data.coreSkillId) &&
-      data.subSkillIds.length === 0
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "subSkillIds must contain at least one sub-skill for this core skill",
-        path: ["subSkillIds"],
-      });
-    }
     for (const subSkillId of data.subSkillIds) {
       if (!subSkillBelongsToCoreSkill(subSkillId, data.coreSkillId)) {
         ctx.addIssue({
@@ -181,6 +174,20 @@ export async function POST(request: Request) {
       { token },
     );
 
+    let subSkillIds = body.subSkillIds;
+    let subSkillIdsInferred = false;
+    if (
+      subSkillIds.length === 0 &&
+      coreSkillRequiresSubSkills(body.coreSkillId)
+    ) {
+      subSkillIds = inferSubSkillIds(summaries, body.coreSkillId);
+      subSkillIdsInferred = true;
+    }
+    const subSkillDistribution = formatSubSkillDistribution(
+      summaries,
+      body.coreSkillId,
+    );
+
     let difficultyLevel: number;
     let difficultyInferred: boolean;
     if (
@@ -193,14 +200,14 @@ export async function POST(request: Request) {
       difficultyLevel = inferDifficultyLevel(
         summaries,
         body.coreSkillId,
-        body.subSkillIds,
+        subSkillIds,
       );
       difficultyInferred = true;
     }
     const difficultyDistribution = formatDifficultyDistribution(
       summaries,
       body.coreSkillId,
-      body.subSkillIds,
+      subSkillIds,
     );
 
     let trainingAttributes: (typeof TRAINING_ATTRIBUTES)[number][];
@@ -212,19 +219,21 @@ export async function POST(request: Request) {
       trainingAttributes = inferTrainingAttributes(
         summaries,
         body.coreSkillId,
-        body.subSkillIds,
+        subSkillIds,
       );
       trainingAttributesInferred = true;
     }
     const trainingAttributeDistribution = formatTrainingAttributeDistribution(
       summaries,
       body.coreSkillId,
-      body.subSkillIds,
+      subSkillIds,
     );
 
     const { system, prompt } = buildDrillPrompt({
       coreSkillId: body.coreSkillId,
-      subSkillIds: body.subSkillIds,
+      subSkillIds,
+      subSkillIdsInferred,
+      subSkillDistribution,
       trainingAttributes,
       trainingAttributesInferred,
       trainingAttributeDistribution,
@@ -316,6 +325,27 @@ export async function POST(request: Request) {
       }
     }
 
+    const subSkillIdsMatch =
+      exercise.subSkillIds.length === subSkillIds.length &&
+      subSkillIds.every((id) => exercise.subSkillIds.includes(id));
+    if (!subSkillIdsMatch) {
+      try {
+        exercise = validateExercise({
+          ...exercise,
+          subSkillIds,
+        });
+      } catch (err) {
+        const pinError = err instanceof Error ? err.message : String(err);
+        return validationFailureResponse(
+          "Generated drill failed validation after sub-skill pin",
+          pinError,
+          generated,
+          generated.patternType ?? exercise.patternType,
+          { ...exercise, subSkillIds },
+        );
+      }
+    }
+
     const qualityScore = recomputeQualityTotal(generated.qualityScore);
 
     return NextResponse.json({
@@ -329,6 +359,9 @@ export async function POST(request: Request) {
       refinePrompt: generated.refinePrompt,
       validationStatus: "passed" as const,
       description: exercise.description,
+      subSkillIds,
+      subSkillIdsInferred,
+      subSkillDistribution,
       difficultyLevel,
       difficultyInferred,
       difficultyDistribution,

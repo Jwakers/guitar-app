@@ -34,17 +34,17 @@ Track what is built and what remains. Update this file as features land.
 - [x] Initial skill self-assessment (rate 1–5 per skill)
 - [x] Initial skill ratings written to Convex (`userSkillRatings`)
 - [x] Onboarding completion flag set (`onboardingCompleted: true`)
-- [ ] Generate initial training block from profile + skill ratings
+- [x] Generate initial training block from profile + skill ratings
 - [x] Redirect new users to onboarding before Today screen
 
 ---
 
 ## Phase 3: Training Engine v1
 
-- [ ] `convex/trainingBlocks.ts` — getCurrentBlock, createBlock
-- [ ] `convex/weeklyPlans.ts` — getWeeklyPlan, generateWeekPlan
-- [ ] `lib/training-engine/` — session generation logic
-- [ ] `convex/sessions.ts` — getTodaySession, generateSession
+- [x] `convex/trainingBlocks.ts` — getCurrentBlock, createBlock
+- [x] `convex/weeklyPlans.ts` — getWeeklyPlan, generateWeekPlan
+- [x] `lib/training-engine/` — session generation logic
+- [x] `convex/sessions.ts` — getTodaySession, generateSession
 - [ ] Basic progressive overload rules
 - [ ] Deload/light session logic
 
@@ -52,13 +52,15 @@ Track what is built and what remains. Update this file as features land.
 
 ## Phase 4: Practice Flow
 
-- [ ] Today screen (`/today`) — shows today's session or generates one
-- [ ] Practice player (`/train/[sessionId]`) — exercise-by-exercise flow
-- [ ] Tab display component (monospace, mobile-readable)
-- [ ] Exercise logging (cleanliness, difficulty, primary metric, BPM)
-- [ ] Session completion screen with summary
-- [ ] Progressive save (logs each exercise immediately)
-- [ ] Session resume after interruption
+- [x] Today screen (`/today`) — shows today's session or generates one
+- [x] Practice player (`/train/[sessionId]`) — exercise-by-exercise flow
+- [x] Tab display component (monospace, mobile-readable) — AlphaTab in session context
+- [x] Exercise logging (cleanliness, difficulty, primary metric, BPM) — `logExerciseResult` + BPM confirmation; full dynamic `feedbackSchema` TBD
+- [x] Session completion screen with summary (stub — detailed feedback TBD)
+- [x] Progressive save (logs each exercise item status immediately)
+- [x] Session resume after interruption
+- [x] Built-in metronome on exercise step (target BPM pre-set)
+- [x] Same-day session replay (read-only — no re-logging)
 
 ---
 
@@ -100,8 +102,8 @@ Track what is built and what remains. Update this file as features land.
 | Marketing landing | `/` | Done |
 | Sign in | `/sign-in` | Done |
 | Sign up | `/sign-up` | Done |
-| Today (stub) | `/today` | Stub |
-| Practice player | `/train/[sessionId]` | Not built |
+| Today | `/today` | Done |
+| Practice player | `/train/[sessionId]` | Done |
 | Progress | `/progress` | Not built |
 | Skill target detail | `/progress/targets/[skillTarget]` | Not built |
 | Training blocks | `/training` | Not built |

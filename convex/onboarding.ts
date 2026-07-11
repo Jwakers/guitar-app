@@ -6,6 +6,7 @@ import {
   subSkillValidator,
 } from "./lib/exerciseValidators";
 import { skillTargetKey } from "../src/lib/skills/taxonomy";
+import { provisionInitialTraining } from "./lib/provisionTraining";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
 
@@ -104,6 +105,9 @@ export const saveOnboardingAnswers = mutation({
         await ctx.db.insert("userSkillRatings", ratingData);
       }
     }
+
+    // Provision training block, week-1 plan, and first session (idempotent)
+    await provisionInitialTraining(ctx, user._id, now);
 
     // Mark onboarding complete
     await ctx.db.patch(user._id, { onboardingCompleted: true });

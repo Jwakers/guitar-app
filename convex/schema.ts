@@ -60,12 +60,16 @@ const tabNote = v.object({
   finger: v.optional(
     v.union(v.literal(1), v.literal(2), v.literal(3), v.literal(4)),
   ),
-  technique: v.optional(
+  articulationFromPrevious: v.optional(
     v.union(
       v.literal("picked"),
       v.literal("hammer_on"),
       v.literal("pull_off"),
       v.literal("slide"),
+    ),
+  ),
+  technique: v.optional(
+    v.union(
       v.literal("bend"),
       v.literal("release"),
       v.literal("vibrato"),
@@ -289,7 +293,8 @@ export default defineSchema({
     targetSessionCount: v.number(),
     plannedSessionIds: v.array(v.id("practiceSessions")),
     status: v.string(),
-  }).index("by_userId_startDate", ["userId", "startDate"]),
+  }).index("by_userId_startDate", ["userId", "startDate"])
+    .index("by_blockId_weekNumber", ["blockId", "weekNumber"]),
 
   // -------------------------------------------------------------------------
   // Practice sessions
@@ -364,6 +369,7 @@ export default defineSchema({
   exerciseLogs: defineTable({
     userId: v.id("users"),
     sessionId: v.id("practiceSessions"),
+    sessionItemOrder: v.optional(v.number()),
     exerciseId: v.id("exercises"),
     coreSkillId: coreSkillValidator,
     subSkillIds: v.array(subSkillValidator),
@@ -399,7 +405,8 @@ export default defineSchema({
   })
     .index("by_userId_date", ["userId", "date"])
     .index("by_userId_exerciseId", ["userId", "exerciseId"])
-    .index("by_userId_coreSkillId", ["userId", "coreSkillId"]),
+    .index("by_userId_coreSkillId", ["userId", "coreSkillId"])
+    .index("by_sessionId", ["sessionId"]),
 
   // -------------------------------------------------------------------------
   // Derived engine state
@@ -501,7 +508,7 @@ export default defineSchema({
     xpAwarded: v.number(),
     achievementsUnlocked: v.array(v.id("achievements")),
     createdAt: v.number(),
-  }),
+  }).index("by_sessionId", ["sessionId"]),
 
   achievements: defineTable({
     title: v.string(),

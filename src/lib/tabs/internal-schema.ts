@@ -6,11 +6,12 @@
 
 export type TabNoteString = 1 | 2 | 3 | 4 | 5 | 6;
 export type TabNoteFinger = 1 | 2 | 3 | 4;
+
+/** How the current note connects from the previous note on the same string. */
+export type NoteArticulation = "picked" | "hammer_on" | "pull_off" | "slide";
+
+/** Sustained or note-local effects — not inter-note connections. */
 export type TabNoteTechnique =
-  | "picked"
-  | "hammer_on"
-  | "pull_off"
-  | "slide"
   | "bend"
   | "release"
   | "vibrato"
@@ -21,6 +22,7 @@ export type TabNote = {
   string: TabNoteString;
   fret: number;
   finger?: TabNoteFinger;
+  articulationFromPrevious?: NoteArticulation;
   technique?: TabNoteTechnique;
   targetPitch?: string;
 };

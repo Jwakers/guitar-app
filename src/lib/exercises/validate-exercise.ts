@@ -157,7 +157,8 @@ function assertTabSupportsSubSkills(
   if (exercise.subSkillIds.includes("legato")) {
     const hasLegato = notes.some(
       (note) =>
-        note.technique === "hammer_on" || note.technique === "pull_off",
+        note.articulationFromPrevious === "hammer_on" ||
+        note.articulationFromPrevious === "pull_off",
     );
     if (!hasLegato) {
       throw new Error(

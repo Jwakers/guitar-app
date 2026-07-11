@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ExerciseSeed } from "../exercise-schema";
 import { validateExercise } from "../validate-exercise";
@@ -226,5 +228,183 @@ describe("validateExercise taxonomy", () => {
         trainingAttributes: ["accuracy", "control"],
       }),
     ).toThrow(/claims bends/);
+  });
+
+  it("rejects bend drills with non half/whole-step targetPitch", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        coreSkillId: "lead_articulation",
+        subSkillIds: ["bends"],
+        trainingAttributes: ["accuracy", "control"],
+        tabData: {
+          ...baseExercise.tabData,
+          bars: [
+            {
+              beats: Array.from({ length: 8 }, (_, i) => ({
+                duration: "eighth" as const,
+                notes: [
+                  {
+                    string: 2 as const,
+                    fret: 7,
+                    ...(i === 3
+                      ? { technique: "bend" as const, targetPitch: "A4" }
+                      : {}),
+                  },
+                ],
+              })),
+            },
+          ],
+        },
+      }),
+    ).toThrow(/half step \(1 semitone\) or whole step \(2 semitones\)/);
+  });
+
+  it("rejects legato drills with invalid cross-string hammer-on", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        coreSkillId: "lead_articulation",
+        subSkillIds: ["legato"],
+        trainingAttributes: ["speed", "control"],
+        tabData: {
+          ...baseExercise.tabData,
+          bars: [
+            {
+              beats: [
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 2,
+                      fret: 7,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 7,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 7,
+                      articulationFromPrevious: "pull_off",
+                    },
+                  ],
+                },
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 7,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    ).toThrow(/Invalid legato/);
+  });
+
+  it("accepts legato drills with valid same-string articulation", () => {
+    expect(() =>
+      validateExercise({
+        ...baseExercise,
+        coreSkillId: "lead_articulation",
+        subSkillIds: ["legato"],
+        trainingAttributes: ["speed", "control"],
+        tabData: {
+          ...baseExercise.tabData,
+          bars: [
+            {
+              beats: [
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 7,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 5,
+                      articulationFromPrevious: "pull_off",
+                    },
+                  ],
+                },
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 8,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 5,
+                      articulationFromPrevious: "pull_off",
+                    },
+                  ],
+                },
+                { duration: "eighth", notes: [{ string: 1, fret: 5 }] },
+                {
+                  duration: "eighth",
+                  notes: [
+                    {
+                      string: 1,
+                      fret: 7,
+                      articulationFromPrevious: "hammer_on",
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it("accepts seed/exercises/legato-valid.json", () => {
+    const fixturePath = resolve(
+      process.cwd(),
+      "seed/exercises/legato-valid.json",
+    );
+    const fixture = JSON.parse(
+      readFileSync(fixturePath, "utf8"),
+    ) as ExerciseSeed;
+    expect(() => validateExercise(fixture)).not.toThrow();
   });
 });

@@ -1087,12 +1087,38 @@ type TabNote = {
   string: 1 | 2 | 3 | 4 | 5 | 6;
   fret: number;
   finger?: 1 | 2 | 3 | 4;
-  technique?: "picked" | "hammer_on" | "pull_off" | "slide" | "bend" | "release" | "vibrato" | "mute" | "harmonic";
+  /** How this note connects from the previous note on the same string. */
+  articulationFromPrevious?: "picked" | "hammer_on" | "pull_off" | "slide";
+  /** Sustained or note-local effects — not inter-note connections. */
+  technique?: "bend" | "release" | "vibrato" | "mute" | "harmonic";
   targetPitch?: string;
 };
 ```
 
 String numbering follows standard guitar convention: `1` is the highest-pitched string (high E), `6` is the lowest (low E).
+
+**Legato semantics:** `hammer_on` and `pull_off` on `articulationFromPrevious` describe movement from the previous note on the **same string**. Cross-string legato is invalid and rejected by `validateTabData`. Do not store hammer-ons or pull-offs on `technique` — that field is for note-local effects only (bend, vibrato, etc.). Hammer-ons from nowhere (`hammer_on_from_nowhere`) are out of scope for MVP.
+
+**Legato validation** (`/lib/tabs/legato-validation.ts`): walks notes in playback order, tracks the last note per string, and rejects:
+
+- `hammer_on` unless previous on same string exists, current fret > previous fret, current fret > 0
+- `pull_off` unless previous on same string exists, current fret < previous fret, previous fret > 0
+- `slide` unless previous on same string exists and frets differ
+- `vibrato` combined with legato articulation on the same note
+
+Hard rejection message for cross-string hammer-on/pull-off:
+
+```txt
+Invalid legato: hammer-on or pull-off connects notes on different strings.
+```
+
+**Bend semantics:** Bend notes use `technique: "bend"` with octave-qualified `targetPitch`. Only **half-step** (1 semitone) and **whole-step** (2 semitone) bends are valid for MVP. `validateBendTargetPitch` in `/lib/tabs/pitch-helpers.ts` rejects all other intervals.
+
+Hard rejection message:
+
+```txt
+targetPitch: bend must be exactly half step (1 semitone) or whole step (2 semitones), got N semitones
+```
 
 ---
 
@@ -1104,11 +1130,14 @@ The file `/lib/tabs/alphatab-adapter.ts` is the only place in the codebase that 
 * It returns alphaTab-compatible input (e.g. AlphaTab's `Score` object or equivalent input format).
 * No component, page, or Convex function may import alphaTab APIs directly except through this adapter.
 * The adapter is the seam that makes alphaTab replaceable.
+* Legato effects (`h`, `sl`) are emitted **only** from `articulationFromPrevious` when the transition passes legato validation — never from fret/string proximity or deprecated `technique` fields. AlphaTeX uses `h` for both hammer-ons and pull-offs; fret direction defines which.
 
 Supporting files:
 
 ```txt
 /lib/tabs/internal-schema.ts   — TabData, TabBar, TabBeat, TabNote type definitions
+/lib/tabs/legato-validation.ts — same-string legato articulation rules
+/lib/tabs/pitch-helpers.ts     — bend interval validation (half/whole step only)
 /lib/tabs/validate-tab-data.ts — runtime validation of TabData objects
 /lib/tabs/alphatab-adapter.ts  — converts TabData → alphaTab input
 /lib/tabs/render-config.ts     — rendering configuration (display options, theming)

@@ -1,3 +1,4 @@
+import type { Doc } from "../_generated/dataModel";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import type { ExerciseSeed } from "../../src/lib/exercises/exercise-schema";
@@ -84,13 +85,7 @@ export async function upsertExerciseBySlug(
   return { action: "updated", id: existing._id };
 }
 
-export function exerciseDocToSeed(
-  doc: ExerciseSeed & {
-    _id?: unknown;
-    _creationTime?: unknown;
-    updatedAt?: unknown;
-  },
-): ExerciseSeed {
+export function exerciseDocToSeed(doc: Doc<"exercises">): ExerciseSeed {
   const { _id, _creationTime, updatedAt, ...seed } = doc;
   return seed;
 }
