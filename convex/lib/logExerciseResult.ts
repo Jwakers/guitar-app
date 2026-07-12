@@ -6,6 +6,7 @@ import {
 } from "../../src/lib/practice/feedback-form";
 import type { SessionExerciseItem } from "./sessionLifecycle";
 import { recomputeExerciseState } from "./recomputeExerciseState";
+import { recomputeSkillRatingsForExercise } from "./recomputeSkillRatings";
 
 export type FeedbackResponseEntry = {
   questionId: string;
@@ -268,6 +269,8 @@ export async function applyLogExerciseResult(
     sessionItem.exerciseId,
     now,
   );
+
+  await recomputeSkillRatingsForExercise(ctx, input.userId, exercise, now);
 
   return { logId, created: true };
 }

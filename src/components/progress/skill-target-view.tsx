@@ -36,10 +36,16 @@ function formatTrend(value: number | undefined): string | null {
   return `${value > 0 ? "+" : ""}${value}`;
 }
 
-export function ProgressView() {
-  const overview = useQuery(api.progress.getProgressOverview);
+type SkillTargetViewProps = {
+  skillTargetKey: string;
+};
 
-  if (overview === undefined) {
+export function SkillTargetView({ skillTargetKey }: SkillTargetViewProps) {
+  const detail = useQuery(api.progression.getSkillTargetDetail, {
+    skillTargetKey,
+  });
+
+  if (detail === undefined) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <p className="font-mono text-sm text-muted-foreground">Loading…</p>
@@ -47,114 +53,81 @@ export function ProgressView() {
     );
   }
 
-  const hasAnyData =
-    overview.skills.length > 0 ||
-    overview.personalBests.length > 0 ||
-    overview.reliablePerformance.length > 0 ||
-    overview.recentActivity.length > 0;
+  if (detail === null) {
+    return (
+      <main className="flex flex-1 flex-col px-4 py-8">
+        <div className="mx-auto w-full max-w-2xl text-center">
+          <p className="font-mono text-sm text-muted-foreground">
+            Skill not found.
+          </p>
+          <Button asChild variant="outline" className="mt-4">
+            <Link href="/progress">Back to Progress</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  const trend7 = formatTrend(detail.trend7Day);
+  const trend30 = formatTrend(detail.trend30Day);
 
   return (
     <main className="flex flex-1 flex-col px-4 py-8">
       <div className="mx-auto w-full max-w-2xl">
-        <p className="font-mono text-[10px] font-bold tracking-widest text-primary">
-          YOUR PROGRESS
+        <Link
+          href="/progress"
+          className="font-mono text-[10px] tracking-widest text-muted-foreground hover:text-foreground"
+        >
+          ← PROGRESS
+        </Link>
+
+        <p className="mt-4 font-mono text-[10px] font-bold tracking-widest text-primary">
+          SKILL TARGET
         </p>
         <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-foreground">
-          Progress
+          {detail.label}
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Week of {overview.weekStartDate} · {overview.todayDate}
-        </p>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-mono text-2xl font-bold text-foreground">
-              {overview.sessionRollup.sessionsCompleted}
-            </p>
-            <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
-              SESSIONS THIS WEEK
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-mono text-2xl font-bold text-foreground">
-              {overview.sessionRollup.totalMinutes}
-            </p>
-            <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
-              MINUTES PRACTISED
-            </p>
-          </div>
-          <div className="rounded-lg border border-border bg-card p-4">
-            <p className="font-mono text-2xl font-bold text-foreground">
-              {overview.sessionRollup.personalBestsThisWeek}
-            </p>
-            <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
-              PERSONAL BESTS
-            </p>
-          </div>
-        </div>
-
-        {!hasAnyData && (
-          <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">
-            <p className="font-mono text-sm font-bold tracking-widest text-muted-foreground">
-              NO PRACTICE DATA YET
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              Complete a session and log feedback to see skills, personal bests,
-              and reliable performance here.
-            </p>
-            <Button asChild className="mt-6">
-              <Link href="/today">Go to Today</Link>
-            </Button>
-          </div>
-        )}
-
-        {overview.skills.length > 0 && (
-          <section className="mt-8">
-            <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              SKILLS
-            </p>
-            <div className="mt-3 space-y-2">
-              {overview.skills.map((skill) => {
-                const trend7 = formatTrend(skill.trend7Day);
-                const trend30 = formatTrend(skill.trend30Day);
-
-                return (
-                <Link
-                  key={skill.skillTargetKey}
-                  href={`/progress/targets/${encodeURIComponent(skill.skillTargetKey)}`}
-                  className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
-                >
-                  <div>
-                    <p className="font-mono text-sm font-bold text-foreground">
-                      {skill.label}
-                    </p>
-                    <p className="mt-0.5 font-mono text-[10px] tracking-widest text-muted-foreground">
-                      {SKILL_STATUS_LABEL[skill.status] ?? skill.status}
-                      {trend7 && (
-                        <span className="ml-2 text-primary">· 7d {trend7}</span>
-                      )}
-                      {trend30 && (
-                        <span className="ml-2 text-primary">· 30d {trend30}</span>
-                      )}
-                    </p>
-                  </div>
-                  <p className="font-mono text-lg font-bold text-foreground">
-                    {skill.rating}
-                  </p>
-                </Link>
-                );
-              })}
+        {detail.rating !== null && (
+          <div className="mt-6 rounded-lg border border-border bg-card p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-3xl font-bold text-foreground">
+                  {detail.rating}
+                </p>
+                <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+                  {detail.status
+                    ? (SKILL_STATUS_LABEL[detail.status] ?? detail.status)
+                    : "—"}
+                  {detail.confidence !== null && (
+                    <span className="ml-2">
+                      · confidence {Math.round(detail.confidence * 100)}%
+                    </span>
+                  )}
+                </p>
+              </div>
+              {(trend7 || trend30) && (
+                <div className="text-right font-mono text-xs text-primary">
+                  {trend7 && <p>7d {trend7}</p>}
+                  {trend30 && <p>30d {trend30}</p>}
+                </div>
+              )}
             </div>
-          </section>
+            {detail.lastTrainedAt && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Last trained {formatLogDate(detail.lastTrainedAt)}
+              </p>
+            )}
+          </div>
         )}
 
-        {overview.personalBests.length > 0 && (
+        {detail.personalBests.length > 0 && (
           <section className="mt-8">
             <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
               PERSONAL BESTS
             </p>
             <div className="mt-3 space-y-2">
-              {overview.personalBests.map((entry, index) => {
+              {detail.personalBests.map((entry, index) => {
                 const metric = formatObjectiveMetric({
                   trainingVerdict: entry.trainingVerdict,
                   objectiveResult: entry.objectiveResult,
@@ -189,13 +162,13 @@ export function ProgressView() {
           </section>
         )}
 
-        {overview.reliablePerformance.length > 0 && (
+        {detail.reliablePerformance.length > 0 && (
           <section className="mt-8">
             <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
               RELIABLE PERFORMANCE
             </p>
             <div className="mt-3 space-y-2">
-              {overview.reliablePerformance.map((entry) => {
+              {detail.reliablePerformance.map((entry) => {
                 const reliable = formatPerformanceValue(
                   entry.reliablePerformance,
                 );
@@ -220,13 +193,13 @@ export function ProgressView() {
           </section>
         )}
 
-        {overview.recentActivity.length > 0 && (
+        {detail.recentActivity.length > 0 && (
           <section className="mt-8">
             <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
               RECENT ACTIVITY
             </p>
             <div className="mt-3 space-y-2">
-              {overview.recentActivity.map((entry, index) => {
+              {detail.recentActivity.map((entry, index) => {
                 const metric = formatObjectiveMetric({
                   trainingVerdict: entry.trainingVerdict,
                   objectiveResult: entry.objectiveResult,
@@ -272,7 +245,7 @@ export function ProgressView() {
             EXERCISE HISTORY
           </p>
           <div className="mt-3">
-            <ExerciseHistoryList />
+            <ExerciseHistoryList skillTargetKey={skillTargetKey} />
           </div>
         </section>
       </div>

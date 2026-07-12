@@ -165,7 +165,7 @@ function exerciseTitle(
   return exerciseTitles[exerciseId] ?? "Unknown exercise";
 }
 
-function toPerformanceSnapshot(
+export function toPerformanceSnapshot(
   performance?: PerformanceSnapshot & {
     calculatedAt?: number;
     achievedAt?: number;
