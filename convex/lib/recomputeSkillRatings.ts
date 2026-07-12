@@ -98,7 +98,6 @@ export async function recomputeSkillRatingForTarget(
   const recomputed = recomputeSkillRating({
     logs: logs.map(exerciseLogToSkillRatingSnapshot),
     previousRating,
-    previousConfidence: existing?.confidence ?? 0.5,
     now,
   });
 

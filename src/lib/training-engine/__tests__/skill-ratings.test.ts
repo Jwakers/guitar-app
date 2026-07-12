@@ -67,6 +67,21 @@ describe("deriveStatus", () => {
     expect(deriveStatus(65)).toBe("stable");
     expect(deriveStatus(80)).toBe("strong");
   });
+
+  it("marks strong ratings as maintenance after inactivity", () => {
+    expect(
+      deriveStatus(80, {
+        lastTrainedAt: now - 30 * DAY,
+        now,
+      }),
+    ).toBe("maintenance");
+    expect(
+      deriveStatus(80, {
+        lastTrainedAt: now - 5 * DAY,
+        now,
+      }),
+    ).toBe("strong");
+  });
 });
 
 describe("computeTrend", () => {
@@ -104,7 +119,6 @@ describe("recomputeSkillRating", () => {
     const result = recomputeSkillRating({
       logs: [log(0, "nearly_there", 78), log(3, "nailed_it", 82)],
       previousRating: 60,
-      previousConfidence: 0.5,
       now,
     });
 

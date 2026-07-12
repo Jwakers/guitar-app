@@ -127,6 +127,37 @@ async function loadExerciseStatesForExercises(
   return states.filter((state): state is Doc<"userExerciseState"> => state !== null);
 }
 
+const FILTERED_HISTORY_CURSOR_PREFIX = "__filtered__";
+
+type FilteredHistoryCursor = {
+  dbCursor: string | null;
+  bufferedIds: Id<"exerciseLogs">[];
+};
+
+function encodeFilteredHistoryCursor(state: FilteredHistoryCursor): string {
+  return FILTERED_HISTORY_CURSOR_PREFIX + JSON.stringify(state);
+}
+
+function decodeFilteredHistoryCursor(
+  cursor: string | null,
+): FilteredHistoryCursor {
+  if (!cursor || !cursor.startsWith(FILTERED_HISTORY_CURSOR_PREFIX)) {
+    return { dbCursor: null, bufferedIds: [] };
+  }
+
+  try {
+    const parsed = JSON.parse(
+      cursor.slice(FILTERED_HISTORY_CURSOR_PREFIX.length),
+    ) as FilteredHistoryCursor;
+    return {
+      dbCursor: parsed.dbCursor ?? null,
+      bufferedIds: parsed.bufferedIds ?? [],
+    };
+  } catch {
+    return { dbCursor: null, bufferedIds: [] };
+  }
+}
+
 async function paginateExerciseHistory(
   ctx: QueryCtx,
   userId: Id<"users">,
@@ -134,44 +165,76 @@ async function paginateExerciseHistory(
   skillTargetKey?: string,
 ) {
   const targetSize = paginationOpts.numItems;
-  let cursor = paginationOpts.cursor;
-  const accumulated: Doc<"exerciseLogs">[] = [];
-  let sourceDone = false;
-  let continueCursor = cursor ?? "";
 
-  while (accumulated.length < targetSize && !sourceDone) {
+  if (!skillTargetKey) {
+    const result = await ctx.db
+      .query("exerciseLogs")
+      .withIndex("by_userId_date", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate(paginationOpts);
+
+    return {
+      page: result.page,
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
+  }
+
+  const { dbCursor: initialDbCursor, bufferedIds } = decodeFilteredHistoryCursor(
+    paginationOpts.cursor,
+  );
+
+  const page: Doc<"exerciseLogs">[] = [];
+  if (bufferedIds.length > 0) {
+    const buffered = await Promise.all(
+      bufferedIds.map((id) => ctx.db.get("exerciseLogs", id)),
+    );
+    for (const log of buffered) {
+      if (log) {
+        page.push(log);
+      }
+    }
+  }
+
+  let dbCursor = initialDbCursor;
+  let sourceDone = false;
+
+  while (page.length < targetSize && !sourceDone) {
     const result = await ctx.db
       .query("exerciseLogs")
       .withIndex("by_userId_date", (q) => q.eq("userId", userId))
       .order("desc")
       .paginate({
-        numItems: skillTargetKey ? targetSize * 3 : targetSize,
-        cursor,
+        numItems: targetSize * 3,
+        cursor: dbCursor,
       });
 
-    const batch = skillTargetKey
-      ? result.page.filter((log) =>
-          logMatchesSkillTargetKey(log, skillTargetKey),
-        )
-      : result.page;
+    const matches = result.page.filter((log) =>
+      logMatchesSkillTargetKey(log, skillTargetKey),
+    );
+    page.push(...matches);
 
-    accumulated.push(...batch);
     sourceDone = result.isDone;
-    continueCursor = result.continueCursor;
-    cursor = result.continueCursor;
+    dbCursor = result.continueCursor;
 
     if (result.page.length === 0) {
       break;
     }
   }
 
-  const page = accumulated.slice(0, targetSize);
-  const hasBufferedMatches = accumulated.length > targetSize;
+  const returnPage = page.slice(0, targetSize);
+  const overflowIds = page.slice(targetSize).map((log) => log._id);
+  const isDone = sourceDone && overflowIds.length === 0;
 
   return {
-    page,
-    isDone: sourceDone && !hasBufferedMatches,
-    continueCursor,
+    page: returnPage,
+    isDone,
+    continueCursor: isDone
+      ? ""
+      : encodeFilteredHistoryCursor({
+          dbCursor,
+          bufferedIds: overflowIds,
+        }),
   };
 }
 

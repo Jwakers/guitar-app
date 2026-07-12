@@ -3,6 +3,7 @@ import type { TrainingVerdict } from "./reliable-performance";
 export const SKILL_RATING_WINDOW = 10;
 export const MAX_RATING_DELTA = 6;
 export const CONFIDENCE_BASELINE = 0.5;
+export const MAINTENANCE_INACTIVITY_DAYS = 21;
 const BLEND_PREVIOUS = 0.65;
 const BLEND_WINDOW = 0.35;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -94,11 +95,27 @@ export function computeRatingFromLogs(
   );
 }
 
-export function deriveStatus(rating: number): SkillRatingStatus {
-  if (rating <= 40) return "weak";
-  if (rating <= 55) return "developing";
-  if (rating <= 70) return "stable";
-  return "strong";
+export function deriveStatus(
+  rating: number,
+  options?: { lastTrainedAt?: number; now?: number },
+): SkillRatingStatus {
+  let status: SkillRatingStatus;
+  if (rating <= 40) status = "weak";
+  else if (rating <= 55) status = "developing";
+  else if (rating <= 70) status = "stable";
+  else status = "strong";
+
+  const { lastTrainedAt, now } = options ?? {};
+  if (
+    status === "strong" &&
+    lastTrainedAt !== undefined &&
+    now !== undefined &&
+    now - lastTrainedAt >= MAINTENANCE_INACTIVITY_DAYS * MS_PER_DAY
+  ) {
+    return "maintenance";
+  }
+
+  return status;
 }
 
 export function deriveConfidence(logCount: number): number {
@@ -127,10 +144,9 @@ export function computeTrend(
 export function recomputeSkillRating(input: {
   logs: SkillRatingLogSnapshot[];
   previousRating: number;
-  previousConfidence: number;
   now: number;
 }): RecomputedSkillRating {
-  const { logs, previousRating, previousConfidence, now } = input;
+  const { logs, previousRating, now } = input;
   const rating = computeRatingFromLogs(logs, previousRating);
 
   const lastTrainedAt =
@@ -138,7 +154,7 @@ export function recomputeSkillRating(input: {
 
   return {
     rating,
-    status: deriveStatus(rating),
+    status: deriveStatus(rating, { lastTrainedAt, now }),
     confidence: deriveConfidence(logs.length),
     trend7Day: computeTrend(logs, previousRating, now, 7),
     trend30Day: computeTrend(logs, previousRating, now, 30),
