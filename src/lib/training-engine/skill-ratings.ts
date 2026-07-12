@@ -2,6 +2,7 @@ import type { TrainingVerdict } from "./reliable-performance";
 
 export const SKILL_RATING_WINDOW = 10;
 export const MAX_RATING_DELTA = 6;
+export const CONFIDENCE_BASELINE = 0.5;
 const BLEND_PREVIOUS = 0.65;
 const BLEND_WINDOW = 0.35;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -100,11 +101,8 @@ export function deriveStatus(rating: number): SkillRatingStatus {
   return "strong";
 }
 
-export function deriveConfidence(
-  logCount: number,
-  baseConfidence: number,
-): number {
-  return Math.min(0.9, baseConfidence + logCount * 0.03);
+export function deriveConfidence(logCount: number): number {
+  return Math.min(0.9, CONFIDENCE_BASELINE + logCount * 0.03);
 }
 
 export function computeTrend(
@@ -141,7 +139,7 @@ export function recomputeSkillRating(input: {
   return {
     rating,
     status: deriveStatus(rating),
-    confidence: deriveConfidence(logs.length, previousConfidence),
+    confidence: deriveConfidence(logs.length),
     trend7Day: computeTrend(logs, previousRating, now, 7),
     trend30Day: computeTrend(logs, previousRating, now, 30),
     lastTrainedAt,

@@ -34,11 +34,29 @@ export function ExerciseHistoryList({ skillTargetKey }: ExerciseHistoryListProps
     );
   }
 
-  if (results.length === 0) {
+  if (
+    results.length === 0 &&
+    status !== "CanLoadMore" &&
+    status !== "LoadingMore"
+  ) {
     return (
       <p className="text-sm text-muted-foreground">
         No practice logs yet for this view.
       </p>
+    );
+  }
+
+  if (results.length === 0 && status === "CanLoadMore") {
+    return (
+      <div>
+        <Button
+          variant="outline"
+          className="w-full font-mono text-xs"
+          onClick={() => loadMore(10)}
+        >
+          Load more
+        </Button>
+      </div>
     );
   }
 

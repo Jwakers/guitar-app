@@ -11,6 +11,12 @@ import {
   type SkillRatingLogSnapshot,
 } from "../../src/lib/training-engine/skill-ratings";
 
+/** Enough logs for rating window plus 30-day trend comparison. */
+export const SKILL_RATING_LOG_LIMIT = 100;
+
+/** Wider fetch for sub-skill filtering over recent user history. */
+export const SUB_SKILL_LOG_FETCH_LIMIT = 250;
+
 export type SkillRatingChange = {
   skillTargetKey: string;
   oldRating: number;
@@ -55,16 +61,18 @@ export async function loadLogsForSkillTarget(
   if (skillTarget.kind === "core") {
     return await ctx.db
       .query("exerciseLogs")
-      .withIndex("by_userId_coreSkillId", (q) =>
+      .withIndex("by_userId_coreSkillId_date", (q) =>
         q.eq("userId", userId).eq("coreSkillId", skillTarget.id),
       )
-      .collect();
+      .order("desc")
+      .take(SKILL_RATING_LOG_LIMIT);
   }
 
   const logs = await ctx.db
     .query("exerciseLogs")
     .withIndex("by_userId_date", (q) => q.eq("userId", userId))
-    .collect();
+    .order("desc")
+    .take(SUB_SKILL_LOG_FETCH_LIMIT);
 
   return logs.filter((log) => log.subSkillIds.includes(skillTarget.id));
 }
@@ -86,12 +94,11 @@ export async function recomputeSkillRatingForTarget(
     .unique();
 
   const previousRating = existing?.rating ?? 60;
-  const previousConfidence = existing?.confidence ?? 0.5;
 
   const recomputed = recomputeSkillRating({
     logs: logs.map(exerciseLogToSkillRatingSnapshot),
     previousRating,
-    previousConfidence,
+    previousConfidence: existing?.confidence ?? 0.5,
     now,
   });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeRatingFromLogs,
   computeTrend,
+  deriveConfidence,
   deriveStatus,
   logPerformanceScore,
   recomputeSkillRating,
@@ -85,6 +86,19 @@ describe("computeTrend", () => {
   });
 });
 
+describe("deriveConfidence", () => {
+  it("derives confidence from a fixed baseline and total log count", () => {
+    expect(deriveConfidence(2)).toBeCloseTo(0.56);
+    expect(deriveConfidence(20)).toBe(0.9);
+  });
+
+  it("is idempotent when log count is unchanged", () => {
+    const first = deriveConfidence(4);
+    const second = deriveConfidence(4);
+    expect(second).toBe(first);
+  });
+});
+
 describe("recomputeSkillRating", () => {
   it("returns full rating snapshot with trends and lastTrainedAt", () => {
     const result = recomputeSkillRating({
@@ -96,7 +110,7 @@ describe("recomputeSkillRating", () => {
 
     expect(result.rating).toBeGreaterThan(60);
     expect(result.status).toBe("stable");
-    expect(result.confidence).toBeGreaterThan(0.5);
+    expect(result.confidence).toBeCloseTo(0.56);
     expect(result.lastTrainedAt).toBe(now);
     expect(result.trend7Day).toBe(0);
   });

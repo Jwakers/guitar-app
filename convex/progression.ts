@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { internalMutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { requireCurrentUser } from "./lib/auth";
 import { buildSkillTargetDetail } from "./lib/buildSkillTargetDetail";
 import {
@@ -108,6 +108,73 @@ function logMatchesSkillTargetKey(
   return log.subSkillIds.includes(target.id);
 }
 
+async function loadExerciseStatesForExercises(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  exerciseIds: Iterable<Id<"exercises">>,
+): Promise<Doc<"userExerciseState">[]> {
+  const states = await Promise.all(
+    [...exerciseIds].map((exerciseId) =>
+      ctx.db
+        .query("userExerciseState")
+        .withIndex("by_userId_exerciseId", (q) =>
+          q.eq("userId", userId).eq("exerciseId", exerciseId),
+        )
+        .unique(),
+    ),
+  );
+
+  return states.filter((state): state is Doc<"userExerciseState"> => state !== null);
+}
+
+async function paginateExerciseHistory(
+  ctx: QueryCtx,
+  userId: Id<"users">,
+  paginationOpts: { numItems: number; cursor: string | null },
+  skillTargetKey?: string,
+) {
+  const targetSize = paginationOpts.numItems;
+  let cursor = paginationOpts.cursor;
+  const accumulated: Doc<"exerciseLogs">[] = [];
+  let sourceDone = false;
+  let continueCursor = cursor ?? "";
+
+  while (accumulated.length < targetSize && !sourceDone) {
+    const result = await ctx.db
+      .query("exerciseLogs")
+      .withIndex("by_userId_date", (q) => q.eq("userId", userId))
+      .order("desc")
+      .paginate({
+        numItems: skillTargetKey ? targetSize * 3 : targetSize,
+        cursor,
+      });
+
+    const batch = skillTargetKey
+      ? result.page.filter((log) =>
+          logMatchesSkillTargetKey(log, skillTargetKey),
+        )
+      : result.page;
+
+    accumulated.push(...batch);
+    sourceDone = result.isDone;
+    continueCursor = result.continueCursor;
+    cursor = result.continueCursor;
+
+    if (result.page.length === 0) {
+      break;
+    }
+  }
+
+  const page = accumulated.slice(0, targetSize);
+  const hasBufferedMatches = accumulated.length > targetSize;
+
+  return {
+    page,
+    isDone: sourceDone && !hasBufferedMatches,
+    continueCursor,
+  };
+}
+
 async function loadExerciseTitles(
   ctx: QueryCtx,
   exerciseIds: Iterable<Id<"exercises">>,
@@ -134,7 +201,7 @@ export const getSkillTargetDetail = query({
       return null;
     }
 
-    const [rating, logs, exerciseStates] = await Promise.all([
+    const [rating, logs] = await Promise.all([
       ctx.db
         .query("userSkillRatings")
         .withIndex("by_userId_skillTargetKey", (q) =>
@@ -144,17 +211,13 @@ export const getSkillTargetDetail = query({
         )
         .unique(),
       loadLogsForSkillTarget(ctx, user._id, skillTarget),
-      ctx.db
-        .query("userExerciseState")
-        .withIndex("by_userId", (q) => q.eq("userId", user._id))
-        .collect(),
     ]);
 
-    const exerciseIds = new Set<Id<"exercises">>();
-    for (const log of logs) exerciseIds.add(log.exerciseId);
-    for (const state of exerciseStates) exerciseIds.add(state.exerciseId);
-
-    const exerciseTitles = await loadExerciseTitles(ctx, exerciseIds);
+    const logExerciseIds = [...new Set(logs.map((log) => log.exerciseId))];
+    const [exerciseStates, exerciseTitles] = await Promise.all([
+      loadExerciseStatesForExercises(ctx, user._id, logExerciseIds),
+      loadExerciseTitles(ctx, logExerciseIds),
+    ]);
 
     return buildSkillTargetDetail({
       skillTargetKey: args.skillTargetKey,
@@ -206,23 +269,18 @@ export const listExerciseHistory = query({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
 
-    const result = await ctx.db
-      .query("exerciseLogs")
-      .withIndex("by_userId_date", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .paginate(args.paginationOpts);
+    const result = await paginateExerciseHistory(
+      ctx,
+      user._id,
+      args.paginationOpts,
+      args.skillTargetKey,
+    );
 
-    const filteredPage = args.skillTargetKey
-      ? result.page.filter((log) =>
-          logMatchesSkillTargetKey(log, args.skillTargetKey!),
-        )
-      : result.page;
-
-    const exerciseIds = new Set(filteredPage.map((log) => log.exerciseId));
+    const exerciseIds = new Set(result.page.map((log) => log.exerciseId));
     const exerciseTitles = await loadExerciseTitles(ctx, exerciseIds);
 
     return {
-      page: filteredPage.map((log) => ({
+      page: result.page.map((log) => ({
         _id: log._id,
         exerciseId: log.exerciseId,
         exerciseTitle: exerciseTitles[log.exerciseId] ?? "Unknown exercise",

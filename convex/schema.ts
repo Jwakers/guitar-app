@@ -406,6 +406,7 @@ export default defineSchema({
     .index("by_userId_date", ["userId", "date"])
     .index("by_userId_exerciseId", ["userId", "exerciseId"])
     .index("by_userId_coreSkillId", ["userId", "coreSkillId"])
+    .index("by_userId_coreSkillId_date", ["userId", "coreSkillId", "date"])
     .index("by_sessionId", ["sessionId"]),
 
   // -------------------------------------------------------------------------
