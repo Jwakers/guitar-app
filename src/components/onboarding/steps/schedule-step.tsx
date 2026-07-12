@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { WizardData } from "../onboarding-wizard";
 import { StepNav } from "./step-nav";
@@ -9,27 +11,9 @@ interface ScheduleStepProps {
   onBack: () => void;
 }
 
-const DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-] as const;
-
-const DAY_SHORT: Record<string, string> = {
-  Monday: "MON",
-  Tuesday: "TUE",
-  Wednesday: "WED",
-  Thursday: "THU",
-  Friday: "FRI",
-  Saturday: "SAT",
-  Sunday: "SUN",
-};
-
 const SESSION_LENGTHS = [30, 45, 60, 90] as const;
+
+const SESSIONS_PER_WEEK = [3, 4, 5, 6, 7] as const;
 
 const INTENSITIES = [
   {
@@ -50,58 +34,44 @@ const INTENSITIES = [
 ] as const;
 
 export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepProps) {
-  function toggleDay(day: string) {
-    const current = data.availableDays;
-    if (current.includes(day)) {
-      if (current.length <= 1) return; // keep at least one
-      onUpdate({ availableDays: current.filter((d) => d !== day) });
-    } else {
-      onUpdate({ availableDays: [...current, day] });
-    }
-  }
-
-  const canProceed = data.availableDays.length >= 1;
-
   return (
     <div className="flex flex-1 flex-col gap-8 overflow-y-auto px-6 py-10">
       <div className="flex flex-col gap-2">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">
-          Your schedule
+          Your preferences
         </h2>
         <p className="text-sm text-muted-foreground">
-          When are you able to practise? We&apos;ll plan around your
-          availability.
+          Practice is available every day. Set targets for session length and how
+          often you aim to train each week.
         </p>
       </div>
 
-      {/* Available days */}
       <div className="flex flex-col gap-3">
         <label className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-          AVAILABLE DAYS ({data.availableDays.length} selected)
+          SESSIONS PER WEEK YOU AIM FOR
         </label>
-        <div className="grid grid-cols-7 gap-1.5">
-          {DAYS.map((day) => {
-            const selected = data.availableDays.includes(day);
+        <div className="grid grid-cols-5 gap-2">
+          {SESSIONS_PER_WEEK.map((count) => {
+            const selected = data.sessionsPerWeek === count;
             return (
               <button
                 type="button"
-                key={day}
-                onClick={() => toggleDay(day)}
+                key={count}
+                onClick={() => onUpdate({ sessionsPerWeek: count })}
                 className={cn(
-                  "flex aspect-square items-center justify-center rounded-lg border font-mono text-[9px] font-bold tracking-widest transition-colors",
+                  "rounded-lg border py-3 font-mono text-sm font-bold transition-colors",
                   selected
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-card text-muted-foreground hover:border-border/60 hover:bg-muted/50",
+                    : "border-border bg-card text-foreground hover:border-border/60",
                 )}
               >
-                {DAY_SHORT[day]}
+                {count}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Session length */}
       <div className="flex flex-col gap-3">
         <label className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           DEFAULT SESSION LENGTH
@@ -138,7 +108,6 @@ export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepPro
         </div>
       </div>
 
-      {/* Intensity */}
       <div className="flex flex-col gap-3">
         <label className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           PREFERRED INTENSITY
@@ -175,7 +144,7 @@ export function ScheduleStep({ data, onUpdate, onNext, onBack }: ScheduleStepPro
         </div>
       </div>
 
-      <StepNav onBack={onBack} onNext={onNext} nextDisabled={!canProceed} />
+      <StepNav onBack={onBack} onNext={onNext} />
     </div>
   );
 }

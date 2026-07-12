@@ -38,6 +38,7 @@ export function CompletingStep({ data, coreSkills }: CompletingStepProps) {
           focusCoreSkillIds: data.focusCoreSkillIds,
           focusSubSkillIds: data.focusSubSkillIds,
           availableDays: data.availableDays,
+          sessionsPerWeek: data.sessionsPerWeek,
           defaultSessionLengthMinutes: data.defaultSessionLengthMinutes,
           preferredIntensity: data.preferredIntensity,
           dataTonePreference: data.dataTonePreference,

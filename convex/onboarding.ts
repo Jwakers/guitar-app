@@ -39,6 +39,7 @@ export const saveOnboardingAnswers = mutation({
       focusCoreSkillIds: v.array(coreSkillValidator),
       focusSubSkillIds: v.array(subSkillValidator),
       availableDays: v.array(v.string()),
+      sessionsPerWeek: v.optional(v.number()),
       defaultSessionLengthMinutes: v.number(),
       preferredIntensity: v.string(),
       dataTonePreference: v.string(),

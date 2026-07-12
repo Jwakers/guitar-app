@@ -72,9 +72,6 @@ export default function Home() {
                 <Link href="/today">RESUME TRAINING</Link>
               </Button>
             </Show>
-            <Button asChild size="lg" variant="outline" className="rounded-md h-14 px-8 font-mono text-sm font-bold tracking-widest border-border hover:bg-secondary">
-              <Link href="/about">SYSTEM SPECS</Link>
-            </Button>
           </div>
         </div>
 

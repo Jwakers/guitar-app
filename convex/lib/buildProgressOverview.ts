@@ -71,6 +71,8 @@ export type BuildProgressOverviewInput = {
   weekStartDate: string;
   todayDate: string;
   timezone: string;
+  currentStreakDays: number;
+  longestStreakDays: number;
   skillRatings: ProgressSkillRatingInput[];
   logs: ProgressLogInput[];
   exerciseStates: ProgressExerciseStateInput[];
@@ -81,6 +83,10 @@ export type BuildProgressOverviewInput = {
 export type ProgressOverview = {
   weekStartDate: string;
   todayDate: string;
+  streak: {
+    currentStreakDays: number;
+    longestStreakDays: number;
+  };
   sessionRollup: {
     sessionsCompleted: number;
     totalMinutes: number;
@@ -275,6 +281,10 @@ export function buildProgressOverview(
   return {
     weekStartDate,
     todayDate,
+    streak: {
+      currentStreakDays: input.currentStreakDays,
+      longestStreakDays: input.longestStreakDays,
+    },
     sessionRollup: {
       sessionsCompleted: completedSessionsThisWeek.length,
       totalMinutes,

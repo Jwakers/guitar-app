@@ -19,6 +19,10 @@ const objectiveResultValidator = v.object({
 const progressOverviewValidator = v.object({
   weekStartDate: v.string(),
   todayDate: v.string(),
+  streak: v.object({
+    currentStreakDays: v.number(),
+    longestStreakDays: v.number(),
+  }),
   sessionRollup: v.object({
     sessionsCompleted: v.number(),
     totalMinutes: v.number(),
@@ -141,6 +145,8 @@ export const getProgressOverview = query({
       weekStartDate,
       todayDate,
       timezone: user.timezone,
+      currentStreakDays: user.currentStreakDays ?? 0,
+      longestStreakDays: user.longestStreakDays ?? 0,
       skillRatings: skillRatings.map((rating) => ({
         skillTargetKey: rating.skillTargetKey,
         rating: rating.rating,

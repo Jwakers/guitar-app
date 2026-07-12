@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -13,7 +13,8 @@ import { canReplaySession } from "@/lib/practice/player-mode";
 
 export function TodayView() {
   const schedule = useQuery(api.sessions.getScheduleStatus);
-  const session = useQuery(api.sessions.getTodaySession);
+  const pendingSession = useQuery(api.sessions.getPendingSession);
+  const todaySession = useQuery(api.sessions.getTodaySession);
   const block = useQuery(api.trainingBlocks.getCurrentBlock);
   const exercises = useQuery(api.exercises.listExercises);
   const generateSession = useMutation(api.sessions.generateSession);
@@ -21,6 +22,11 @@ export function TodayView() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const generateAttempted = useRef(false);
+
+  const session = useMemo(() => {
+    if (pendingSession) return pendingSession;
+    return todaySession;
+  }, [pendingSession, todaySession]);
 
   const runGenerateSession = useCallback(() => {
     setGenerating(true);
@@ -41,21 +47,25 @@ export function TodayView() {
   useEffect(() => {
     if (
       schedule === undefined ||
-      session === undefined ||
-      !schedule.isPracticeDay ||
-      session !== null ||
+      pendingSession === undefined ||
+      todaySession === undefined ||
       generateAttempted.current
     ) {
       return;
     }
 
+    if (pendingSession !== null || todaySession !== null) {
+      return;
+    }
+
     generateAttempted.current = true;
     runGenerateSession();
-  }, [schedule, session, runGenerateSession]);
+  }, [schedule, pendingSession, todaySession, runGenerateSession]);
 
   if (
     schedule === undefined ||
-    session === undefined ||
+    pendingSession === undefined ||
+    todaySession === undefined ||
     block === undefined ||
     exercises === undefined
   ) {
@@ -63,37 +73,6 @@ export function TodayView() {
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <p className="font-mono text-sm text-muted-foreground">Loading…</p>
       </div>
-    );
-  }
-
-  if (!schedule.isPracticeDay) {
-    return (
-      <main className="flex flex-1 flex-col px-4 py-8">
-        <div className="mx-auto w-full max-w-2xl">
-          <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
-            TODAY
-          </h1>
-          <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">
-            <p className="font-mono text-sm font-bold tracking-widest text-muted-foreground">
-              REST DAY
-            </p>
-            <p className="mt-3 text-sm text-muted-foreground">
-              No session scheduled for today. Recovery is part of the programme.
-            </p>
-            {schedule.nextPracticeDay && (
-              <p className="mt-4 font-mono text-xs text-primary">
-                Next session: {schedule.nextPracticeDay.dayName} (
-                {schedule.nextPracticeDay.dateString})
-              </p>
-            )}
-          </div>
-          {block && (
-            <p className="mt-6 text-center font-mono text-[10px] tracking-widest text-muted-foreground">
-              {block.title.toUpperCase()} · WEEK {block.currentWeek}
-            </p>
-          )}
-        </div>
-      </main>
     );
   }
 
@@ -164,6 +143,9 @@ export function TodayView() {
           <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
             TODAY
           </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your session is ready when you are.
+          </p>
           {block && (
             <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
               {block.title.toUpperCase()} · WEEK {block.currentWeek}

@@ -31,6 +31,8 @@ describe("buildProgressOverview", () => {
       weekStartDate,
       todayDate,
       timezone: "UTC",
+      currentStreakDays: 4,
+      longestStreakDays: 7,
       skillRatings: [
         {
           skillTargetKey: "core:synchronisation",
@@ -107,6 +109,11 @@ describe("buildProgressOverview", () => {
       exerciseTitles,
     });
 
+    expect(overview.streak).toEqual({
+      currentStreakDays: 4,
+      longestStreakDays: 7,
+    });
+
     expect(overview.sessionRollup).toEqual({
       sessionsCompleted: 2,
       totalMinutes: 55,
@@ -141,6 +148,8 @@ describe("buildProgressOverview", () => {
       weekStartDate: "2026-07-07",
       todayDate: "2026-07-11",
       timezone: "UTC",
+      currentStreakDays: 0,
+      longestStreakDays: 0,
       skillRatings: [],
       logs: [],
       exerciseStates: [],

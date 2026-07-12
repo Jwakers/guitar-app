@@ -28,6 +28,7 @@ export type WizardData = {
   focusSubSkillIds: SubSkill[];
   focusSubSkillSelections: FocusSubSkillSelection[];
   availableDays: string[];
+  sessionsPerWeek: number;
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
   skillRatings: Record<string, 1 | 2 | 3 | 4 | 5>; // core:{id} → 1–5
@@ -55,6 +56,7 @@ const DEFAULT_DATA: WizardData = {
   focusSubSkillIds: [],
   focusSubSkillSelections: [],
   availableDays: ["Monday", "Wednesday", "Friday"],
+  sessionsPerWeek: 7,
   defaultSessionLengthMinutes: 45,
   preferredIntensity: "moderate",
   skillRatings: {},

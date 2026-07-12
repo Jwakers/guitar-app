@@ -19,6 +19,7 @@ export const SUB_SKILL_LOG_FETCH_LIMIT = 250;
 
 export type SkillRatingChange = {
   skillTargetKey: string;
+  skillTarget: SkillTarget;
   oldRating: number;
   newRating: number;
 };
@@ -126,6 +127,7 @@ export async function recomputeSkillRatingForTarget(
 
   return {
     skillTargetKey: key,
+    skillTarget,
     oldRating: previousRating,
     newRating: recomputed.rating,
   };

@@ -7,12 +7,15 @@ import {
 } from "../../src/lib/training-engine/block-types";
 import { buildSession, SessionBuildError } from "../../src/lib/training-engine/build-session";
 import {
+  generateTargets,
+  reasonCodesFromScore,
+} from "../../src/lib/training-engine/generate-targets";
+import {
   addWeeksMs,
   formatDateInTimezone,
   getDayNameInTimezone,
   isPracticeDay,
   nextPracticeDay,
-  practiceDayIndex,
 } from "../../src/lib/training-engine/dates";
 import { selectInitialBlock } from "../../src/lib/training-engine/select-initial-block";
 import type {
@@ -51,6 +54,7 @@ export function profileDocToSnapshot(
     focusCoreSkillIds: profile.focusCoreSkillIds,
     focusSubSkillIds: profile.focusSubSkillIds,
     availableDays: profile.availableDays,
+    sessionsPerWeek: profile.sessionsPerWeek ?? 7,
     defaultSessionLengthMinutes: profile.defaultSessionLengthMinutes,
     preferredIntensity: profile.preferredIntensity,
   };
@@ -120,26 +124,32 @@ export async function getActiveBlock(
     .first();
 }
 
+const DAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;
+
 export function sessionTypeForDate(
   dateMs: number,
   timezone: string,
   profile: UserProfileSnapshot,
   blockType: BlockType,
-): { sessionType: import("../../src/lib/training-engine/types").SessionType; dayName: string } | null {
+): { sessionType: import("../../src/lib/training-engine/types").SessionType; dayName: string } {
   const dayName = getDayNameInTimezone(dateMs, timezone);
-  if (!isPracticeDay(dateMs, timezone, profile.availableDays)) {
-    return null;
-  }
   const config = getBlockConfig(blockType);
+  const sessionsPerWeek = profile.sessionsPerWeek ?? 7;
   const pattern = scaleSessionPattern(
     config.weekOneSessionPattern,
-    profile.availableDays.length,
+    sessionsPerWeek,
   );
-  const index = practiceDayIndex(dayName, profile.availableDays);
-  if (index < 0 || index >= pattern.length) {
-    return { sessionType: "standard", dayName };
-  }
-  return { sessionType: pattern[index]!, dayName };
+  const dayIndex = DAY_NAMES.indexOf(dayName as (typeof DAY_NAMES)[number]);
+  const index = dayIndex >= 0 ? dayIndex % pattern.length : 0;
+  return { sessionType: pattern[index] ?? "standard", dayName };
 }
 
 /**
@@ -200,7 +210,7 @@ export async function provisionInitialTraining(
       startDate: weekStart,
       endDate: weekEnd,
       theme: config.weekOneTheme,
-      targetSessionCount: profile.availableDays.length,
+      targetSessionCount: profile.sessionsPerWeek ?? 7,
       plannedSessionIds: [],
       status: "active",
     });
@@ -216,37 +226,34 @@ export async function provisionInitialTraining(
   );
 
   let sessionId: Id<"practiceSessions"> | undefined;
+  const dateString = formatDateInTimezone(now, user.timezone);
+  const existingSession = await ctx.db
+    .query("practiceSessions")
+    .withIndex("by_userId_date", (q) =>
+      q.eq("userId", userId).eq("date", dateString),
+    )
+    .first();
 
-  if (sessionMeta) {
-    const dateString = formatDateInTimezone(now, user.timezone);
-    const existingSession = await ctx.db
-      .query("practiceSessions")
-      .withIndex("by_userId_date", (q) =>
-        q.eq("userId", userId).eq("date", dateString),
-      )
-      .first();
+  if (!existingSession) {
+    sessionId = await createSessionForDate(
+      ctx,
+      userId,
+      block._id,
+      weeklyPlan._id,
+      dateString,
+      sessionMeta.sessionType,
+      profileSnapshot,
+      blockDocToSnapshot(block),
+      ratingsToSnapshots(ratings),
+      exercises,
+      now,
+    );
 
-    if (!existingSession) {
-      sessionId = await createSessionForDate(
-        ctx,
-        userId,
-        block._id,
-        weeklyPlan._id,
-        dateString,
-        sessionMeta.sessionType,
-        profileSnapshot,
-        blockDocToSnapshot(block),
-        ratingsToSnapshots(ratings),
-        exercises,
-        now,
-      );
-
-      await ctx.db.patch(weeklyPlan._id, {
-        plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
-      });
-    } else {
-      sessionId = existingSession._id;
-    }
+    await ctx.db.patch("weeklyPlans", weeklyPlan._id, {
+      plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
+    });
+  } else {
+    sessionId = existingSession._id;
   }
 
   return {
@@ -290,6 +297,120 @@ export async function createSessionForDate(
     status: "planned",
     sessionType: built.sessionType,
     exerciseItems: built.exerciseItems,
+    createdAt: now,
+  });
+}
+
+export async function createExtraSession(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  blockId: Id<"trainingBlocks">,
+  weeklyPlanId: Id<"weeklyPlans">,
+  dateString: string,
+  profile: UserProfileSnapshot,
+  block: BlockSnapshot,
+  ratings: SkillRatingSnapshot[],
+  exercises: ExerciseCandidate[],
+  now: number,
+): Promise<Id<"practiceSessions">> {
+  const shorterProfile: UserProfileSnapshot = {
+    ...profile,
+    defaultSessionLengthMinutes: Math.min(
+      30,
+      Math.max(15, Math.round(profile.defaultSessionLengthMinutes * 0.6)),
+    ),
+  };
+
+  return await createSessionForDate(
+    ctx,
+    userId,
+    blockId,
+    weeklyPlanId,
+    dateString,
+    "maintenance",
+    shorterProfile,
+    block,
+    ratings,
+    exercises,
+    now,
+  );
+}
+
+export async function createCustomSession(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  blockId: Id<"trainingBlocks">,
+  weeklyPlanId: Id<"weeklyPlans">,
+  dateString: string,
+  exerciseIds: Id<"exercises">[],
+  profile: UserProfileSnapshot,
+  block: BlockSnapshot,
+  exercises: ExerciseCandidate[],
+  now: number,
+): Promise<Id<"practiceSessions">> {
+  if (exerciseIds.length === 0) {
+    throw new SessionBuildError("Select at least one exercise.");
+  }
+
+  const exerciseStates = await loadUserExerciseStates(ctx, userId);
+  const byId = new Map(exercises.map((exercise) => [exercise._id, exercise]));
+  const exerciseItems: import("../../src/lib/training-engine/types").SessionExerciseItem[] =
+    [];
+
+  for (let order = 0; order < exerciseIds.length; order++) {
+    const exerciseId = exerciseIds[order]!;
+    const exercise = byId.get(exerciseId);
+    if (!exercise) {
+      throw new SessionBuildError("One or more selected exercises are unavailable.");
+    }
+
+    const targets = generateTargets(exercise, {
+      sessionType: "maintenance",
+      userState: exerciseStates.get(exerciseId),
+    });
+
+    const breakdown = {
+      goalMatch: 1,
+      weaknessMatch: 0,
+      blockRelevance: 1,
+      readiness: 1,
+      progressionNeed: 0,
+      maintenanceNeed: 0,
+      variety: 0,
+      penalties: 0,
+      total: 3,
+    };
+
+    exerciseItems.push({
+      exerciseId,
+      slotType: order === 0 ? "primary" : "secondary",
+      order,
+      targetMetric: targets.targetMetric,
+      targetValue: targets.targetValue,
+      targetBpm: targets.targetBpm,
+      durationMinutes: targets.durationMinutes,
+      status: "pending",
+      reasonCodes: reasonCodesFromScore(breakdown),
+      scoreBreakdown: breakdown,
+    });
+  }
+
+  const estimatedMinutes = exerciseItems.reduce(
+    (sum, item) => sum + item.durationMinutes,
+    0,
+  );
+
+  return await ctx.db.insert("practiceSessions", {
+    userId,
+    blockId,
+    weeklyPlanId,
+    date: dateString,
+    title: "Custom Practice",
+    goal: `Focused practice on ${exerciseItems.length} selected exercise${exerciseItems.length === 1 ? "" : "s"}.`,
+    estimatedMinutes,
+    status: "planned",
+    sessionType: "maintenance",
+    exerciseItems,
     createdAt: now,
   });
 }
