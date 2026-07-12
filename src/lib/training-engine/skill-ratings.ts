@@ -144,13 +144,16 @@ export function computeTrend(
 export function recomputeSkillRating(input: {
   logs: SkillRatingLogSnapshot[];
   previousRating: number;
+  previousLastTrainedAt?: number;
   now: number;
 }): RecomputedSkillRating {
-  const { logs, previousRating, now } = input;
+  const { logs, previousRating, previousLastTrainedAt, now } = input;
   const rating = computeRatingFromLogs(logs, previousRating);
 
   const lastTrainedAt =
-    logs.length > 0 ? Math.max(...logs.map((log) => log.date)) : undefined;
+    logs.length > 0
+      ? Math.max(...logs.map((log) => log.date))
+      : previousLastTrainedAt;
 
   return {
     rating,

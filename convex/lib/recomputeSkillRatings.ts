@@ -98,6 +98,7 @@ export async function recomputeSkillRatingForTarget(
   const recomputed = recomputeSkillRating({
     logs: logs.map(exerciseLogToSkillRatingSnapshot),
     previousRating,
+    previousLastTrainedAt: existing?.lastTrainedAt,
     now,
   });
 

@@ -128,4 +128,19 @@ describe("recomputeSkillRating", () => {
     expect(result.lastTrainedAt).toBe(now);
     expect(result.trend7Day).toBe(0);
   });
+
+  it("preserves stored lastTrainedAt and maintenance status when logs are empty", () => {
+    const lastTrainedAt = now - 30 * DAY;
+
+    const result = recomputeSkillRating({
+      logs: [],
+      previousRating: 80,
+      previousLastTrainedAt: lastTrainedAt,
+      now,
+    });
+
+    expect(result.rating).toBe(80);
+    expect(result.lastTrainedAt).toBe(lastTrainedAt);
+    expect(result.status).toBe("maintenance");
+  });
 });
