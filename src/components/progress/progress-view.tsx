@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { ExerciseHistoryList } from "@/components/progress/exercise-history-list";
 import { Button } from "@/components/ui/button";
+import { api } from "@/convex/_generated/api";
 import { TRAINING_VERDICT_LABEL } from "@/lib/practice/labels";
 import { formatObjectiveMetric } from "@/lib/practice/session-log-display";
-import { ExerciseHistoryList } from "@/components/progress/exercise-history-list";
+import { useQuery } from "convex/react";
+import Link from "next/link";
 
 const SKILL_STATUS_LABEL: Record<string, string> = {
   weak: "Weak",
@@ -16,9 +16,10 @@ const SKILL_STATUS_LABEL: Record<string, string> = {
   maintenance: "Maintenance",
 };
 
-function formatPerformanceValue(
-  performance?: { value: number; unit: string },
-): string | null {
+function formatPerformanceValue(performance?: {
+  value: number;
+  unit: string;
+}): string | null {
   if (!performance) return null;
   return `${performance.value} ${performance.unit}`;
 }
@@ -82,10 +83,6 @@ export function ProgressView() {
             </p>
             <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
               DAY STREAK
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Counts days you complete practice. Missing days don&apos;t reduce
-              it until your next session.
             </p>
           </div>
           <div className="rounded-lg border border-border bg-card p-4">
@@ -151,29 +148,33 @@ export function ProgressView() {
                 const trend30 = formatTrend(skill.trend30Day);
 
                 return (
-                <Link
-                  key={skill.skillTargetKey}
-                  href={`/progress/targets/${encodeURIComponent(skill.skillTargetKey)}`}
-                  className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
-                >
-                  <div>
-                    <p className="font-mono text-sm font-bold text-foreground">
-                      {skill.label}
+                  <Link
+                    key={skill.skillTargetKey}
+                    href={`/progress/targets/${encodeURIComponent(skill.skillTargetKey)}`}
+                    className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40"
+                  >
+                    <div>
+                      <p className="font-mono text-sm font-bold text-foreground">
+                        {skill.label}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10px] tracking-widest text-muted-foreground">
+                        {SKILL_STATUS_LABEL[skill.status] ?? skill.status}
+                        {trend7 && (
+                          <span className="ml-2 text-primary">
+                            · 7d {trend7}
+                          </span>
+                        )}
+                        {trend30 && (
+                          <span className="ml-2 text-primary">
+                            · 30d {trend30}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <p className="font-mono text-lg font-bold text-foreground">
+                      {skill.rating}
                     </p>
-                    <p className="mt-0.5 font-mono text-[10px] tracking-widest text-muted-foreground">
-                      {SKILL_STATUS_LABEL[skill.status] ?? skill.status}
-                      {trend7 && (
-                        <span className="ml-2 text-primary">· 7d {trend7}</span>
-                      )}
-                      {trend30 && (
-                        <span className="ml-2 text-primary">· 30d {trend30}</span>
-                      )}
-                    </p>
-                  </div>
-                  <p className="font-mono text-lg font-bold text-foreground">
-                    {skill.rating}
-                  </p>
-                </Link>
+                  </Link>
                 );
               })}
             </div>

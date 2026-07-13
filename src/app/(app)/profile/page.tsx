@@ -19,6 +19,9 @@ export default function ProfilePage() {
           <Button asChild variant="outline" className="justify-start">
             <Link href="/settings">Practice settings</Link>
           </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link href="/settings/subscription">Subscription</Link>
+          </Button>
         </div>
       </div>
     </main>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -12,6 +13,7 @@ export function TrainingView() {
   const router = useRouter();
   const block = useQuery(api.trainingBlocks.getCurrentBlock);
   const exercises = useQuery(api.exercises.listExercises);
+  const subscription = useQuery(api.subscriptions.getSubscriptionStatus);
   const generateExtraSession = useMutation(api.training.generateExtraSession);
   const generateCustomSession = useMutation(api.training.generateCustomSession);
 
@@ -20,6 +22,9 @@ export function TrainingView() {
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<"extra" | "custom" | null>(null);
+
+  const trainingUnlocked =
+    subscription?.entitlements.trainingSessions === true;
 
   const focusSkillIds = new Set([
     ...(block?.focusCoreSkillIds ?? []),
@@ -83,11 +88,42 @@ export function TrainingView() {
     }
   }
 
-  if (block === undefined || exercises === undefined) {
+  if (
+    block === undefined ||
+    exercises === undefined ||
+    subscription === undefined
+  ) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <p className="font-mono text-sm text-muted-foreground">Loading…</p>
       </div>
+    );
+  }
+
+  if (!trainingUnlocked) {
+    return (
+      <main className="flex flex-1 flex-col px-4 py-8">
+        <div className="mx-auto w-full max-w-2xl">
+          <p className="font-mono text-[10px] font-bold tracking-widest text-primary">
+            FREE-FORM PRACTICE
+          </p>
+          <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-foreground">
+            Training
+          </h1>
+          <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">
+            <p className="font-mono text-sm font-bold tracking-widest text-muted-foreground">
+              PRO FEATURE
+            </p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Extra and custom training sessions are available on Pro. Your core
+              Today practice is always free.
+            </p>
+            <Button asChild className="mt-6">
+              <Link href="/settings/subscription">View subscription</Link>
+            </Button>
+          </div>
+        </div>
+      </main>
     );
   }
 

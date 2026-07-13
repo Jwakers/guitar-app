@@ -4,6 +4,11 @@ import { internalMutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireCurrentUser } from "./lib/auth";
+import {
+  assertEntitlement,
+  getUserEntitlements,
+} from "./lib/subscriptions";
+import { FREE_SKILL_EXERCISE_HISTORY_LIMIT } from "../src/lib/subscriptions/entitlements";
 import { buildSkillTargetDetail } from "./lib/buildSkillTargetDetail";
 import {
   loadLogsForSkillTarget,
@@ -264,6 +269,8 @@ export const getSkillTargetDetail = query({
       return null;
     }
 
+    const entitlements = getUserEntitlements(user);
+
     const [rating, logs] = await Promise.all([
       ctx.db
         .query("userSkillRatings")
@@ -276,7 +283,15 @@ export const getSkillTargetDetail = query({
       loadLogsForSkillTarget(ctx, user._id, skillTarget),
     ]);
 
-    const logExerciseIds = [...new Set(logs.map((log) => log.exerciseId))];
+    const limitedLogs =
+      entitlements.skillExerciseHistoryFull ||
+      entitlements.skillExerciseHistoryLimit === null
+        ? logs
+        : logs.slice(0, entitlements.skillExerciseHistoryLimit);
+
+    const logExerciseIds = [
+      ...new Set(limitedLogs.map((log) => log.exerciseId)),
+    ];
     const [exerciseStates, exerciseTitles] = await Promise.all([
       loadExerciseStatesForExercises(ctx, user._id, logExerciseIds),
       loadExerciseTitles(ctx, logExerciseIds),
@@ -295,7 +310,7 @@ export const getSkillTargetDetail = query({
             lastTrainedAt: rating.lastTrainedAt,
           }
         : null,
-      logs: logs.map((log) => ({
+      logs: limitedLogs.map((log) => ({
         exerciseId: log.exerciseId,
         date: log.date,
         trainingVerdict: log.trainingVerdict,
@@ -319,6 +334,31 @@ export const getSkillTargetDetail = query({
   },
 });
 
+async function mapHistoryPage(
+  ctx: QueryCtx,
+  logs: Doc<"exerciseLogs">[],
+) {
+  const exerciseIds = new Set(logs.map((log) => log.exerciseId));
+  const exerciseTitles = await loadExerciseTitles(ctx, exerciseIds);
+
+  return logs.map((log) => ({
+    _id: log._id,
+    exerciseId: log.exerciseId,
+    exerciseTitle: exerciseTitles[log.exerciseId] ?? "Unknown exercise",
+    date: log.date,
+    trainingVerdict: log.trainingVerdict,
+    objectiveResult: {
+      metric: log.objectiveResult.metric,
+      targetValue: log.objectiveResult.targetValue,
+      actualValue: log.objectiveResult.actualValue,
+      unit: log.objectiveResult.unit,
+    },
+    isPersonalBest: log.isPersonalBest,
+    coreSkillId: log.coreSkillId,
+    subSkillIds: log.subSkillIds,
+  }));
+}
+
 export const listExerciseHistory = query({
   args: {
     paginationOpts: paginationOptsValidator,
@@ -331,34 +371,53 @@ export const listExerciseHistory = query({
   }),
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
+    const entitlements = getUserEntitlements(user);
+
+    if (
+      args.skillTargetKey &&
+      !entitlements.skillExerciseHistoryFull &&
+      args.paginationOpts.cursor
+    ) {
+      assertEntitlement(user, "skill_exercise_history");
+    }
+
+    const paginationOpts =
+      args.skillTargetKey &&
+      !entitlements.skillExerciseHistoryFull &&
+      entitlements.skillExerciseHistoryLimit !== null
+        ? {
+            ...args.paginationOpts,
+            numItems: Math.min(
+              args.paginationOpts.numItems,
+              entitlements.skillExerciseHistoryLimit,
+            ),
+          }
+        : args.paginationOpts;
 
     const result = await paginateExerciseHistory(
       ctx,
       user._id,
-      args.paginationOpts,
+      paginationOpts,
       args.skillTargetKey,
     );
 
-    const exerciseIds = new Set(result.page.map((log) => log.exerciseId));
-    const exerciseTitles = await loadExerciseTitles(ctx, exerciseIds);
+    if (
+      args.skillTargetKey &&
+      !entitlements.skillExerciseHistoryFull &&
+      entitlements.skillExerciseHistoryLimit !== null
+    ) {
+      const limit = entitlements.skillExerciseHistoryLimit;
+      const cappedPage = result.page.slice(0, limit);
+      const capReached = cappedPage.length >= limit || result.isDone;
+      return {
+        page: await mapHistoryPage(ctx, cappedPage),
+        isDone: capReached,
+        continueCursor: capReached ? "" : result.continueCursor,
+      };
+    }
 
     return {
-      page: result.page.map((log) => ({
-        _id: log._id,
-        exerciseId: log.exerciseId,
-        exerciseTitle: exerciseTitles[log.exerciseId] ?? "Unknown exercise",
-        date: log.date,
-        trainingVerdict: log.trainingVerdict,
-        objectiveResult: {
-          metric: log.objectiveResult.metric,
-          targetValue: log.objectiveResult.targetValue,
-          actualValue: log.objectiveResult.actualValue,
-          unit: log.objectiveResult.unit,
-        },
-        isPersonalBest: log.isPersonalBest,
-        coreSkillId: log.coreSkillId,
-        subSkillIds: log.subSkillIds,
-      })),
+      page: await mapHistoryPage(ctx, result.page),
       isDone: result.isDone,
       continueCursor: result.continueCursor,
     };

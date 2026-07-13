@@ -76,4 +76,24 @@ describe("buildDrillPrompt", () => {
     expect(prompt).toContain("exercise.patternType is the source of truth");
     expect(prompt).toContain("Short pattern warning");
   });
+
+  it("lists allowed sub-skills and disambiguates slides for fretting_control", () => {
+    const { prompt } = buildDrillPrompt({
+      coreSkillId: "fretting_control",
+      subSkillIds: ["fretting_accuracy"],
+      trainingAttributes: ["accuracy"],
+      difficultyLevel: 5,
+      difficultyInferred: false,
+      exerciseType: "primary",
+      existingDrills: [],
+    });
+
+    expect(prompt).toContain(
+      "Allowed subSkillIds for fretting_control: finger_independence, fretting_accuracy, position_shifting",
+    );
+    expect(prompt).toContain("slides is lead_articulation only");
+    expect(prompt).toContain(
+      'Tab slide articulation (articulationFromPrevious: "slide") is NOT the slides sub-skill',
+    );
+  });
 });

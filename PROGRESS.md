@@ -99,10 +99,12 @@ Track what is built and what remains. Update this file as features land.
 
 ## Phase 7: Subscription Readiness
 
-- [ ] Subscription tier model (free / pro)
-- [ ] Feature gate logic
-- [ ] Subscription page (`/settings/subscription`)
-- [ ] Billing integration (post-MVP)
+- [x] Subscription tier model (free / pro) with cached `users.subscriptionTier`
+- [x] Central entitlements (`src/lib/subscriptions/entitlements.ts`)
+- [x] Server-side feature gates (training, monthly review history, skill history)
+- [x] Subscription page (`/settings/subscription`) — PricingTable-ready shell
+- [x] Clerk Billing sync scaffold (`convex/http.ts` webhook + `syncFromClerkBilling`)
+- [ ] Clerk Billing checkout UI + live webhook wiring (when billing enabled)
 
 ---
 
@@ -124,4 +126,5 @@ Track what is built and what remains. Update this file as features land.
 | Achievements | `/achievements` | Done |
 | Profile | `/profile` | Done |
 | Settings | `/settings` | Done |
+| Subscription | `/settings/subscription` | Done |
 | Onboarding | `/onboarding` | Done |
