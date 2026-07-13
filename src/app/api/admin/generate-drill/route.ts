@@ -106,6 +106,8 @@ function validationFailureResponse(
   generated: z.infer<typeof drillGeneratorOutputSchema>,
   patternType: string,
   rawExercise: unknown,
+  taxonomyPinned: boolean,
+  pinnedFields: string[],
 ) {
   return NextResponse.json(
     {
@@ -120,6 +122,8 @@ function validationFailureResponse(
       refinePrompt: generated.refinePrompt,
       validationStatus: "failed" as const,
       rawExercise,
+      taxonomyPinned,
+      pinnedFields,
     },
     { status: 422 },
   );
@@ -301,6 +305,8 @@ export async function POST(request: Request) {
         generated,
         generated.patternType ?? generated.exercise.patternType,
         validation.rawExercise,
+        taxonomyPinned,
+        pinnedFields,
       );
     }
 
@@ -319,6 +325,8 @@ export async function POST(request: Request) {
           generated,
           generated.patternType ?? exercise.patternType,
           difficultyValidation.rawExercise,
+          taxonomyPinned,
+          pinnedFields,
         );
       }
       exercise = difficultyValidation.exercise;
@@ -341,6 +349,8 @@ export async function POST(request: Request) {
           generated,
           generated.patternType ?? exercise.patternType,
           attributeValidation.rawExercise,
+          taxonomyPinned,
+          pinnedFields,
         );
       }
       exercise = attributeValidation.exercise;
