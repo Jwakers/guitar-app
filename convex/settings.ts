@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
-import { DEFAULT_SESSIONS_PER_WEEK } from "../src/lib/training-engine/constants";
+import { DEFAULT_SESSIONS_PER_WEEK, normalizeSessionsPerWeek } from "../src/lib/training-engine/constants";
 
 const preferredIntensityValidator = v.union(
   v.literal("light"),
@@ -64,13 +64,6 @@ export const updateProfileSettings = mutation({
     }
 
     if (
-      args.sessionsPerWeek !== undefined &&
-      (args.sessionsPerWeek < 1 || args.sessionsPerWeek > 7)
-    ) {
-      throw new Error("Sessions per week must be between 1 and 7");
-    }
-
-    if (
       args.defaultSessionLengthMinutes !== undefined &&
       (args.defaultSessionLengthMinutes < 15 ||
         args.defaultSessionLengthMinutes > 120)
@@ -94,7 +87,7 @@ export const updateProfileSettings = mutation({
       updates.preferredIntensity = args.preferredIntensity;
     }
     if (args.sessionsPerWeek !== undefined) {
-      updates.sessionsPerWeek = args.sessionsPerWeek;
+      updates.sessionsPerWeek = normalizeSessionsPerWeek(args.sessionsPerWeek);
     }
 
     await ctx.db.patch("userProfiles", profile._id, updates);

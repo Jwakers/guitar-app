@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
@@ -15,26 +15,28 @@ function monthLabel(year: number, month: number): string {
 }
 
 export function MonthlyReviewView() {
-  const [year, setYear] = useState<number | null>(null);
-  const [month, setMonth] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
 
   const bounds = useQuery(api.reviews.getMonthlyReviewBounds);
+
+  const year = selectedMonth?.year ?? bounds?.currentYear ?? null;
+  const month = selectedMonth?.month ?? bounds?.currentMonth ?? null;
+
   const review = useQuery(
     api.reviews.getMonthlyReview,
     year !== null && month !== null ? { year, month } : "skip",
   );
 
-  useEffect(() => {
-    if (bounds === undefined) return;
-    setYear((current) => current ?? bounds.currentYear);
-    setMonth((current) => current ?? bounds.currentMonth);
-  }, [bounds]);
-
   function shiftMonth(delta: number) {
     if (year === null || month === null) return;
     const date = new Date(year, month - 1 + delta, 1);
-    setYear(date.getFullYear());
-    setMonth(date.getMonth() + 1);
+    setSelectedMonth({
+      year: date.getFullYear(),
+      month: date.getMonth() + 1,
+    });
   }
 
   const canGoPrev =

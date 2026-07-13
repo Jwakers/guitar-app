@@ -41,6 +41,40 @@ export function AchievementsView() {
     void runSeed();
   }, [runSeed]);
 
+  if (seedError) {
+    return (
+      <main className="flex flex-1 flex-col px-4 py-8">
+        <div className="mx-auto w-full max-w-2xl">
+          <p className="font-mono text-[10px] font-bold tracking-widest text-primary">
+            GAMIFICATION
+          </p>
+          <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-foreground">
+            Achievements
+          </h1>
+          <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/10 px-6 py-8 text-center">
+            <p className="font-mono text-sm text-destructive">{seedError}</p>
+            <Button
+              type="button"
+              className="mt-4"
+              variant="outline"
+              onClick={() => {
+                seedAttempted.current = true;
+                void runSeed();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+          <div className="mt-8">
+            <Button asChild variant="outline">
+              <Link href="/progress">Back to Progress</Link>
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (achievements === undefined) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12">
@@ -70,24 +104,7 @@ export function AchievementsView() {
           reduce it until your next session.
         </p>
 
-        {seedError && (
-          <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/10 px-6 py-8 text-center">
-            <p className="font-mono text-sm text-destructive">{seedError}</p>
-            <Button
-              type="button"
-              className="mt-4"
-              variant="outline"
-              onClick={() => {
-                seedAttempted.current = true;
-                void runSeed();
-              }}
-            >
-              Retry
-            </Button>
-          </div>
-        )}
-
-        {!seedError && seeding && achievements.length === 0 && (
+        {!seeding && achievements.length === 0 && (
           <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">
             <p className="font-mono text-sm text-muted-foreground">
               Loading medals…
