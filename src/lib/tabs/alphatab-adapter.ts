@@ -27,7 +27,6 @@ const DURATION_MAP: Record<TabBeatDuration, number> = {
 const ARTICULATION_EFFECTS: Partial<Record<NoteArticulation, string>> = {
   hammer_on: "h",
   pull_off: "h",
-  slide: "sl",
 };
 
 const NOTE_TECHNIQUE_EFFECTS: Partial<
@@ -68,6 +67,19 @@ function tuningToAlphaTex(tuning: string[]): string {
   return `\\tuning (${[...pitches].reverse().join(" ")})`;
 }
 
+function slideArticulationEffect(
+  note: TabNote,
+  previousOnString: PreviousNoteOnString,
+): string {
+  if (note.fret > previousOnString.fret) {
+    return "sib";
+  }
+  if (note.fret < previousOnString.fret) {
+    return "sia";
+  }
+  return "sl";
+}
+
 function articulationEffect(
   note: TabNote,
   previousOnString: PreviousNoteOnString | undefined,
@@ -81,7 +93,37 @@ function articulationEffect(
     return null;
   }
 
+  if (articulation === "slide") {
+    return slideArticulationEffect(note, previousOnString!);
+  }
+
   return ARTICULATION_EFFECTS[articulation] ?? null;
+}
+
+function shouldMergeBeamForSlide(
+  beat: TabBeat,
+  nextBeat: TabBeat | undefined,
+): boolean {
+  if (
+    nextBeat === undefined ||
+    beat.rest === true ||
+    nextBeat.rest === true ||
+    beat.notes.length !== 1 ||
+    nextBeat.notes.length !== 1
+  ) {
+    return false;
+  }
+
+  const sourceNote = beat.notes[0]!;
+  const destNote = nextBeat.notes[0]!;
+  if (sourceNote.string !== destNote.string) {
+    return false;
+  }
+  if (destNote.articulationFromPrevious !== "slide") {
+    return false;
+  }
+
+  return isValidArticulationFromPrevious("slide", { fret: sourceNote.fret }, destNote);
 }
 
 function noteTechniqueEffect(
@@ -132,7 +174,11 @@ function noteEffects(
   return effects;
 }
 
-function beatEffects(beat: TabBeat, flags: EmitFlags): string[] {
+function beatEffects(
+  beat: TabBeat,
+  flags: EmitFlags,
+  mergeBeamWithNext = false,
+): string[] {
   const effects: string[] = [];
 
   // AlphaTeX pick strokes are su/sd. `d` means dotted — do not use it for downstrokes.
@@ -146,6 +192,10 @@ function beatEffects(beat: TabBeat, flags: EmitFlags): string[] {
 
   if (beat.tuplet !== undefined) {
     effects.push(`tu ${beat.tuplet}`);
+  }
+
+  if (mergeBeamWithNext) {
+    effects.push("beam merge");
   }
 
   return effects;
@@ -188,9 +238,10 @@ function beatToAlphaTex(
   previousBendQt: number | null,
   lastNoteOnString: Map<TabNoteString, PreviousNoteOnString>,
   flags: EmitFlags,
+  mergeBeamWithNext = false,
 ): { tex: string; bendQt: number | null } {
   const dur = DURATION_MAP[beat.duration];
-  const beatFx = formatEffects(beatEffects(beat, flags));
+  const beatFx = formatEffects(beatEffects(beat, flags, mergeBeamWithNext));
   const accented = beat.accent === true;
 
   if (beat.rest === true || beat.notes.length === 0) {
@@ -241,13 +292,17 @@ function barToAlphaTex(
 ): string {
   let previousBendQt: number | null = null;
   const parts: string[] = [];
-  for (const beat of bar.beats) {
+  for (let beatIndex = 0; beatIndex < bar.beats.length; beatIndex += 1) {
+    const beat = bar.beats[beatIndex]!;
+    const nextBeat = bar.beats[beatIndex + 1];
+    const mergeBeamWithNext = shouldMergeBeamForSlide(beat, nextBeat);
     const { tex, bendQt } = beatToAlphaTex(
       beat,
       tuning,
       previousBendQt,
       lastNoteOnString,
       flags,
+      mergeBeamWithNext,
     );
     parts.push(tex);
     previousBendQt = bendQt;
@@ -267,9 +322,11 @@ function barToAlphaTex(
  * Bend amounts use quarter-tones (2 = half step, 4 = whole step), inferred from
  * `targetPitch` (required for bend notes).
  *
- * Legato effects (`h`, `sl`) are emitted only from `articulationFromPrevious`
+ * Legato effects (`h`, `sib`, `sia`) are emitted only from `articulationFromPrevious`
  * when the transition passes legato validation — never from proximity or
- * deprecated `technique` fields.
+ * deprecated `technique` fields. Slides use directional slide-into markers
+ * (`sib` ascending, `sia` descending) so AlphaTab draws tab slashes. Source
+ * beats before a same-string slide also emit `{beam merge}`.
  *
  * `displayHints` gates optional annotations:
  * - showPicking: opt-in

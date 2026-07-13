@@ -730,7 +730,7 @@ A hammer-on is not merely “a note after another note”. A pull-off is not mer
 
 Hammer-ons from nowhere are advanced and out of scope for MVP. If introduced later, use a separate explicit value (`hammer_on_from_nowhere`) with its own validation — do not silently interpret cross-string hammer-ons as hammer-ons from nowhere.
 
-**AlphaTab adapter rule:** emit `h` / `sl` only when internal legato validation has passed. Never infer legato from proximity.
+**AlphaTab adapter rule:** emit `h` for hammer-ons/pull-offs and directional slide-into markers (`sib` ascending, `sia` descending) when internal legato validation has passed. Source beats before a same-string slide also emit `{beam merge}` so AlphaTab draws tab slashes. Never infer legato from proximity.
 
 Example tab JSON:
 
