@@ -98,6 +98,7 @@ export const FIXTURE_PROFILE = {
   focusCoreSkillIds: ["picking", "synchronisation"] as const,
   focusSubSkillIds: ["alternate_picking"] as const,
   availableDays: ["Monday", "Wednesday", "Friday"],
+  sessionsPerWeek: 7,
   defaultSessionLengthMinutes: 30,
   preferredIntensity: "moderate",
 };

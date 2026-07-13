@@ -143,6 +143,9 @@ export default defineSchema({
     onboardingCompleted: v.boolean(),
     subscriptionTier: v.union(v.literal("free"), v.literal("pro")),
     timezone: v.string(),
+    currentStreakDays: v.optional(v.number()),
+    longestStreakDays: v.optional(v.number()),
+    lastPracticeDate: v.optional(v.string()),
     // Editable only in the Convex dashboard / DB — never via client mutations.
     // Optional for backwards compatibility with existing rows; treat missing as false.
     isSuperUser: v.optional(v.boolean()),
@@ -156,6 +159,7 @@ export default defineSchema({
     focusCoreSkillIds: v.array(coreSkillValidator),
     focusSubSkillIds: v.array(subSkillValidator),
     availableDays: v.array(v.string()),
+    sessionsPerWeek: v.optional(v.number()),
     defaultSessionLengthMinutes: v.number(),
     preferredIntensity: v.string(),
     dataTonePreference: v.string(),
@@ -356,6 +360,15 @@ export default defineSchema({
         instructionsOverride: v.optional(v.string()),
       }),
     ),
+    pendingSkillRatingChanges: v.optional(
+      v.array(
+        v.object({
+          skillTarget,
+          oldRating: v.number(),
+          newRating: v.number(),
+        }),
+      ),
+    ),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
   })
@@ -525,7 +538,9 @@ export default defineSchema({
     userId: v.id("users"),
     achievementId: v.id("achievements"),
     unlockedAt: v.number(),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_achievementId", ["userId", "achievementId"]),
 
   // -------------------------------------------------------------------------
   // Monthly reviews

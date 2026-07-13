@@ -66,8 +66,37 @@ export function ProgressView() {
           Week of {overview.weekStartDate} · {overview.todayDate}
         </p>
 
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/achievements">Achievements</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/review/monthly">Monthly Review</Link>
+          </Button>
+        </div>
+
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-border bg-card p-4">
+            <p className="font-mono text-2xl font-bold text-foreground">
+              {overview.streak.currentStreakDays}
+            </p>
+            <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+              DAY STREAK
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Counts days you complete practice. Missing days don&apos;t reduce
+              it until your next session.
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <p className="font-mono text-2xl font-bold text-foreground">
+              {overview.streak.longestStreakDays}
+            </p>
+            <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
+              LONGEST STREAK
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4 sm:col-span-1">
             <p className="font-mono text-2xl font-bold text-foreground">
               {overview.sessionRollup.sessionsCompleted}
             </p>
@@ -75,6 +104,9 @@ export function ProgressView() {
               SESSIONS THIS WEEK
             </p>
           </div>
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="font-mono text-2xl font-bold text-foreground">
               {overview.sessionRollup.totalMinutes}

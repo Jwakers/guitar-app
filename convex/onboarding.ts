@@ -6,6 +6,7 @@ import {
   subSkillValidator,
 } from "./lib/exerciseValidators";
 import { skillTargetKey } from "../src/lib/skills/taxonomy";
+import { normalizeSessionsPerWeek } from "../src/lib/training-engine/constants";
 import { provisionInitialTraining } from "./lib/provisionTraining";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
@@ -38,7 +39,7 @@ export const saveOnboardingAnswers = mutation({
       primaryGoals: v.array(v.string()),
       focusCoreSkillIds: v.array(coreSkillValidator),
       focusSubSkillIds: v.array(subSkillValidator),
-      availableDays: v.array(v.string()),
+      sessionsPerWeek: v.optional(v.number()),
       defaultSessionLengthMinutes: v.number(),
       preferredIntensity: v.string(),
       dataTonePreference: v.string(),
@@ -67,9 +68,13 @@ export const saveOnboardingAnswers = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .unique();
 
+    const { sessionsPerWeek, ...profileFields } = args.profile;
+
     const profileData = {
       userId: user._id,
-      ...args.profile,
+      ...profileFields,
+      availableDays: [],
+      sessionsPerWeek: normalizeSessionsPerWeek(sessionsPerWeek),
       updatedAt: now,
     };
 

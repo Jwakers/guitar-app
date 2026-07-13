@@ -6,7 +6,11 @@ import {
 } from "../../src/lib/practice/feedback-form";
 import type { SessionExerciseItem } from "./sessionLifecycle";
 import { recomputeExerciseState } from "./recomputeExerciseState";
-import { recomputeSkillRatingsForExercise } from "./recomputeSkillRatings";
+import {
+  recomputeSkillRatingsForExercise,
+  type SkillRatingChange,
+} from "./recomputeSkillRatings";
+import { mergeSkillRatingChanges } from "./mergeSkillRatingChanges";
 
 export type FeedbackResponseEntry = {
   questionId: string;
@@ -270,7 +274,42 @@ export async function applyLogExerciseResult(
     now,
   );
 
-  await recomputeSkillRatingsForExercise(ctx, input.userId, exercise, now);
+  const skillChanges = await recomputeSkillRatingsForExercise(
+    ctx,
+    input.userId,
+    exercise,
+    now,
+  );
+
+  if (skillChanges.length > 0) {
+    await appendSessionSkillRatingChanges(
+      ctx,
+      input.session._id,
+      input.session.pendingSkillRatingChanges ?? [],
+      skillChanges,
+    );
+  }
 
   return { logId, created: true };
 }
+
+async function appendSessionSkillRatingChanges(
+  ctx: MutationCtx,
+  sessionId: Id<"practiceSessions">,
+  existing: NonNullable<Doc<"practiceSessions">["pendingSkillRatingChanges"]>,
+  incoming: SkillRatingChange[],
+): Promise<void> {
+  const merged = mergeSkillRatingChanges(
+    existing ?? [],
+    incoming.map((change) => ({
+      skillTarget: change.skillTarget,
+      oldRating: change.oldRating,
+      newRating: change.newRating,
+    })),
+  );
+
+  await ctx.db.patch("practiceSessions", sessionId, {
+    pendingSkillRatingChanges: merged,
+  });
+}
+

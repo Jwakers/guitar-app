@@ -30,7 +30,7 @@ Track what is built and what remains. Update this file as features land.
 ## Phase 2: Onboarding
 
 - [x] Onboarding questionnaire (experience level, guitar type, goals)
-- [x] Practice schedule selection (available days, session length, intensity)
+- [x] Practice schedule preferences (session length, intensity, sessions-per-week target)
 - [x] Initial skill self-assessment (rate 1–5 per skill)
 - [x] Initial skill ratings written to Convex (`userSkillRatings`)
 - [x] Onboarding completion flag set (`onboardingCompleted: true`)
@@ -77,12 +77,23 @@ Track what is built and what remains. Update this file as features land.
 
 ## Phase 6: Gamification
 
-- [ ] Streak tracking
-- [ ] Medal system (bronze / silver / gold)
-- [ ] Achievements (`convex/achievements.ts`)
-- [ ] Monthly review generation (`convex/reviews.ts`)
-- [ ] Achievements screen (`/achievements`)
-- [ ] Monthly review screen (`/review/monthly`)
+- [x] Streak tracking
+- [x] Medal system (bronze / silver / gold)
+- [x] Achievements (`convex/achievements.ts`)
+- [x] Monthly review generation (`convex/reviews.ts`)
+- [x] Achievements screen (`/achievements`)
+- [x] Monthly review screen (`/review/monthly`)
+
+---
+
+## Always-on training UX
+
+- [x] Always-on practice (no rest-day gate; pending sessions resume)
+- [x] Achievement catalog seeds on `/achievements` visit
+- [x] Monthly review month-scoped stats with bounded navigation
+- [x] `/training` extra + custom sessions
+- [x] `/settings` practice preferences (`sessionsPerWeek`, length, intensity)
+- [x] `availableDays` deprecated for session gating (kept for backwards compatibility)
 
 ---
 
@@ -106,11 +117,11 @@ Track what is built and what remains. Update this file as features land.
 | Practice player | `/train/[sessionId]` | Done |
 | Progress | `/progress` | Done |
 | Skill target detail | `/progress/targets/[skillTarget]` | Done |
-| Training blocks | `/training` | Not built |
+| Training | `/training` | Done |
 | Exercise library | `/exercises` | Not built |
 | Exercise detail | `/exercises/[exerciseId]` | Not built |
-| Monthly review | `/review/monthly` | Not built |
-| Achievements | `/achievements` | Not built |
-| Profile | `/profile` | Not built |
-| Settings | `/settings` | Not built |
+| Monthly review | `/review/monthly` | Done |
+| Achievements | `/achievements` | Done |
+| Profile | `/profile` | Done |
+| Settings | `/settings` | Done |
 | Onboarding | `/onboarding` | Done |

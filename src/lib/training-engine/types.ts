@@ -106,6 +106,7 @@ export type UserProfileSnapshot = {
   focusCoreSkillIds: CoreSkill[];
   focusSubSkillIds: SubSkill[];
   availableDays: string[];
+  sessionsPerWeek?: number;
   defaultSessionLengthMinutes: number;
   preferredIntensity: string;
 };

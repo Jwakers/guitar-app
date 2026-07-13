@@ -4,12 +4,16 @@ import { requireCurrentUser } from "./lib/auth";
 import {
   applyCompleteExerciseItem,
   applyStartSession,
-  countTerminalItems,
   getSessionForUser,
 } from "./lib/sessionLifecycle";
 import { applyLogExerciseResult } from "./lib/logExerciseResult";
+import { buildSessionSummary } from "./lib/completeSessionSummary";
 import { getWeeklyPlanForBlockWeek } from "./lib/weeklyPlanLookup";
 import { sessionSlotTypeValidator, trainingVerdict } from "./lib/sessionValidators";
+import {
+  coreSkillValidator,
+  subSkillValidator,
+} from "./lib/exerciseValidators";
 import {
   blockDocToSnapshot,
   createSessionForDate,
@@ -25,6 +29,7 @@ import {
   sessionTypeForDate,
 } from "./lib/provisionTraining";
 import type { BlockType } from "../src/lib/training-engine/types";
+import { pickNewestPendingSession } from "../src/lib/training-engine/pending-session";
 
 const exerciseItemValidator = v.object({
   exerciseId: v.id("exercises"),
@@ -60,6 +65,11 @@ const exerciseItemValidator = v.object({
   instructionsOverride: v.optional(v.string()),
 });
 
+const skillTargetValidator = v.union(
+  v.object({ kind: v.literal("core"), id: coreSkillValidator }),
+  v.object({ kind: v.literal("sub"), id: subSkillValidator }),
+);
+
 const sessionDocValidator = v.object({
   _id: v.id("practiceSessions"),
   _creationTime: v.number(),
@@ -84,8 +94,41 @@ const sessionDocValidator = v.object({
     v.literal("maintenance"),
   ),
   exerciseItems: v.array(exerciseItemValidator),
+  pendingSkillRatingChanges: v.optional(
+    v.array(
+      v.object({
+        skillTarget: skillTargetValidator,
+        oldRating: v.number(),
+        newRating: v.number(),
+      }),
+    ),
+  ),
   createdAt: v.number(),
   completedAt: v.optional(v.number()),
+});
+
+export const getPendingSession = query({
+  args: {},
+  returns: v.union(sessionDocValidator, v.null()),
+  handler: async (ctx) => {
+    const user = await requireCurrentUser(ctx);
+    const [planned, active] = await Promise.all([
+      ctx.db
+        .query("practiceSessions")
+        .withIndex("by_userId_status", (q) =>
+          q.eq("userId", user._id).eq("status", "planned"),
+        )
+        .collect(),
+      ctx.db
+        .query("practiceSessions")
+        .withIndex("by_userId_status", (q) =>
+          q.eq("userId", user._id).eq("status", "active"),
+        )
+        .collect(),
+    ]);
+
+    return pickNewestPendingSession([...planned, ...active]);
+  },
 });
 
 export const getTodaySession = query({
@@ -174,19 +217,12 @@ export const generateSession = mutation({
     );
     const profileSnapshot = profileDocToSnapshot(profile);
 
-    if (
-      !isPracticeDay(now, user.timezone, profileSnapshot.availableDays)
-    ) {
-      return null;
-    }
-
     const sessionMeta = sessionTypeForDate(
       now,
       user.timezone,
       profileSnapshot,
       block.blockType as BlockType,
     );
-    if (!sessionMeta) return null;
 
     const weeklyPlan = await getWeeklyPlanForBlockWeek(
       ctx,
@@ -214,7 +250,7 @@ export const generateSession = mutation({
       );
 
       if (!weeklyPlan.plannedSessionIds.includes(sessionId)) {
-        await ctx.db.patch(weeklyPlan._id, {
+        await ctx.db.patch("weeklyPlans", weeklyPlan._id, {
           plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
         });
       }
@@ -420,24 +456,24 @@ export const completeSession = mutation({
       return session;
     }
 
-    const completedCount = countTerminalItems(session.exerciseItems);
-
     const existingSummary = await ctx.db
       .query("sessionSummaries")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", session._id))
       .first();
 
     if (!existingSummary) {
+      const summary = await buildSessionSummary(ctx, user, session, now);
+
       await ctx.db.insert("sessionSummaries", {
         sessionId: session._id,
         userId: user._id,
-        durationMinutes: session.estimatedMinutes,
-        completedExerciseCount: completedCount,
-        skillRatingChanges: [],
-        personalBests: [],
-        streakUpdated: false,
-        xpAwarded: 0,
-        achievementsUnlocked: [],
+        durationMinutes: summary.durationMinutes,
+        completedExerciseCount: summary.completedExerciseCount,
+        skillRatingChanges: summary.skillRatingChanges,
+        personalBests: summary.personalBests,
+        streakUpdated: summary.streakUpdated,
+        xpAwarded: summary.xpAwarded,
+        achievementsUnlocked: summary.achievementsUnlocked,
         createdAt: now,
       });
     }
@@ -445,6 +481,7 @@ export const completeSession = mutation({
     await ctx.db.patch(session._id, {
       status: "completed",
       completedAt: now,
+      pendingSkillRatingChanges: [],
     });
 
     const updated = await ctx.db.get("practiceSessions", session._id);
