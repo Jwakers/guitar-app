@@ -26,7 +26,6 @@ import {
 } from "@/lib/admin/infer-training-attributes";
 import type { TaxonomyConstraints } from "@/lib/admin/pin-exercise-taxonomy";
 import {
-  prepareExerciseForValidation,
   shouldAttemptLlmRepair,
   validateGeneratedDrill,
 } from "@/lib/admin/validate-generated-drill";
@@ -309,12 +308,8 @@ export async function POST(request: Request) {
 
     // Pin difficulty to the requested/inferred level so the model cannot drift.
     if (exercise.difficultyLevel !== difficultyLevel) {
-      const pinned = prepareExerciseForValidation(
-        { ...exercise, difficultyLevel },
-        taxonomyConstraints,
-      );
       const difficultyValidation = validateGeneratedDrill(
-        pinned.exercise,
+        { ...exercise, difficultyLevel },
         taxonomyConstraints,
       );
       if (!difficultyValidation.ok) {
@@ -335,12 +330,8 @@ export async function POST(request: Request) {
         exercise.trainingAttributes.includes(attribute),
       );
     if (!trainingAttributesMatch) {
-      const pinned = prepareExerciseForValidation(
-        { ...exercise, trainingAttributes },
-        taxonomyConstraints,
-      );
       const attributeValidation = validateGeneratedDrill(
-        pinned.exercise,
+        { ...exercise, trainingAttributes },
         taxonomyConstraints,
       );
       if (!attributeValidation.ok) {

@@ -134,7 +134,7 @@ function WorkingStatus({
 }
 
 type GenerateResponse = {
-  exercise?: ExerciseSeed;
+  exercise?: ExerciseSeed | Partial<ExerciseSeed>;
   rawExercise?: unknown;
   briefMarkdown: string;
   qualityScore: QualityScore;
@@ -174,6 +174,14 @@ function formatApiError(data: ApiErrorBody, status: number): string {
     return data.details.map((d) => d.message).join(" ");
   }
   return data.error ?? `Request failed (${status})`;
+}
+
+function formatDifficultyLevel(
+  exercise: Partial<ExerciseSeed>,
+  responseLevel?: number,
+): string {
+  const level = exercise.difficultyLevel ?? responseLevel;
+  return level != null ? `${level}/10` : "—";
 }
 
 const PATTERN_TYPE_LABELS: Record<
@@ -376,8 +384,10 @@ export function DrillGenerator() {
       }
 
       if (data.validationStatus === "failed") {
-        const partialExercise =
-          (data.rawExercise as ExerciseSeed | undefined) ?? data.exercise;
+        const partialExercise: Partial<ExerciseSeed> | undefined =
+          data.rawExercise != null && typeof data.rawExercise === "object"
+            ? (data.rawExercise as Partial<ExerciseSeed>)
+            : data.exercise;
         setResult({
           exercise: partialExercise,
           briefMarkdown: data.briefMarkdown ?? "",
@@ -430,7 +440,7 @@ export function DrillGenerator() {
     setError(null);
 
     try {
-      const ex = result.exercise;
+      const ex = result.exercise as ExerciseSeed;
       const saved = await saveExercise({
         title: ex.title,
         slug: ex.slug,
@@ -710,7 +720,7 @@ export function DrillGenerator() {
                 {result.exercise.title ?? "Untitled candidate"}
               </h2>
               <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
-                DIFFICULTY {result.exercise.difficultyLevel}/10
+                DIFFICULTY {formatDifficultyLevel(result.exercise, result.difficultyLevel)}
                 {result.difficultyInferred
                   ? " · AUTO-INFERRED FROM LIBRARY GAPS"
                   : ""}
