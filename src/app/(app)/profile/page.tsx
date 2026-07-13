@@ -14,6 +14,9 @@ export default function ProfilePage() {
         <p className="mt-2 text-sm text-muted-foreground">
           Manage your practice preferences and account settings.
         </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          View the full drill library and open any drill.
+        </p>
 
         <div className="mt-8 flex flex-col gap-3">
           <Button asChild variant="outline" className="justify-start">
@@ -21,6 +24,9 @@ export default function ProfilePage() {
           </Button>
           <Button asChild variant="outline" className="justify-start">
             <Link href="/settings/subscription">Subscription</Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-start">
+            <Link href="/drills">Browse drills</Link>
           </Button>
         </div>
       </div>

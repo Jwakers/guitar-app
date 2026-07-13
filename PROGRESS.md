@@ -120,11 +120,13 @@ Track what is built and what remains. Update this file as features land.
 | Progress | `/progress` | Done |
 | Skill target detail | `/progress/targets/[skillTarget]` | Done |
 | Training | `/training` | Done |
-| Exercise library | `/exercises` | Not built |
-| Exercise detail | `/exercises/[exerciseId]` | Not built |
+| Exercise library (drills) | `/drills` | Done |
+| Exercise detail (drill) | `/drills/[id]` | Done |
 | Monthly review | `/review/monthly` | Done |
 | Achievements | `/achievements` | Done |
 | Profile | `/profile` | Done |
 | Settings | `/settings` | Done |
 | Subscription | `/settings/subscription` | Done |
 | Onboarding | `/onboarding` | Done |
+
+Runtime routes use `/drills` and `/drills/[id]`. The technical spec's `/exercises` paths redirect here.
