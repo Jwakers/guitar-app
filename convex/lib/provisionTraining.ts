@@ -18,6 +18,7 @@ import {
   nextPracticeDay,
 } from "../../src/lib/training-engine/dates";
 import { selectInitialBlock } from "../../src/lib/training-engine/select-initial-block";
+import { DEFAULT_SESSIONS_PER_WEEK } from "../../src/lib/training-engine/constants";
 import type {
   BlockSnapshot,
   BlockType,
@@ -54,7 +55,7 @@ export function profileDocToSnapshot(
     focusCoreSkillIds: profile.focusCoreSkillIds,
     focusSubSkillIds: profile.focusSubSkillIds,
     availableDays: profile.availableDays,
-    sessionsPerWeek: profile.sessionsPerWeek ?? 7,
+    sessionsPerWeek: profile.sessionsPerWeek ?? DEFAULT_SESSIONS_PER_WEEK,
     defaultSessionLengthMinutes: profile.defaultSessionLengthMinutes,
     preferredIntensity: profile.preferredIntensity,
   };
@@ -210,7 +211,7 @@ export async function provisionInitialTraining(
       startDate: weekStart,
       endDate: weekEnd,
       theme: config.weekOneTheme,
-      targetSessionCount: profile.sessionsPerWeek ?? 7,
+      targetSessionCount: profile.sessionsPerWeek ?? DEFAULT_SESSIONS_PER_WEEK,
       plannedSessionIds: [],
       status: "active",
     });

@@ -103,6 +103,7 @@ export function SettingsView() {
                   <button
                     key={count}
                     type="button"
+                    aria-pressed={selected}
                     onClick={() => setSessionsPerWeek(count)}
                     className={cn(
                       "rounded-lg border py-3 font-mono text-sm font-bold transition-colors",
@@ -129,6 +130,7 @@ export function SettingsView() {
                   <button
                     key={mins}
                     type="button"
+                    aria-pressed={selected}
                     onClick={() => setSessionLength(mins)}
                     className={cn(
                       "rounded-lg border py-3 font-mono text-sm font-bold transition-colors",
@@ -155,6 +157,7 @@ export function SettingsView() {
                   <button
                     key={opt.value}
                     type="button"
+                    aria-pressed={selected}
                     onClick={() => setIntensity(opt.value)}
                     className={cn(
                       "rounded-lg border px-4 py-3 text-left font-mono text-xs font-bold tracking-widest transition-colors",

@@ -43,7 +43,10 @@ export async function buildSessionSummary(
     ctx,
     user._id,
     now,
-    stats,
+    {
+      ...stats,
+      sessionsCompleted: stats.sessionsCompleted + 1,
+    },
   );
 
   return {

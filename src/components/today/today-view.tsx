@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -59,7 +59,9 @@ export function TodayView() {
     }
 
     generateAttempted.current = true;
-    runGenerateSession();
+    startTransition(() => {
+      runGenerateSession();
+    });
   }, [schedule, pendingSession, todaySession, runGenerateSession]);
 
   if (

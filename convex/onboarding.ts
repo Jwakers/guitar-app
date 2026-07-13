@@ -6,9 +6,20 @@ import {
   subSkillValidator,
 } from "./lib/exerciseValidators";
 import { skillTargetKey } from "../src/lib/skills/taxonomy";
+import { DEFAULT_SESSIONS_PER_WEEK } from "../src/lib/training-engine/constants";
 import { provisionInitialTraining } from "./lib/provisionTraining";
 
 type SkillRatingStatus = "weak" | "developing" | "stable" | "strong";
+
+function normalizeSessionsPerWeek(value: number | undefined): number {
+  if (value === undefined) {
+    return DEFAULT_SESSIONS_PER_WEEK;
+  }
+  if (value < 1 || value > 7) {
+    throw new Error("Sessions per week must be between 1 and 7");
+  }
+  return value;
+}
 
 const skillTargetValidator = v.union(
   v.object({ kind: v.literal("core"), id: coreSkillValidator }),
@@ -38,7 +49,6 @@ export const saveOnboardingAnswers = mutation({
       primaryGoals: v.array(v.string()),
       focusCoreSkillIds: v.array(coreSkillValidator),
       focusSubSkillIds: v.array(subSkillValidator),
-      availableDays: v.array(v.string()),
       sessionsPerWeek: v.optional(v.number()),
       defaultSessionLengthMinutes: v.number(),
       preferredIntensity: v.string(),
@@ -68,9 +78,13 @@ export const saveOnboardingAnswers = mutation({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .unique();
 
+    const { sessionsPerWeek, ...profileFields } = args.profile;
+
     const profileData = {
       userId: user._id,
-      ...args.profile,
+      ...profileFields,
+      availableDays: [],
+      sessionsPerWeek: normalizeSessionsPerWeek(sessionsPerWeek),
       updatedAt: now,
     };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
@@ -17,12 +17,29 @@ export function AchievementsView() {
   const ensureCatalog = useMutation(api.achievements.ensureCatalog);
   const achievements = useQuery(api.achievements.listUserAchievements);
   const seedAttempted = useRef(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedError, setSeedError] = useState<string | null>(null);
+
+  const runSeed = useCallback(async () => {
+    setSeeding(true);
+    setSeedError(null);
+    try {
+      await ensureCatalog({});
+    } catch (err) {
+      setSeedError(
+        err instanceof Error ? err.message : "Could not load achievements",
+      );
+      seedAttempted.current = false;
+    } finally {
+      setSeeding(false);
+    }
+  }, [ensureCatalog]);
 
   useEffect(() => {
     if (seedAttempted.current) return;
     seedAttempted.current = true;
-    void ensureCatalog({});
-  }, [ensureCatalog]);
+    void runSeed();
+  }, [runSeed]);
 
   if (achievements === undefined) {
     return (
@@ -53,13 +70,27 @@ export function AchievementsView() {
           reduce it until your next session.
         </p>
 
-        {achievements.length === 0 && (
+        {seedError && (
+          <div className="mt-8 rounded-lg border border-destructive/30 bg-destructive/10 px-6 py-8 text-center">
+            <p className="font-mono text-sm text-destructive">{seedError}</p>
+            <Button
+              type="button"
+              className="mt-4"
+              variant="outline"
+              onClick={() => {
+                seedAttempted.current = true;
+                void runSeed();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {!seedError && seeding && achievements.length === 0 && (
           <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">
             <p className="font-mono text-sm text-muted-foreground">
               Loading medals…
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Complete a session to start unlocking achievements.
             </p>
           </div>
         )}

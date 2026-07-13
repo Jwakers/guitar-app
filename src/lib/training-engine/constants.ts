@@ -1,0 +1,1 @@
+export const DEFAULT_SESSIONS_PER_WEEK = 7;

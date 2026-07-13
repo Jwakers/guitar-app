@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { requireCurrentUser } from "./lib/auth";
 import { getWeeklyPlanForBlockWeek } from "./lib/weeklyPlanLookup";
 import {
@@ -14,7 +16,34 @@ import {
   ratingsToSnapshots,
   SessionBuildError,
 } from "./lib/provisionTraining";
-import type { Id } from "./_generated/dataModel";
+
+async function ensureActiveBlock(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  now: number,
+): Promise<Doc<"trainingBlocks">> {
+  let block = await getActiveBlock(ctx, userId);
+  if (!block) {
+    await provisionInitialTraining(ctx, userId, now);
+    block = await getActiveBlock(ctx, userId);
+    if (!block) {
+      throw new Error("No active training block. Complete onboarding first.");
+    }
+  }
+  return block;
+}
+
+async function appendPlannedSession(
+  ctx: MutationCtx,
+  weeklyPlan: Doc<"weeklyPlans">,
+  sessionId: Id<"practiceSessions">,
+): Promise<void> {
+  if (!weeklyPlan.plannedSessionIds.includes(sessionId)) {
+    await ctx.db.patch("weeklyPlans", weeklyPlan._id, {
+      plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
+    });
+  }
+}
 
 export const generateExtraSession = mutation({
   args: {},
@@ -24,14 +53,7 @@ export const generateExtraSession = mutation({
     const now = Date.now();
     const dateString = formatDateInTimezone(now, user.timezone);
 
-    let block = await getActiveBlock(ctx, user._id);
-    if (!block) {
-      await provisionInitialTraining(ctx, user._id, now);
-      block = await getActiveBlock(ctx, user._id);
-      if (!block) {
-        throw new Error("No active training block. Complete onboarding first.");
-      }
-    }
+    const block = await ensureActiveBlock(ctx, user._id, now);
 
     const { profile, ratings, exercises } = await loadUserTrainingContext(
       ctx,
@@ -62,11 +84,7 @@ export const generateExtraSession = mutation({
         now,
       );
 
-      if (!weeklyPlan.plannedSessionIds.includes(sessionId)) {
-        await ctx.db.patch("weeklyPlans", weeklyPlan._id, {
-          plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
-        });
-      }
+      await appendPlannedSession(ctx, weeklyPlan, sessionId);
 
       return sessionId;
     } catch (error) {
@@ -95,14 +113,7 @@ export const generateCustomSession = mutation({
     const now = Date.now();
     const dateString = formatDateInTimezone(now, user.timezone);
 
-    let block = await getActiveBlock(ctx, user._id);
-    if (!block) {
-      await provisionInitialTraining(ctx, user._id, now);
-      block = await getActiveBlock(ctx, user._id);
-      if (!block) {
-        throw new Error("No active training block. Complete onboarding first.");
-      }
-    }
+    const block = await ensureActiveBlock(ctx, user._id, now);
 
     const { profile, exercises } = await loadUserTrainingContext(
       ctx,
@@ -126,18 +137,14 @@ export const generateCustomSession = mutation({
         block._id,
         weeklyPlan._id,
         dateString,
-        args.exerciseIds as Id<"exercises">[],
+        args.exerciseIds,
         profileSnapshot,
         blockDocToSnapshot(block),
         exercises,
         now,
       );
 
-      if (!weeklyPlan.plannedSessionIds.includes(sessionId)) {
-        await ctx.db.patch("weeklyPlans", weeklyPlan._id, {
-          plannedSessionIds: [...weeklyPlan.plannedSessionIds, sessionId],
-        });
-      }
+      await appendPlannedSession(ctx, weeklyPlan, sessionId);
 
       return sessionId;
     } catch (error) {

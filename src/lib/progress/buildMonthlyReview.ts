@@ -47,7 +47,7 @@ export type MonthlyReviewResult = {
   longestStreak: number;
 };
 
-function isDateInMonth(
+export function isTimestampInMonth(
   dateMs: number,
   year: number,
   month: number,
@@ -188,7 +188,7 @@ export function buildMonthlyReview(
   );
 
   const monthLogs = logs.filter((log) =>
-    isDateInMonth(log.date, year, month, timezone),
+    isTimestampInMonth(log.date, year, month, timezone),
   );
 
   const personalBestCount = monthLogs.filter((log) => log.isPersonalBest).length;

@@ -1,13 +1,29 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
+import { DEFAULT_SESSIONS_PER_WEEK } from "../src/lib/training-engine/constants";
+
+const preferredIntensityValidator = v.union(
+  v.literal("light"),
+  v.literal("moderate"),
+  v.literal("hard"),
+);
+
+type PreferredIntensity = "light" | "moderate" | "hard";
+
+function asPreferredIntensity(value: string): PreferredIntensity {
+  if (value === "light" || value === "moderate" || value === "hard") {
+    return value;
+  }
+  return "moderate";
+}
 
 export const getProfileSettings = query({
   args: {},
   returns: v.union(
     v.object({
       defaultSessionLengthMinutes: v.number(),
-      preferredIntensity: v.string(),
+      preferredIntensity: preferredIntensityValidator,
       sessionsPerWeek: v.number(),
     }),
     v.null(),
@@ -23,8 +39,8 @@ export const getProfileSettings = query({
 
     return {
       defaultSessionLengthMinutes: profile.defaultSessionLengthMinutes,
-      preferredIntensity: profile.preferredIntensity,
-      sessionsPerWeek: profile.sessionsPerWeek ?? 7,
+      preferredIntensity: asPreferredIntensity(profile.preferredIntensity),
+      sessionsPerWeek: profile.sessionsPerWeek ?? DEFAULT_SESSIONS_PER_WEEK,
     };
   },
 });
@@ -32,7 +48,7 @@ export const getProfileSettings = query({
 export const updateProfileSettings = mutation({
   args: {
     defaultSessionLengthMinutes: v.optional(v.number()),
-    preferredIntensity: v.optional(v.string()),
+    preferredIntensity: v.optional(preferredIntensityValidator),
     sessionsPerWeek: v.optional(v.number()),
   },
   returns: v.null(),

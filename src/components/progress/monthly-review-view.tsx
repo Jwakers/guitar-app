@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "convex/react";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
@@ -15,14 +15,23 @@ function monthLabel(year: number, month: number): string {
 }
 
 export function MonthlyReviewView() {
-  const now = useMemo(() => new Date(), []);
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState<number | null>(null);
+  const [month, setMonth] = useState<number | null>(null);
 
   const bounds = useQuery(api.reviews.getMonthlyReviewBounds);
-  const review = useQuery(api.reviews.getMonthlyReview, { year, month });
+  const review = useQuery(
+    api.reviews.getMonthlyReview,
+    year !== null && month !== null ? { year, month } : "skip",
+  );
+
+  useEffect(() => {
+    if (bounds === undefined) return;
+    setYear((current) => current ?? bounds.currentYear);
+    setMonth((current) => current ?? bounds.currentMonth);
+  }, [bounds]);
 
   function shiftMonth(delta: number) {
+    if (year === null || month === null) return;
     const date = new Date(year, month - 1 + delta, 1);
     setYear(date.getFullYear());
     setMonth(date.getMonth() + 1);
@@ -30,14 +39,23 @@ export function MonthlyReviewView() {
 
   const canGoPrev =
     bounds !== undefined &&
+    year !== null &&
+    month !== null &&
     compareYearMonth(year, month, bounds.earliestYear, bounds.earliestMonth) >
       0;
 
   const canGoNext =
     bounds !== undefined &&
+    year !== null &&
+    month !== null &&
     compareYearMonth(year, month, bounds.currentYear, bounds.currentMonth) < 0;
 
-  if (review === undefined || bounds === undefined) {
+  if (
+    review === undefined ||
+    bounds === undefined ||
+    year === null ||
+    month === null
+  ) {
     return (
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <p className="font-mono text-sm text-muted-foreground">Loading…</p>

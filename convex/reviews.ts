@@ -8,11 +8,27 @@ import {
   coreSkillValidator,
   subSkillValidator,
 } from "./lib/exerciseValidators";
+import { skillTargetKey } from "../src/lib/skills/taxonomy";
+import { DEFAULT_SESSIONS_PER_WEEK } from "../src/lib/training-engine/constants";
 import { formatDateInTimezone } from "../src/lib/training-engine/dates";
 import {
   buildMonthlyReview,
   computeMonthlyReviewBounds,
+  isTimestampInMonth,
 } from "../src/lib/progress/buildMonthlyReview";
+
+function isFutureMonth(
+  year: number,
+  month: number,
+  timezone: string,
+  now: number,
+): boolean {
+  const todayDate = formatDateInTimezone(now, timezone);
+  const [todayYear, todayMonth] = todayDate.split("-").map(Number);
+  return (
+    year > todayYear! || (year === todayYear && month > todayMonth!)
+  );
+}
 
 const skillTargetValidator = v.union(
   v.object({ kind: v.literal("core"), id: coreSkillValidator }),
@@ -54,13 +70,11 @@ function formatMonthlyReviewResponse(
     weakestSkillTarget: built.weakestSkillTarget,
     mostImprovedLabel: built.mostImprovedSkillTarget
       ? labelFromSkillTargetKey(
-          `${built.mostImprovedSkillTarget.kind}:${built.mostImprovedSkillTarget.id}`,
+          skillTargetKey(built.mostImprovedSkillTarget),
         )
       : undefined,
     weakestLabel: built.weakestSkillTarget
-      ? labelFromSkillTargetKey(
-          `${built.weakestSkillTarget.kind}:${built.weakestSkillTarget.id}`,
-        )
+      ? labelFromSkillTargetKey(skillTargetKey(built.weakestSkillTarget))
       : undefined,
     personalBestCount: built.personalBestCount,
     achievementsUnlocked: built.achievementsUnlocked,
@@ -105,12 +119,9 @@ async function loadMonthlyReviewData(
     throw new Error("User not found");
   }
 
-  const monthStart = Date.UTC(year, month - 1, 1);
-  const monthEnd = Date.UTC(year, month, 0, 23, 59, 59, 999);
-
   const achievementsUnlockedIds = userAchievements
-    .filter(
-      (entry) => entry.unlockedAt >= monthStart && entry.unlockedAt <= monthEnd,
+    .filter((entry) =>
+      isTimestampInMonth(entry.unlockedAt, year, month, user.timezone),
     )
     .map((entry) => entry.achievementId);
 
@@ -118,7 +129,7 @@ async function loadMonthlyReviewData(
     year,
     month,
     timezone: user.timezone,
-    sessionsPerWeek: profile?.sessionsPerWeek ?? 7,
+    sessionsPerWeek: profile?.sessionsPerWeek ?? DEFAULT_SESSIONS_PER_WEEK,
     sessions: sessions.map((session) => ({
       date: session.date,
       estimatedMinutes: session.estimatedMinutes,
@@ -187,6 +198,12 @@ export const generateMonthlyReview = mutation({
   returns: monthlyReviewValidator,
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
+    const now = Date.now();
+
+    if (isFutureMonth(args.year, args.month, user.timezone, now)) {
+      throw new Error("Cannot generate review for a future month");
+    }
+
     const { built, achievementsUnlockedIds } = await loadMonthlyReviewData(
       ctx,
       user._id,
@@ -242,13 +259,8 @@ export const getMonthlyReview = query({
   handler: async (ctx, args) => {
     const user = await requireCurrentUser(ctx);
     const now = Date.now();
-    const todayDate = formatDateInTimezone(now, user.timezone);
-    const [todayYear, todayMonth] = todayDate.split("-").map(Number);
 
-    if (
-      args.year > todayYear! ||
-      (args.year === todayYear && args.month > todayMonth!)
-    ) {
+    if (isFutureMonth(args.year, args.month, user.timezone, now)) {
       return null;
     }
 
