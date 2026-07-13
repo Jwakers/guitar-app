@@ -77,15 +77,17 @@ export function DrillList() {
     return (
       <div className="rounded-lg border border-border bg-card px-6 py-10 text-center">
         <p className="font-mono text-sm text-muted-foreground">
-          No exercises in this deployment yet.
+          More drills coming soon.
         </p>
-        <p className="mt-2 font-mono text-xs text-muted-foreground/60">
-          Author drills in the admin generator (dev), then run{" "}
-          <code className="rounded bg-muted px-1 py-0.5">
-            pnpm migrate:exercises
-          </code>{" "}
-          to promote to production.
-        </p>
+        {process.env.NODE_ENV === "development" && (
+          <p className="mt-2 font-mono text-xs text-muted-foreground/60">
+            Author drills in the admin generator, then run{" "}
+            <code className="rounded bg-muted px-1 py-0.5">
+              pnpm migrate:exercises
+            </code>{" "}
+            to promote to production.
+          </p>
+        )}
       </div>
     );
   }

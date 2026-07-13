@@ -48,6 +48,105 @@ const baseTab = (overrides: Partial<TabData> = {}): TabData => ({
   ...overrides,
 });
 
+/** Snapshot from exercise kh72tb7b46509r826xd60y9stx8aec8c (sliding pentatonic phrase). */
+const slidingPentatonicPhraseTab: TabData = {
+  tuning: ["E", "A", "D", "G", "B", "E"],
+  tempo: 80,
+  timeSignature: { beats: 4, beatValue: 4 },
+  displayHints: {
+    loopEndBar: 1,
+    loopStartBar: 0,
+    showFingering: false,
+    showPicking: false,
+  },
+  bars: [
+    {
+      beats: [
+        {
+          duration: "eighth",
+          notes: [{ finger: 1, fret: 5, string: 3, targetPitch: "D4" }],
+        },
+        {
+          duration: "quarter",
+          notes: [
+            {
+              articulationFromPrevious: "slide",
+              finger: 3,
+              fret: 7,
+              string: 3,
+              targetPitch: "E4",
+            },
+          ],
+        },
+        {
+          duration: "eighth",
+          notes: [{ finger: 1, fret: 8, string: 2, targetPitch: "G4" }],
+        },
+        {
+          duration: "eighth",
+          notes: [{ finger: 1, fret: 8, string: 2, targetPitch: "G4" }],
+        },
+        {
+          duration: "quarter",
+          notes: [
+            {
+              articulationFromPrevious: "slide",
+              finger: 3,
+              fret: 10,
+              string: 2,
+              targetPitch: "A4",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      beats: [
+        {
+          duration: "eighth",
+          notes: [{ finger: 1, fret: 8, string: 1, targetPitch: "C5" }],
+        },
+        {
+          duration: "eighth",
+          notes: [{ finger: 3, fret: 10, string: 2, targetPitch: "A4" }],
+        },
+        {
+          duration: "eighth",
+          notes: [{ finger: 1, fret: 8, string: 2, targetPitch: "G4" }],
+        },
+        {
+          duration: "quarter",
+          notes: [
+            {
+              articulationFromPrevious: "slide",
+              finger: 1,
+              fret: 5,
+              string: 2,
+              targetPitch: "E4",
+            },
+          ],
+        },
+        {
+          duration: "eighth",
+          notes: [{ finger: 3, fret: 7, string: 3, targetPitch: "E4" }],
+        },
+        {
+          duration: "quarter",
+          notes: [
+            {
+              articulationFromPrevious: "slide",
+              finger: 1,
+              fret: 5,
+              string: 3,
+              targetPitch: "D4",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 describe("tabDataToAlphaTex", () => {
   it("emits score+tabs staff header", () => {
     const tex = tabDataToAlphaTex(baseTab());
@@ -353,6 +452,148 @@ describe("tabDataToAlphaTex", () => {
     expect(tex).not.toContain("ac");
   });
 
+  it("emits ascending slide as sib with beam merge on source beat", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              { duration: "eighth", notes: [{ string: 2, fret: 5 }] },
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 7,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("5.2.8{beam merge}");
+    expect(tex).toContain("7.2{sib}.4");
+    expect(tex).not.toContain("{sl}");
+  });
+
+  it("emits descending slide as sia with beam merge on source beat", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              { duration: "eighth", notes: [{ string: 2, fret: 8 }] },
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 5,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("8.2.8{beam merge}");
+    expect(tex).toContain("5.2{sia}.4");
+    expect(tex).not.toContain("{sl}");
+  });
+
+  it("emits beam merge when a same-string slide crosses a bar boundary", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [{ duration: "eighth", notes: [{ string: 2, fret: 5 }] }],
+          },
+          {
+            beats: [
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 7,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("5.2.8{beam merge}");
+    expect(tex).toContain("7.2{sib}.4");
+  });
+
+  it("emits four directional slides for the sliding pentatonic phrase", () => {
+    const tex = tabDataToAlphaTex(slidingPentatonicPhraseTab);
+    expect(tex).toMatchInlineSnapshot(`
+      "\\staff{score tabs}
+      \\tuning (E4 B3 G3 D3 A2 E2)
+      \\ts(4 4)
+      \\tempo 80
+      | 5.3.8{beam merge} 7.3{sib}.4 8.2.8 8.2.8{beam merge} 10.2{sib}.4
+      | 8.1.8 10.2.8 8.2.8{beam merge} 5.2{sia}.4 7.3.8{beam merge} 5.3{sia}.4"
+    `);
+  });
+
+  it("slide AlphaTeX repro matrix: directional slide-into plus beam merge", () => {
+    const ascending = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              { duration: "eighth", notes: [{ string: 3, fret: 5 }] },
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 3,
+                    fret: 7,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(ascending).toContain("5.3.8{beam merge} 7.3{sib}.4");
+
+    const descending = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [
+              { duration: "eighth", notes: [{ string: 2, fret: 8 }] },
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 5,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(descending).toContain("8.2.8{beam merge} 5.2{sia}.4");
+  });
+
   it("emits pick strokes only when showPicking is true", () => {
     const withHint = tabDataToAlphaTex(
       baseTab({
@@ -386,7 +627,7 @@ describe("tabDataToAlphaTex", () => {
         ],
       }),
     );
-    expect(withHint).toContain("10.2{sl}.8{sd}");
+    expect(withHint).toContain("10.2{sib}.8{sd}");
     expect(withHint).toContain("12.2.8{su}");
     expect(withHint).not.toContain("lf");
 
@@ -411,7 +652,8 @@ describe("tabDataToAlphaTex", () => {
         ],
       }),
     );
-    expect(withoutHint).toContain("10.2{sl}.8");
+    expect(withoutHint).toContain("5.2.8{beam merge}");
+    expect(withoutHint).toContain("10.2{sib}.8");
     expect(withoutHint).not.toContain("sd");
   });
 });

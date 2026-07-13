@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/exercises",
+        destination: "/drills",
+        permanent: true,
+      },
+      {
+        source: "/exercises/:id",
+        destination: "/drills/:id",
+        permanent: true,
+      },
+    ];
+  },
   turbopack: {
     root: __dirname,
   },

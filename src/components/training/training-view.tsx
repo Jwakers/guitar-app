@@ -9,6 +9,17 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+function BrowseFullLibraryLink() {
+  return (
+    <Link
+      href="/drills"
+      className="font-mono text-xs text-primary hover:underline"
+    >
+      Browse full library →
+    </Link>
+  );
+}
+
 export function TrainingView() {
   const router = useRouter();
   const block = useQuery(api.trainingBlocks.getCurrentBlock);
@@ -122,6 +133,9 @@ export function TrainingView() {
               <Link href="/settings/subscription">View subscription</Link>
             </Button>
           </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            <BrowseFullLibraryLink />
+          </p>
         </div>
       </main>
     );
@@ -168,7 +182,8 @@ export function TrainingView() {
             Exercise picker
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Select up to 8 exercises for a custom session.
+            Select up to 8 exercises for a custom session.{" "}
+            <BrowseFullLibraryLink />
           </p>
 
           <div className="mt-4 flex flex-col gap-2">
