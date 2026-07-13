@@ -8,6 +8,7 @@ describe("normalizeSessionsPerWeek", () => {
 
   it("accepts integer values between 1 and 7", () => {
     expect(normalizeSessionsPerWeek(3)).toBe(3);
+    expect(normalizeSessionsPerWeek(7)).toBe(7);
   });
 
   it("rejects fractional values", () => {
@@ -18,6 +19,9 @@ describe("normalizeSessionsPerWeek", () => {
 
   it("rejects out-of-range values", () => {
     expect(() => normalizeSessionsPerWeek(0)).toThrow(
+      "Sessions per week must be between 1 and 7",
+    );
+    expect(() => normalizeSessionsPerWeek(8)).toThrow(
       "Sessions per week must be between 1 and 7",
     );
   });
