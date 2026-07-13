@@ -27,6 +27,7 @@ const BILLING_SYNC_EVENTS = new Set([
   "subscription.created",
   "subscription.updated",
   "subscription.active",
+  "subscription.pastDue",
   "subscriptionItem.canceled",
   "subscriptionItem.ended",
   "subscriptionItem.pastDue",
@@ -92,7 +93,15 @@ http.route({
       return new Response(null, { status: 200 });
     }
 
-    await ctx.runMutation(internal.subscriptions.syncFromClerkBilling, syncArgs);
+    try {
+      await ctx.runMutation(
+        internal.subscriptions.syncFromClerkBilling,
+        syncArgs,
+      );
+    } catch (error) {
+      console.error("Clerk billing sync failed", error);
+      return new Response("Sync failed", { status: 500 });
+    }
 
     return new Response(null, { status: 200 });
   }),

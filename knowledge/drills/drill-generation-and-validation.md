@@ -104,6 +104,8 @@ Automated gates (required for dev save and production promotion):
 
 AI or automated generation may assist with drafting, but it must not be the final authority for production acceptance.
 
+**Taxonomy auto-pin (generator):** After the model returns a candidate, the drill generator pins `coreSkillId` and `subSkillIds` to the server-requested values before validation. Wrong pairings (e.g. `slides` under `fretting_control`) are corrected without a second LLM call. Tab slide articulation (`articulationFromPrevious: "slide"`) is not the `slides` sub-skill.
+
 ### Pattern material
 
 Chromatic patterns (including 5-6-7-8 fretting shapes) are acceptable when they are the best fit for the training goal — especially for finger independence, synchronisation, fretting accuracy, warm-ups, or isolated mechanical control.

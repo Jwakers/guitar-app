@@ -134,7 +134,8 @@ function WorkingStatus({
 }
 
 type GenerateResponse = {
-  exercise: ExerciseSeed;
+  exercise?: ExerciseSeed;
+  rawExercise?: unknown;
   briefMarkdown: string;
   qualityScore: QualityScore;
   patternType?:
@@ -147,9 +148,11 @@ type GenerateResponse = {
   reviewerChecklist: string[];
   refinePrompt: string;
   validationStatus: "passed" | "failed";
+  validationError?: string;
   description?: string;
   error?: string;
-  validationError?: string;
+  taxonomyPinned?: boolean;
+  pinnedFields?: string[];
   subSkillIds?: string[];
   subSkillIdsInferred?: boolean;
   subSkillDistribution?: string;
@@ -373,7 +376,33 @@ export function DrillGenerator() {
       }
 
       if (data.validationStatus === "failed") {
-        setResult(null);
+        const partialExercise =
+          (data.rawExercise as ExerciseSeed | undefined) ?? data.exercise;
+        setResult({
+          exercise: partialExercise,
+          briefMarkdown: data.briefMarkdown ?? "",
+          qualityScore:
+            data.qualityScore ??
+            ({
+              clearTrainingPurpose: 0,
+              measurableOutcome: 0,
+              mechanicalUsefulness: 0,
+              appropriateDifficulty: 0,
+              progressionRegressionQuality: 0,
+              coachingQuality: 0,
+              total: 0,
+            } satisfies QualityScore),
+          patternType: data.patternType,
+          redFlags: data.redFlags ?? [],
+          missingFields: data.missingFields ?? [],
+          reviewerChecklist: data.reviewerChecklist ?? [],
+          refinePrompt: data.refinePrompt ?? "",
+          validationStatus: "failed",
+          validationError:
+            data.validationError ??
+            data.error ??
+            "Generated drill failed validation",
+        });
         setError(
           data.validationError ??
             data.error ??
@@ -393,7 +422,9 @@ export function DrillGenerator() {
   }
 
   async function handleSave() {
-    if (!result?.exercise || alreadySaved) return;
+    if (!result?.exercise || alreadySaved || result.validationStatus !== "passed") {
+      return;
+    }
     setSaving(true);
     setSaveMessage(null);
     setError(null);
@@ -650,9 +681,33 @@ export function DrillGenerator() {
       {result?.exercise && !loading && (
         <>
           <div className="mx-auto mt-10 w-full max-w-2xl space-y-6 px-4">
+            {result.validationStatus === "failed" && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+                <p className="font-mono text-[10px] font-bold tracking-widest text-destructive">
+                  VALIDATION FAILED
+                </p>
+                <p className="mt-2 text-sm text-destructive">
+                  {result.validationError ??
+                    "This candidate did not pass automated validation."}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The draft is preserved below — refine and retry without
+                  starting from scratch. Save is disabled until validation
+                  passes.
+                </p>
+              </div>
+            )}
+
+            {result.validationStatus === "passed" && result.taxonomyPinned && (
+              <p className="text-xs text-muted-foreground">
+                Taxonomy auto-corrected ({result.pinnedFields?.join(", ")} pinned
+                to your request).
+              </p>
+            )}
+
             <div>
               <h2 className="font-mono text-lg font-bold tracking-tight">
-                {result.exercise.title}
+                {result.exercise.title ?? "Untitled candidate"}
               </h2>
               <p className="mt-1 font-mono text-[10px] tracking-widest text-muted-foreground">
                 DIFFICULTY {result.exercise.difficultyLevel}/10
@@ -702,10 +757,10 @@ export function DrillGenerator() {
                   </p>
                 )}
               <p className="mt-2 text-sm text-muted-foreground">
-                {result.exercise.description}
+                {result.exercise.description ?? "No description."}
               </p>
               <p className="mt-2 text-sm text-foreground">
-                {result.exercise.purpose}
+                {result.exercise.purpose ?? "No purpose."}
               </p>
             </div>
 
@@ -800,7 +855,13 @@ export function DrillGenerator() {
               <h3 className="mb-3 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
                 TAB
               </h3>
-              <TabRenderer tabData={result.exercise.tabData} />
+              {result.exercise.tabData ? (
+                <TabRenderer tabData={result.exercise.tabData} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No tab data in this candidate.
+                </p>
+              )}
             </div>
           </section>
 
@@ -830,7 +891,12 @@ export function DrillGenerator() {
                 </Button>
                 <Button
                   type="button"
-                  disabled={saving || alreadySaved || loading}
+                  disabled={
+                    saving ||
+                    alreadySaved ||
+                    loading ||
+                    result.validationStatus !== "passed"
+                  }
                   onClick={() => void handleSave()}
                 >
                   {saving

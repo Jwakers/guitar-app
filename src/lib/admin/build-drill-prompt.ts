@@ -9,6 +9,7 @@ import {
   isSubSkill,
   skillKnowledgeFilename,
   subSkillLabel,
+  subSkillsForCoreSkill,
   trainingAttributeLabel,
   type CoreSkill,
   type SubSkill,
@@ -113,7 +114,8 @@ const SCHEMA_CONSTRAINTS = `
 
 ExerciseSeed fields:
 - coreSkillId: ${CORE_SKILLS.map((id) => `\`${id}\``).join(" | ")}
-- subSkillIds: known sub-skill IDs compatible with coreSkillId
+- subSkillIds: known sub-skill IDs compatible with coreSkillId (see per-request allow-list in the generation prompt)
+- Tab slide articulation uses articulationFromPrevious: "slide" on a note — this is NOT the slides sub-skill (lead_articulation only)
 - trainingAttributes: one or more of ${TRAINING_ATTRIBUTES.map((id) => `\`${id}\``).join(" | ")}
 - patternType: micro_drill | standard_loop | musical_sequence | benchmark
 - microDrillJustification: required when patternType is micro_drill
@@ -257,6 +259,9 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     NOISE_CONTROL_GUIDANCE,
   ].join("\n");
 
+  const allowedSubSkills = subSkillsForCoreSkill(input.coreSkillId);
+  const allowedSubSkillList = allowedSubSkills.join(", ");
+
   const parts: string[] = [
     "## Generation request",
     `Core Skill: ${input.coreSkillId} (${coreSkillLabel(input.coreSkillId)})`,
@@ -266,6 +271,9 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     }${
       input.subSkillIdsInferred ? " (AUTO-INFERRED — do not change these)" : ""
     }`,
+    `Allowed subSkillIds for ${input.coreSkillId}: ${allowedSubSkillList}`,
+    "Do NOT assign sub-skills from other core skills (e.g. slides is lead_articulation only, not fretting_control).",
+    'Tab slide articulation (articulationFromPrevious: "slide") is NOT the slides sub-skill.',
     `Training attributes: ${input.trainingAttributes
       .map((id) => `${id} (${trainingAttributeLabel(id)})`)
       .join(", ")}${

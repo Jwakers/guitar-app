@@ -406,14 +406,13 @@ export const listExerciseHistory = query({
       !entitlements.skillExerciseHistoryFull &&
       entitlements.skillExerciseHistoryLimit !== null
     ) {
-      const cappedPage = result.page.slice(
-        0,
-        entitlements.skillExerciseHistoryLimit,
-      );
+      const limit = entitlements.skillExerciseHistoryLimit;
+      const cappedPage = result.page.slice(0, limit);
+      const capReached = cappedPage.length >= limit || result.isDone;
       return {
         page: await mapHistoryPage(ctx, cappedPage),
-        isDone: true,
-        continueCursor: "",
+        isDone: capReached,
+        continueCursor: capReached ? "" : result.continueCursor,
       };
     }
 

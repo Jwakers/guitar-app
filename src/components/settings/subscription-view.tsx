@@ -4,35 +4,40 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import {
+  FREE_SKILL_EXERCISE_HISTORY_LIMIT,
+} from "@/lib/subscriptions/entitlements";
 import { SubscriptionPricing } from "./subscription-pricing";
 
-const FEATURE_ROWS = [
-  {
-    label: "Today sessions & core practice",
-    free: true,
-    pro: true,
-  },
-  {
-    label: "Extra & custom training sessions",
-    free: false,
-    pro: true,
-  },
-  {
-    label: "Monthly review history",
-    free: "Current month",
-    pro: "Full history",
-  },
-  {
-    label: "Skill exercise history",
-    free: "Last 20 logs",
-    pro: "Full history",
-  },
-  {
-    label: "Achievements & streaks",
-    free: true,
-    pro: true,
-  },
-] as const;
+function buildFeatureRows(skillExerciseHistoryLimit: number) {
+  return [
+    {
+      label: "Today sessions & core practice",
+      free: true,
+      pro: true,
+    },
+    {
+      label: "Extra & custom training sessions",
+      free: false,
+      pro: true,
+    },
+    {
+      label: "Monthly review history",
+      free: "Current month",
+      pro: "Full history",
+    },
+    {
+      label: "Skill exercise history",
+      free: `Last ${skillExerciseHistoryLimit} logs`,
+      pro: "Full history",
+    },
+    {
+      label: "Achievements & streaks",
+      free: true,
+      pro: true,
+    },
+  ] as const;
+}
 
 function formatCell(value: boolean | string): string {
   if (typeof value === "string") {
@@ -55,6 +60,10 @@ export function SubscriptionView() {
   }
 
   const tierLabel = status.tier === "pro" ? "Pro" : "Free";
+  const freeSkillHistoryLimit =
+    status.entitlements.skillExerciseHistoryLimit ??
+    FREE_SKILL_EXERCISE_HISTORY_LIMIT;
+  const featureRows = buildFeatureRows(freeSkillHistoryLimit);
 
   return (
     <main className="flex flex-1 flex-col px-4 py-8">
@@ -94,34 +103,54 @@ export function SubscriptionView() {
         </div>
 
         <section className="mt-8 overflow-hidden rounded-lg border border-border">
-          <div className="grid grid-cols-3 border-b border-border bg-muted/30 px-4 py-3 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-            <span>FEATURE</span>
-            <span className="text-center">FREE</span>
-            <span className="text-center">PRO</span>
-          </div>
-          {FEATURE_ROWS.map((row) => (
-            <div
-              key={row.label}
-              className="grid grid-cols-3 border-b border-border px-4 py-3 last:border-b-0"
-            >
-              <span className="text-sm text-foreground">{row.label}</span>
-              <span className="text-center font-mono text-xs text-muted-foreground">
-                {formatCell(row.free)}
-              </span>
-              <span className="text-center font-mono text-xs text-foreground">
-                {formatCell(row.pro)}
-              </span>
-            </div>
-          ))}
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left font-mono text-[10px] font-bold tracking-widest text-muted-foreground"
+                >
+                  FEATURE
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-center font-mono text-[10px] font-bold tracking-widest text-muted-foreground"
+                >
+                  FREE
+                </th>
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-center font-mono text-[10px] font-bold tracking-widest text-muted-foreground"
+                >
+                  PRO
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {featureRows.map((row) => (
+                <tr
+                  key={row.label}
+                  className="border-b border-border last:border-b-0"
+                >
+                  <th
+                    scope="row"
+                    className="px-4 py-3 text-left text-sm font-normal text-foreground"
+                  >
+                    {row.label}
+                  </th>
+                  <td className="px-4 py-3 text-center font-mono text-xs text-muted-foreground">
+                    {formatCell(row.free)}
+                  </td>
+                  <td className="px-4 py-3 text-center font-mono text-xs text-foreground">
+                    {formatCell(row.pro)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
 
-        {status.tier !== "pro" && (
-          <section className="mt-8">
-            <SubscriptionPricing billingEnabled={billingEnabled} />
-          </section>
-        )}
-
-        {status.tier === "pro" && billingEnabled && (
+        {(status.tier !== "pro" || billingEnabled) && (
           <section className="mt-8">
             <SubscriptionPricing billingEnabled={billingEnabled} />
           </section>

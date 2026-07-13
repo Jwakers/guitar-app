@@ -3,16 +3,9 @@ import { internalMutation, query } from "./_generated/server";
 import {
   tierFromClerkPlanSlug,
 } from "../src/lib/subscriptions/entitlements";
+import { entitlementsValidator } from "../src/lib/subscriptions/entitlements-convex";
 import { requireCurrentUser } from "./lib/auth";
 import { getUserEntitlements, getUserTier } from "./lib/subscriptions";
-
-const entitlementsValidator = v.object({
-  tier: v.union(v.literal("free"), v.literal("pro")),
-  trainingSessions: v.boolean(),
-  monthlyReviewHistory: v.boolean(),
-  skillExerciseHistoryFull: v.boolean(),
-  skillExerciseHistoryLimit: v.union(v.number(), v.null()),
-});
 
 export const getSubscriptionStatus = query({
   args: {},
@@ -79,7 +72,9 @@ export const syncFromClerkBilling = internalMutation({
         "Clerk billing sync: no Convex user for authProviderId",
         args.clerkUserId,
       );
-      return null;
+      throw new Error(
+        `Clerk billing sync: user not found for authProviderId ${args.clerkUserId}`,
+      );
     }
 
     const subscriptionTier = tierFromClerkPlanSlug(

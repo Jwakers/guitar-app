@@ -68,4 +68,46 @@ describe("verifyClerkWebhookPayload", () => {
       ),
     ).rejects.toThrow("Invalid Svix signature");
   });
+
+  it("rejects a stale Svix timestamp", async () => {
+    const secret = "whsec_" + btoa("super-secret-key-for-tests!!");
+    const payload = JSON.stringify({ type: "subscription.updated", data: {} });
+    const msgId = "msg_stale";
+    const staleTimestamp = String(Math.floor(Date.now() / 1000) - 6 * 60);
+    const signature = await signTestPayload(
+      secret,
+      msgId,
+      staleTimestamp,
+      payload,
+    );
+
+    await expect(
+      verifyClerkWebhookPayload(
+        payload,
+        {
+          svixId: msgId,
+          svixTimestamp: staleTimestamp,
+          svixSignature: signature,
+        },
+        secret,
+      ),
+    ).rejects.toThrow("Svix timestamp outside tolerance");
+  });
+
+  it("rejects missing Svix headers", async () => {
+    const secret = "whsec_" + btoa("super-secret-key-for-tests!!");
+    const payload = JSON.stringify({ type: "subscription.updated", data: {} });
+
+    await expect(
+      verifyClerkWebhookPayload(
+        payload,
+        {
+          svixId: "",
+          svixTimestamp: String(Math.floor(Date.now() / 1000)),
+          svixSignature: "v1,invalid",
+        },
+        secret,
+      ),
+    ).rejects.toThrow("Missing Svix headers");
+  });
 });

@@ -10,7 +10,6 @@ import {
 import { buildDrillPrompt } from "@/lib/admin/build-drill-prompt";
 import {
   drillGeneratorOutputSchema,
-  normalizeExerciseSeed,
 } from "@/lib/admin/exercise-seed-zod";
 import { getConvexToken } from "@/lib/admin/get-convex-token";
 import {
@@ -25,8 +24,13 @@ import {
   formatTrainingAttributeDistribution,
   inferTrainingAttributes,
 } from "@/lib/admin/infer-training-attributes";
+import type { TaxonomyConstraints } from "@/lib/admin/pin-exercise-taxonomy";
+import {
+  prepareExerciseForValidation,
+  shouldAttemptLlmRepair,
+  validateGeneratedDrill,
+} from "@/lib/admin/validate-generated-drill";
 import type { ExerciseSeed } from "@/lib/exercises/exercise-schema";
-import { validateExercise } from "@/lib/exercises/validate-exercise";
 import {
   CORE_SKILLS,
   SUB_SKILLS,
@@ -255,51 +259,74 @@ export async function POST(request: Request) {
       DEFAULT_DRILL_GENERATOR_MODEL;
 
     let generated = await generateCandidate(model, system, prompt);
-    let exercise: ExerciseSeed;
-    let validationError: string | null = null;
 
-    try {
-      exercise = validateExercise(normalizeExerciseSeed(generated.exercise));
-    } catch (err) {
-      validationError = err instanceof Error ? err.message : String(err);
+    const taxonomyConstraints: TaxonomyConstraints = {
+      coreSkillId: body.coreSkillId,
+      subSkillIds,
+    };
+
+    let taxonomyPinned = false;
+    let pinnedFields: string[] = [];
+
+    let validation = validateGeneratedDrill(
+      generated.exercise,
+      taxonomyConstraints,
+    );
+    taxonomyPinned = validation.taxonomyPinned || taxonomyPinned;
+    pinnedFields = [...new Set([...pinnedFields, ...validation.pinnedFields])];
+
+    if (
+      !validation.ok &&
+      shouldAttemptLlmRepair(validation.validationError)
+    ) {
       generated = await generateCandidate(
         model,
         system,
         prompt,
-        validationError,
+        validation.validationError,
       );
-      try {
-        exercise = validateExercise(normalizeExerciseSeed(generated.exercise));
-        validationError = null;
-      } catch (err2) {
-        validationError = err2 instanceof Error ? err2.message : String(err2);
-        return validationFailureResponse(
-          "Generated drill failed validation after repair pass",
-          validationError,
-          generated,
-          generated.patternType ?? generated.exercise.patternType,
-          generated.exercise,
-        );
-      }
+      validation = validateGeneratedDrill(
+        generated.exercise,
+        taxonomyConstraints,
+      );
+      taxonomyPinned = validation.taxonomyPinned || taxonomyPinned;
+      pinnedFields = [...new Set([...pinnedFields, ...validation.pinnedFields])];
     }
+
+    if (!validation.ok) {
+      return validationFailureResponse(
+        shouldAttemptLlmRepair(validation.validationError)
+          ? "Generated drill failed validation after repair pass"
+          : "Generated drill failed validation",
+        validation.validationError,
+        generated,
+        generated.patternType ?? generated.exercise.patternType,
+        validation.rawExercise,
+      );
+    }
+
+    let exercise: ExerciseSeed = validation.exercise;
 
     // Pin difficulty to the requested/inferred level so the model cannot drift.
     if (exercise.difficultyLevel !== difficultyLevel) {
-      try {
-        exercise = validateExercise({
-          ...exercise,
-          difficultyLevel,
-        });
-      } catch (err) {
-        const pinError = err instanceof Error ? err.message : String(err);
+      const pinned = prepareExerciseForValidation(
+        { ...exercise, difficultyLevel },
+        taxonomyConstraints,
+      );
+      const difficultyValidation = validateGeneratedDrill(
+        pinned.exercise,
+        taxonomyConstraints,
+      );
+      if (!difficultyValidation.ok) {
         return validationFailureResponse(
           "Generated drill failed validation after difficulty pin",
-          pinError,
+          difficultyValidation.validationError,
           generated,
           generated.patternType ?? exercise.patternType,
-          { ...exercise, difficultyLevel },
+          difficultyValidation.rawExercise,
         );
       }
+      exercise = difficultyValidation.exercise;
     }
 
     const trainingAttributesMatch =
@@ -308,42 +335,24 @@ export async function POST(request: Request) {
         exercise.trainingAttributes.includes(attribute),
       );
     if (!trainingAttributesMatch) {
-      try {
-        exercise = validateExercise({
-          ...exercise,
-          trainingAttributes,
-        });
-      } catch (err) {
-        const pinError = err instanceof Error ? err.message : String(err);
+      const pinned = prepareExerciseForValidation(
+        { ...exercise, trainingAttributes },
+        taxonomyConstraints,
+      );
+      const attributeValidation = validateGeneratedDrill(
+        pinned.exercise,
+        taxonomyConstraints,
+      );
+      if (!attributeValidation.ok) {
         return validationFailureResponse(
           "Generated drill failed validation after training attribute pin",
-          pinError,
+          attributeValidation.validationError,
           generated,
           generated.patternType ?? exercise.patternType,
-          { ...exercise, trainingAttributes },
+          attributeValidation.rawExercise,
         );
       }
-    }
-
-    const subSkillIdsMatch =
-      exercise.subSkillIds.length === subSkillIds.length &&
-      subSkillIds.every((id) => exercise.subSkillIds.includes(id));
-    if (!subSkillIdsMatch) {
-      try {
-        exercise = validateExercise({
-          ...exercise,
-          subSkillIds,
-        });
-      } catch (err) {
-        const pinError = err instanceof Error ? err.message : String(err);
-        return validationFailureResponse(
-          "Generated drill failed validation after sub-skill pin",
-          pinError,
-          generated,
-          generated.patternType ?? exercise.patternType,
-          { ...exercise, subSkillIds },
-        );
-      }
+      exercise = attributeValidation.exercise;
     }
 
     const qualityScore = recomputeQualityTotal(generated.qualityScore);
@@ -359,6 +368,8 @@ export async function POST(request: Request) {
       refinePrompt: generated.refinePrompt,
       validationStatus: "passed" as const,
       description: exercise.description,
+      taxonomyPinned,
+      pinnedFields,
       subSkillIds,
       subSkillIdsInferred,
       subSkillDistribution,
