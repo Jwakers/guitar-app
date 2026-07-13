@@ -827,6 +827,12 @@ Pro may include:
 
 Do not let subscription design pollute the core practice experience.
 
+**Runtime source of truth:** [`src/lib/subscriptions/entitlements.ts`](../src/lib/subscriptions/entitlements.ts) defines tier capabilities. Convex handlers read the cached `users.subscriptionTier` field (never client-supplied tier).
+
+**Clerk Billing (planned):** Recurring subscriptions will use Clerk Billing (B2C user plan slug `pro`). Clerk webhooks hit [`convex/http.ts`](../convex/http.ts) (`POST /clerk-billing-webhook`), which calls `internal.subscriptions.syncFromClerkBilling` to update cached tier and billing metadata. Checkout UI will use Clerk `<PricingTable />` on `/settings/subscription` when billing is enabled.
+
+**Dev fallback:** Patch `subscriptionTier` in the Convex dashboard for local gate testing without billing.
+
 ---
 
 ## 19. Gamification

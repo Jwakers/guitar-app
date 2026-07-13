@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireCurrentUser } from "./lib/auth";
+import { assertEntitlement, getUserEntitlements } from "./lib/subscriptions";
 import { labelFromSkillTargetKey } from "./lib/buildProgressOverview";
 import {
   coreSkillValidator,
@@ -16,6 +17,32 @@ import {
   computeMonthlyReviewBounds,
   isTimestampInMonth,
 } from "../src/lib/progress/buildMonthlyReview";
+
+function getCurrentYearMonth(
+  timezone: string,
+  now: number,
+): { year: number; month: number } {
+  const todayDate = formatDateInTimezone(now, timezone);
+  const [year, month] = todayDate.split("-").map(Number);
+  return { year: year!, month: month! };
+}
+
+function assertMonthlyReviewMonthAccess(
+  user: Doc<"users">,
+  year: number,
+  month: number,
+  now: number,
+): void {
+  const entitlements = getUserEntitlements(user);
+  if (entitlements.monthlyReviewHistory) {
+    return;
+  }
+
+  const current = getCurrentYearMonth(user.timezone, now);
+  if (year !== current.year || month !== current.month) {
+    assertEntitlement(user, "monthly_review_history");
+  }
+}
 
 function isFutureMonth(
   year: number,
@@ -204,6 +231,8 @@ export const generateMonthlyReview = mutation({
       throw new Error("Cannot generate review for a future month");
     }
 
+    assertMonthlyReviewMonthAccess(user, args.year, args.month, now);
+
     const { built, achievementsUnlockedIds } = await loadMonthlyReviewData(
       ctx,
       user._id,
@@ -263,6 +292,8 @@ export const getMonthlyReview = query({
     if (isFutureMonth(args.year, args.month, user.timezone, now)) {
       return null;
     }
+
+    assertMonthlyReviewMonthAccess(user, args.year, args.month, now);
 
     const { built } = await loadMonthlyReviewData(
       ctx,

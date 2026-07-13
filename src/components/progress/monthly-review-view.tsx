@@ -21,6 +21,7 @@ export function MonthlyReviewView() {
   } | null>(null);
 
   const bounds = useQuery(api.reviews.getMonthlyReviewBounds);
+  const subscription = useQuery(api.subscriptions.getSubscriptionStatus);
 
   const year = selectedMonth?.year ?? bounds?.currentYear ?? null;
   const month = selectedMonth?.month ?? bounds?.currentMonth ?? null;
@@ -43,8 +44,20 @@ export function MonthlyReviewView() {
     bounds !== undefined &&
     year !== null &&
     month !== null &&
+    subscription?.entitlements.monthlyReviewHistory === true &&
     compareYearMonth(year, month, bounds.earliestYear, bounds.earliestMonth) >
       0;
+
+  const showHistoryUpsell =
+    subscription !== undefined &&
+    !subscription.entitlements.monthlyReviewHistory &&
+    bounds !== undefined &&
+    compareYearMonth(
+      bounds.earliestYear,
+      bounds.earliestMonth,
+      bounds.currentYear,
+      bounds.currentMonth,
+    ) < 0;
 
   const canGoNext =
     bounds !== undefined &&
@@ -55,6 +68,7 @@ export function MonthlyReviewView() {
   if (
     review === undefined ||
     bounds === undefined ||
+    subscription === undefined ||
     year === null ||
     month === null
   ) {
@@ -96,6 +110,18 @@ export function MonthlyReviewView() {
             </Button>
           </div>
         </div>
+
+        {showHistoryUpsell && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Pro unlocks full monthly review history.{" "}
+            <Link
+              href="/settings/subscription"
+              className="font-mono text-xs text-primary underline-offset-4 hover:underline"
+            >
+              View subscription
+            </Link>
+          </p>
+        )}
 
         {!review && (
           <div className="mt-8 rounded-lg border border-border bg-card px-6 py-10 text-center">

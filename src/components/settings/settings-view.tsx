@@ -186,6 +186,9 @@ export function SettingsView() {
             {saving ? "Saving…" : "Save settings"}
           </Button>
           <Button asChild variant="outline">
+            <Link href="/settings/subscription">Subscription</Link>
+          </Button>
+          <Button asChild variant="outline">
             <Link href="/profile">Back to profile</Link>
           </Button>
         </div>

@@ -3,6 +3,7 @@ import { mutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireCurrentUser } from "./lib/auth";
+import { assertEntitlement } from "./lib/subscriptions";
 import { getWeeklyPlanForBlockWeek } from "./lib/weeklyPlanLookup";
 import {
   blockDocToSnapshot,
@@ -50,6 +51,7 @@ export const generateExtraSession = mutation({
   returns: v.id("practiceSessions"),
   handler: async (ctx) => {
     const user = await requireCurrentUser(ctx);
+    assertEntitlement(user, "training_sessions");
     const now = Date.now();
     const dateString = formatDateInTimezone(now, user.timezone);
 
@@ -110,6 +112,7 @@ export const generateCustomSession = mutation({
     }
 
     const user = await requireCurrentUser(ctx);
+    assertEntitlement(user, "training_sessions");
     const now = Date.now();
     const dateString = formatDateInTimezone(now, user.timezone);
 

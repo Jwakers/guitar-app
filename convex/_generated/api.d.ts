@@ -11,6 +11,7 @@
 import type * as achievements from "../achievements.js";
 import type * as devReset from "../devReset.js";
 import type * as exercises from "../exercises.js";
+import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_buildProgressOverview from "../lib/buildProgressOverview.js";
 import type * as lib_buildSkillTargetDetail from "../lib/buildSkillTargetDetail.js";
@@ -25,7 +26,9 @@ import type * as lib_recomputeSkillRatings from "../lib/recomputeSkillRatings.js
 import type * as lib_sessionLifecycle from "../lib/sessionLifecycle.js";
 import type * as lib_sessionValidators from "../lib/sessionValidators.js";
 import type * as lib_streaks from "../lib/streaks.js";
+import type * as lib_subscriptions from "../lib/subscriptions.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
+import type * as lib_verifyClerkWebhook from "../lib/verifyClerkWebhook.js";
 import type * as lib_weeklyPlanLookup from "../lib/weeklyPlanLookup.js";
 import type * as onboarding from "../onboarding.js";
 import type * as progress from "../progress.js";
@@ -34,6 +37,7 @@ import type * as reviews from "../reviews.js";
 import type * as sessions from "../sessions.js";
 import type * as settings from "../settings.js";
 import type * as skills from "../skills.js";
+import type * as subscriptions from "../subscriptions.js";
 import type * as training from "../training.js";
 import type * as trainingBlocks from "../trainingBlocks.js";
 import type * as users from "../users.js";
@@ -49,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   achievements: typeof achievements;
   devReset: typeof devReset;
   exercises: typeof exercises;
+  http: typeof http;
   "lib/auth": typeof lib_auth;
   "lib/buildProgressOverview": typeof lib_buildProgressOverview;
   "lib/buildSkillTargetDetail": typeof lib_buildSkillTargetDetail;
@@ -63,7 +68,9 @@ declare const fullApi: ApiFromModules<{
   "lib/sessionLifecycle": typeof lib_sessionLifecycle;
   "lib/sessionValidators": typeof lib_sessionValidators;
   "lib/streaks": typeof lib_streaks;
+  "lib/subscriptions": typeof lib_subscriptions;
   "lib/upsertExercise": typeof lib_upsertExercise;
+  "lib/verifyClerkWebhook": typeof lib_verifyClerkWebhook;
   "lib/weeklyPlanLookup": typeof lib_weeklyPlanLookup;
   onboarding: typeof onboarding;
   progress: typeof progress;
@@ -72,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   sessions: typeof sessions;
   settings: typeof settings;
   skills: typeof skills;
+  subscriptions: typeof subscriptions;
   training: typeof training;
   trainingBlocks: typeof trainingBlocks;
   users: typeof users;

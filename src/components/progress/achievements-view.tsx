@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { api } from "@/convex/_generated/api";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const MEDAL_STYLES: Record<string, string> = {
   bronze: "border-amber-700/40 bg-amber-950/20 text-amber-600",
@@ -46,7 +46,7 @@ export function AchievementsView() {
       <main className="flex flex-1 flex-col px-4 py-8">
         <div className="mx-auto w-full max-w-2xl">
           <p className="font-mono text-[10px] font-bold tracking-widest text-primary">
-            GAMIFICATION
+            YOUR ACHIEVEMENTS
           </p>
           <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-foreground">
             Achievements
@@ -91,17 +91,13 @@ export function AchievementsView() {
     <main className="flex flex-1 flex-col px-4 py-8">
       <div className="mx-auto w-full max-w-2xl">
         <p className="font-mono text-[10px] font-bold tracking-widest text-primary">
-          GAMIFICATION
+          YOUR ACHIEVEMENTS
         </p>
         <h1 className="mt-2 font-mono text-xl font-bold tracking-tight text-foreground">
           Achievements
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {unlockedCount} of {achievements.length} unlocked
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Streak counts days you complete practice — missing days don&apos;t
-          reduce it until your next session.
         </p>
 
         {!seeding && achievements.length === 0 && (
