@@ -289,12 +289,16 @@ function barToAlphaTex(
   tuning: string[],
   flags: EmitFlags,
   lastNoteOnString: Map<TabNoteString, PreviousNoteOnString>,
+  nextBarFirstBeat?: TabBeat,
 ): string {
   let previousBendQt: number | null = null;
   const parts: string[] = [];
   for (let beatIndex = 0; beatIndex < bar.beats.length; beatIndex += 1) {
     const beat = bar.beats[beatIndex]!;
-    const nextBeat = bar.beats[beatIndex + 1];
+    const nextBeat =
+      beatIndex + 1 < bar.beats.length
+        ? bar.beats[beatIndex + 1]
+        : nextBarFirstBeat;
     const mergeBeamWithNext = shouldMergeBeamForSlide(beat, nextBeat);
     const { tex, bendQt } = beatToAlphaTex(
       beat,
@@ -351,7 +355,10 @@ export function tabDataToAlphaTex(data: TabData): string {
   ].join("\n");
 
   const bars = data.bars
-    .map((bar) => `| ${barToAlphaTex(bar, data.tuning, flags, lastNoteOnString)}`)
+    .map((bar, barIndex) => {
+      const nextBarFirstBeat = data.bars[barIndex + 1]?.beats[0];
+      return `| ${barToAlphaTex(bar, data.tuning, flags, lastNoteOnString, nextBarFirstBeat)}`;
+    })
     .join("\n");
 
   return `${header}\n${bars}`;

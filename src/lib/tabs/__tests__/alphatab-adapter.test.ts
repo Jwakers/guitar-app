@@ -506,6 +506,34 @@ describe("tabDataToAlphaTex", () => {
     expect(tex).not.toContain("{sl}");
   });
 
+  it("emits beam merge when a same-string slide crosses a bar boundary", () => {
+    const tex = tabDataToAlphaTex(
+      baseTab({
+        bars: [
+          {
+            beats: [{ duration: "eighth", notes: [{ string: 2, fret: 5 }] }],
+          },
+          {
+            beats: [
+              {
+                duration: "quarter",
+                notes: [
+                  {
+                    string: 2,
+                    fret: 7,
+                    articulationFromPrevious: "slide",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    expect(tex).toContain("5.2.8{beam merge}");
+    expect(tex).toContain("7.2{sib}.4");
+  });
+
   it("emits four directional slides for the sliding pentatonic phrase", () => {
     const tex = tabDataToAlphaTex(slidingPentatonicPhraseTab);
     expect(tex).toMatchInlineSnapshot(`
