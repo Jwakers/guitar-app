@@ -345,6 +345,8 @@ export function tabDataToAlphaTex(data: TabData): string {
 
   const header = [
     "\\staff{score tabs}",
+    // Softer GM patch within AlphaTab's bundled Sonivox soundfont.
+    '\\instrument "Acoustic Guitar Nylon"',
     tuningToAlphaTex(data.tuning),
     ...(data.capo !== undefined && data.capo > 0
       ? [`\\capo ${data.capo}`]

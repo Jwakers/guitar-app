@@ -151,6 +151,7 @@ describe("tabDataToAlphaTex", () => {
   it("emits score+tabs staff header", () => {
     const tex = tabDataToAlphaTex(baseTab());
     expect(tex).toContain("\\staff{score tabs}");
+    expect(tex).toContain('\\instrument "Acoustic Guitar Nylon"');
     expect(tex).toContain("\\tuning (E4 B3 G3 D3 A2 E2)");
     expect(tex).toContain("\\ts(4 4)");
     expect(tex).toContain("\\tempo 90");
@@ -538,6 +539,7 @@ describe("tabDataToAlphaTex", () => {
     const tex = tabDataToAlphaTex(slidingPentatonicPhraseTab);
     expect(tex).toMatchInlineSnapshot(`
       "\\staff{score tabs}
+      \\instrument "Acoustic Guitar Nylon"
       \\tuning (E4 B3 G3 D3 A2 E2)
       \\ts(4 4)
       \\tempo 80

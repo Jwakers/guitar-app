@@ -9,16 +9,24 @@ type ExerciseDetailSectionsProps = {
   coachingNotes: string[];
   successCriteria?: string[];
   showSuccessCriteria?: boolean;
+  /** Live playback tempo for the tab MIDI player (e.g. metronome BPM). */
+  playbackBpm?: number;
 };
 
-export function ExerciseTabSection({ tabData }: { tabData: TabData }) {
+export function ExerciseTabSection({
+  tabData,
+  playbackBpm,
+}: {
+  tabData: TabData;
+  playbackBpm?: number;
+}) {
   return (
     <section className="mb-8 px-4">
       <div className="mx-auto w-full max-w-6xl">
         <h2 className="mb-3 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           TAB
         </h2>
-        <TabRenderer tabData={tabData} />
+        <TabRenderer tabData={tabData} playbackBpm={playbackBpm} />
       </div>
     </section>
   );
@@ -32,10 +40,11 @@ export function ExerciseDetailSections({
   coachingNotes,
   successCriteria,
   showSuccessCriteria = false,
+  playbackBpm,
 }: ExerciseDetailSectionsProps) {
   return (
     <>
-      <ExerciseTabSection tabData={tabData} />
+      <ExerciseTabSection tabData={tabData} playbackBpm={playbackBpm} />
 
       <div className="mx-auto w-full max-w-2xl px-4">
         <section className="mb-6">

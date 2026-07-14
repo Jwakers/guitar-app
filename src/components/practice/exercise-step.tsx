@@ -34,6 +34,7 @@ type ExerciseStepProps = {
   playerMode: PlayerMode;
   loggedResult?: LoggedResult;
   metronomeKey: string;
+  currentBpm: number;
   onBpmChange: (bpm: number) => void;
   onBack: () => void;
   onReturnToCurrent: () => void;
@@ -48,6 +49,7 @@ export function ExerciseStep({
   playerMode,
   loggedResult,
   metronomeKey,
+  currentBpm,
   onBpmChange,
   onBack,
   onReturnToCurrent,
@@ -141,6 +143,7 @@ export function ExerciseStep({
           coachingNotes={exercise.coachingNotes}
           successCriteria={exercise.successCriteria}
           showSuccessCriteria
+          playbackBpm={currentBpm}
         />
       </div>
 
