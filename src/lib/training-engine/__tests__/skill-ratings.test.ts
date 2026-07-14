@@ -99,6 +99,16 @@ describe("computeTrend", () => {
     ];
     expect(computeTrend(logs, 60, now, 7)).toBeGreaterThan(0);
   });
+
+  it("returns negative trend when recent logs underperform older logs", () => {
+    const logs = [
+      log(1, "needs_work", 55),
+      log(2, "needs_work", 52),
+      log(10, "nailed_it", 88),
+      log(20, "nailed_it", 86),
+    ];
+    expect(computeTrend(logs, 70, now, 7)).toBeLessThan(0);
+  });
 });
 
 describe("deriveConfidence", () => {

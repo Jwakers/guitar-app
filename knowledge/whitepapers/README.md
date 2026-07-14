@@ -10,10 +10,10 @@ Whitepapers explain *why* the algorithms exist rather than how they are coded. T
 
 | Document | Status | Priority |
 |---|---|---|
-| `rating-and-progression.md` | Not started | High |
+| `rating-and-progression.md` | Draft (MVP implemented) | High |
 | `practice-methodology.md` | Not started | High |
 | `adaptive-training-engine.md` | Not started | High |
-| `skill-rating-methodology.md` | Not started | High |
+| `skill-rating-methodology.md` | Covered in `rating-and-progression.md` § Skill ratings | High |
 | `periodisation-model.md` | Not started | Medium |
 | `confidence-vs-capability.md` | Not started | Medium |
 | `reliable-performance-model.md` | Not started | Medium |

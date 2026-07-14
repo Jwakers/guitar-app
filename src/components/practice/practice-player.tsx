@@ -43,6 +43,13 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
   const [replayComplete, setReplayComplete] = useState(false);
   const initializedSessionId = useRef<string | null>(null);
 
+  const sessionSummary = useQuery(
+    api.sessions.getSessionSummary,
+    session && (phase === "summary" || session.status === "completed")
+      ? { sessionId: session._id }
+      : "skip",
+  );
+
   const [currentBpm, setCurrentBpm] = useState(120);
   const [peakBpm, setPeakBpm] = useState(120);
 
@@ -229,6 +236,7 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
         session={session}
         exerciseTitleById={exerciseTitleById}
         logsByOrder={logsByOrder}
+        skillRatingChanges={sessionSummary?.skillRatingChanges}
       />
     );
   }
@@ -260,6 +268,7 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
         session={session}
         exerciseTitleById={exerciseTitleById}
         logsByOrder={logsByOrder}
+        skillRatingChanges={sessionSummary?.skillRatingChanges}
       />
     );
   }

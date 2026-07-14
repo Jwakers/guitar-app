@@ -332,6 +332,12 @@ export function subSkillLabel(id: SubSkill): string {
   return SUB_SKILL_DEFINITIONS[id].label;
 }
 
+export function skillTargetLabel(target: SkillTarget): string {
+  return target.kind === "core"
+    ? coreSkillLabel(target.id)
+    : subSkillLabel(target.id);
+}
+
 export function trainingAttributeLabel(id: TrainingAttribute): string {
   return TRAINING_ATTRIBUTE_DEFINITIONS[id].label;
 }

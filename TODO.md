@@ -12,6 +12,8 @@ For engineering implementation tasks, use the project issue tracker or `PROGRESS
 
 **File:** `knowledge/whitepapers/rating-and-progression.md`
 
+**Status:** Draft complete (MVP algorithm documented). Planned extensions listed in § Future work.
+
 This is the first whitepaper to author. It underpins the skill rating system, reliable performance model, training verdict definitions, and all progression and regression rules implemented by the exercise selection engine.
 
 This document should be written manually as part of product design. It represents core intellectual property and should be treated as a foundational design artefact. Do not auto-generate it.

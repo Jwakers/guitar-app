@@ -107,6 +107,18 @@ const sessionDocValidator = v.object({
   completedAt: v.optional(v.number()),
 });
 
+const skillRatingChangeValidator = v.object({
+  skillTarget: skillTargetValidator,
+  oldRating: v.number(),
+  newRating: v.number(),
+});
+
+const sessionSummaryDocValidator = v.object({
+  skillRatingChanges: v.array(skillRatingChangeValidator),
+  xpAwarded: v.number(),
+  streakUpdated: v.boolean(),
+});
+
 export const getPendingSession = query({
   args: {},
   returns: v.union(sessionDocValidator, v.null()),
@@ -331,6 +343,33 @@ export const getSessionLogs = query({
       feedbackResponses: log.feedbackResponses,
       isPersonalBest: log.isPersonalBest,
     }));
+  },
+});
+
+export const getSessionSummary = query({
+  args: { sessionId: v.id("practiceSessions") },
+  returns: v.union(sessionSummaryDocValidator, v.null()),
+  handler: async (ctx, args) => {
+    const user = await requireCurrentUser(ctx);
+    const session = await ctx.db.get("practiceSessions", args.sessionId);
+    if (!session || session.userId !== user._id) {
+      return null;
+    }
+
+    const summary = await ctx.db
+      .query("sessionSummaries")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (!summary) {
+      return null;
+    }
+
+    return {
+      skillRatingChanges: summary.skillRatingChanges,
+      xpAwarded: summary.xpAwarded,
+      streakUpdated: summary.streakUpdated,
+    };
   },
 });
 

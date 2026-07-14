@@ -623,24 +623,35 @@ This formula is not final. It should be implemented as a clearly isolated scorin
 
 ## 11. Skill Ratings
 
-Skill ratings are 0-100.
+Skill ratings are 0–100 estimates of user capability per core or sub-skill. The **implemented** algorithm is documented in [`knowledge/whitepapers/rating-and-progression.md`](../knowledge/whitepapers/rating-and-progression.md). Implementation: `src/lib/training-engine/skill-ratings.ts`.
 
-They should update gradually.
+### Design principles
 
-A single good day should not massively inflate a skill.
+* Update gradually — a single good or bad day should not move the rating dramatically
+* Bidirectional — ratings decrease when recent logs underperform, not only when they improve
+* Treat missed days as programming input (maintenance status), not numeric punishment
 
-A single bad day should not punish the user heavily.
+### Implemented (MVP)
 
-Suggested principles:
+* Rolling window of the last **10** logs per skill target, recency-weighted
+* Per-log score from **Training Verdict** (85 / 65 / 50) with optional **clean_bpm** objective blend (60% verdict + 40% actual/target ratio)
+* Blend: **65%** stored previous rating + **35%** window average
+* Per-update cap: **±6** points
+* Status bands: ≤40 weak · ≤55 developing · ≤56–70 stable · >70 strong; strong + 21 days idle → maintenance
+* Confidence from log count: `0.5 + logCount × 0.03`, max 0.9
+* Onboarding seeds core skills only (1–5 self-assessment → 20–100); sub-skills default to 60 on first recompute
+* Triggered after every exercise log for the exercise's core skill and sub-skills
 
-* Use rolling averages
-* Weight recent logs more heavily
-* Weight harder exercises more heavily
-* Consider confidence level
-* Separate performance from consistency
-* Treat missed days as programming input, not punishment
+### Planned (not yet implemented)
 
-MVP skill ratings may begin as simple derived scores from recent exercise logs. The exact methodology — rolling averages, confidence weighting, recency decay — will be formally defined in `knowledge/whitepapers/rating-and-progression.md`. Do not over-engineer the initial implementation; a working placeholder is sufficient to validate the core loop.
+* Weight harder exercises (`difficultyLevel`) more heavily in skill rating updates
+* Confidence inferred from verdict quality and consistency, not just log count
+* Numeric rating decay from extended inactivity (currently only status changes to maintenance)
+* Objective metric blending for non-BPM primary metrics
+* Separate performance vs consistency dimensions
+* Post-onboarding manual re-assessment flow
+
+Exercise difficulty (`difficultyLevel`, 1–10) is a separate catalog scale. Changing the difficulty rubric does not require remapping user skill ratings.
 
 ---
 
