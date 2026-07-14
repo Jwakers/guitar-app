@@ -250,7 +250,7 @@ export function DrillGenerator() {
   const [coreSkillId, setCoreSkillId] = useState("");
   const [subSkillIds, setSubSkillIds] = useState<string[]>([]);
   const [trainingAttributes, setTrainingAttributes] = useState<string[]>([]);
-  /** Empty string = auto-infer from library gaps (mid-heavy 4–8 curve). */
+  /** Empty string = auto-infer from library gaps (start-heavy 1–4 curve). */
   const [difficultyLevel, setDifficultyLevel] = useState("");
   const [exerciseType, setExerciseType] =
     useState<(typeof EXERCISE_TYPES)[number]>("primary");
@@ -594,11 +594,11 @@ export function DrillGenerator() {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 value={difficultyLevel}
                 onChange={(e) => setDifficultyLevel(e.target.value)}
-                placeholder="Auto (mid 4–8 bias)"
+                placeholder="Auto (start 1–4 bias)"
               />
               <span className="block text-xs text-muted-foreground">
-                Leave blank to fill library gaps — weighted toward 4–8, not flat
-                across 1–10.
+                Leave blank to fill library gaps — start-heavy 1–4, moderate
+                5–6, light 7–8, sparse 9–10.
               </span>
             </label>
             <label className="block space-y-1">

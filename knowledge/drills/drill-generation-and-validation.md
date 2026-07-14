@@ -500,19 +500,37 @@ Mark for review (soft — not an automatic hard reject) when:
 
 ---
 
+### Difficulty scale (1–10)
+
+Canonical meaning of `difficultyLevel` for this catalog. The audience is **intermediate → mastery**, not absolute beginner.
+
+| Level | Meaning |
+| --- | --- |
+| **1–3** | Intermediate **starting band** — where most users begin; 1 = easiest useful starter drill for an intermediate |
+| **4** | Solid intermediate working level |
+| **5–6** | **Advanced threshold** — most players are stretching here |
+| **7–8** | Stretch / high goals for dedicated intermediates; uncommon day-one capability |
+| **9–10** | **Basic mastery** — extremely difficult for most; catalog-rare and must be justified |
+
+Generation and library fill should be **start-heavy (1–4)**, moderate at **5–6**, light at **7–8**, and sparse at **9–10**. A typical intermediate should not feel immediately capable of level 8 unless they are already very strong.
+
+Reject absolute-beginner fluff and material that is too easy to be useful. Reject treating 7–8 as normal mid-catalog fill.
+
+**Catalog audit checklist (manual):** after any scale change, spot-check drills rated **≥ 7** (may be overstated) and **≤ 2** (may still be absolute-beginner fluff). Re-rate or flag via admin notes; do not bulk-regenerate tabs solely for difficulty.
+
 ### Appropriate Difficulty
 
 Score highly when:
 
 - the drill suits intermediate electric guitarists
-- the difficulty rating is plausible
+- the difficulty rating is plausible against the scale above
 - the drill can be slowed down
 - the drill has room to progress
 
 Reject if:
 
-- it is too easy to be useful
-- it is too advanced for MVP
+- it is too easy to be useful (absolute-beginner fluff)
+- the assigned level is inflated so day-one intermediates land at stretch/mastery bands
 - it requires unavailable prerequisite skills
 - it is likely to frustrate more than train
 

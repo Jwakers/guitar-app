@@ -119,7 +119,7 @@ ExerciseSeed fields:
 - trainingAttributes: one or more of ${TRAINING_ATTRIBUTES.map((id) => `\`${id}\``).join(" | ")}
 - patternType: micro_drill | standard_loop | musical_sequence | benchmark
 - microDrillJustification: required when patternType is micro_drill
-- difficultyLevel: integer 1–10
+- difficultyLevel: integer 1–10 using this scale: 1–3 intermediate starting band (1 = easiest useful starter for an intermediate); 4 solid intermediate; 5–6 advanced threshold; 7–8 stretch goals (uncommon day-one); 9–10 basic mastery (catalog-rare, must be justified). Reject absolute-beginner fluff and inflated mid-catalog 7–8 fill.
 - exerciseType: warmup | primary | secondary | accessory | isolation | test
 - primaryProgressMetric: clean_bpm | accuracy_score | timing_consistency | control_score | clean_reps | endurance_duration | noise_control | comfort_score
 - status: active | deprecated | replaced (use "active" for new drills)
@@ -308,7 +308,7 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
     parts.push(
       `Difficulty level: ${input.difficultyLevel} (AUTO-INFERRED — do not change this)`,
       "Difficulty was chosen because this taxonomy slice is under-filled at this level.",
-      "Library difficulty targets follow a mid-heavy bell curve focused on 4–8; extremes (1–2, 9–10) stay sparse.",
+      "Library difficulty targets are start-heavy (1–4), moderate at advanced (5–6), light stretch (7–8), sparse mastery (9–10).",
       ...(input.difficultyDistribution
         ? [
             `Current difficulty counts for this taxonomy slice: ${input.difficultyDistribution}`,
@@ -316,7 +316,10 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
         : []),
     );
   } else {
-    parts.push(`Difficulty level: ${input.difficultyLevel} (explicitly requested)`);
+    parts.push(
+      `Difficulty level: ${input.difficultyLevel} (explicitly requested)`,
+      "Justify the tab against the intermediate-start → mastery scale: 1–3 start, 5–6 advanced, 7–8 stretch, 9–10 mastery-rare.",
+    );
   }
 
   if (input.targetBpm != null) {

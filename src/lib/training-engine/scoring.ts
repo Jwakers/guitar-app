@@ -125,7 +125,8 @@ export function scoreExercise(
 
   const penalties =
     (usedExerciseIds.has(exercise._id) ? WEIGHTS.tooSoonRepeatPenalty : 0) +
-    (purpose.intensity === "low" && exercise.difficultyLevel > 6
+    // Advanced threshold starts at 5–6; low-intensity slots should not pull those.
+    (purpose.intensity === "low" && exercise.difficultyLevel > 4
       ? WEIGHTS.difficultyMismatchPenalty * 0.5
       : 0);
 

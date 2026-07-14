@@ -9,7 +9,6 @@
  */
 
 import type * as achievements from "../achievements.js";
-import type * as devReset from "../devReset.js";
 import type * as exercises from "../exercises.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -30,6 +29,7 @@ import type * as lib_subscriptions from "../lib/subscriptions.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
 import type * as lib_verifyClerkWebhook from "../lib/verifyClerkWebhook.js";
 import type * as lib_weeklyPlanLookup from "../lib/weeklyPlanLookup.js";
+import type * as migrateDifficultyScale from "../migrateDifficultyScale.js";
 import type * as onboarding from "../onboarding.js";
 import type * as progress from "../progress.js";
 import type * as progression from "../progression.js";
@@ -51,7 +51,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   achievements: typeof achievements;
-  devReset: typeof devReset;
   exercises: typeof exercises;
   http: typeof http;
   "lib/auth": typeof lib_auth;
@@ -72,6 +71,7 @@ declare const fullApi: ApiFromModules<{
   "lib/upsertExercise": typeof lib_upsertExercise;
   "lib/verifyClerkWebhook": typeof lib_verifyClerkWebhook;
   "lib/weeklyPlanLookup": typeof lib_weeklyPlanLookup;
+  migrateDifficultyScale: typeof migrateDifficultyScale;
   onboarding: typeof onboarding;
   progress: typeof progress;
   progression: typeof progression;

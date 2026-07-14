@@ -489,6 +489,9 @@ function SuperUserExerciseMetadataEditorForm({
                   setField("difficultyLevel", Number(e.target.value))
                 }
               />
+              <p className="mt-1 text-xs text-muted-foreground">
+                1–3 start · 4 solid · 5–6 advanced · 7–8 stretch · 9–10 mastery
+              </p>
             </div>
             <div>
               <FieldLabel>Estimated minutes</FieldLabel>

@@ -285,7 +285,7 @@ coreSkillId
 subSkillIds[]
 trainingAttributes[]
 targetWeaknesses[]
-difficultyLevel // 1-10
+difficultyLevel // 1-10 — intermediate start (1–3) → advanced (5–6) → stretch (7–8) → basic mastery (9–10); see knowledge/drills/drill-generation-and-validation.md
 exerciseType // warmup | primary | secondary | accessory | isolation | test
 primaryProgressMetric
 supportsBpm
@@ -1195,7 +1195,7 @@ type ExerciseSeed = {
   subSkillIds: SubSkill[];
   trainingAttributes: TrainingAttribute[];
   targetWeaknesses: string[];
-  difficultyLevel: number; // 1-10
+  difficultyLevel: number; // 1-10 (intermediate start → mastery; see drill-generation-and-validation.md)
   exerciseType: "warmup" | "primary" | "secondary" | "accessory" | "isolation" | "test";
   primaryProgressMetric:
     | "clean_bpm"
