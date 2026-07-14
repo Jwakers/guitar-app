@@ -47,7 +47,7 @@ const requestSchema = z
     coreSkillId: z.enum(CORE_SKILLS),
     subSkillIds: z.array(z.enum(SUB_SKILLS)).default([]),
     trainingAttributes: z.array(z.enum(TRAINING_ATTRIBUTES)).default([]),
-    /** Omit or null to auto-infer from library gaps (mid-heavy 4–8 curve). */
+    /** Omit or null to auto-infer from library gaps (start-heavy 1–4 curve). */
     difficultyLevel: z.number().int().min(1).max(10).nullable().optional(),
     exerciseType: z.enum([
       "warmup",

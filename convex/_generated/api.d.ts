@@ -9,7 +9,6 @@
  */
 
 import type * as achievements from "../achievements.js";
-import type * as devReset from "../devReset.js";
 import type * as exercises from "../exercises.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -51,7 +50,6 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   achievements: typeof achievements;
-  devReset: typeof devReset;
   exercises: typeof exercises;
   http: typeof http;
   "lib/auth": typeof lib_auth;

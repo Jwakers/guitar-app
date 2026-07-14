@@ -85,24 +85,26 @@ type TemplateSlotDef = {
   useSupportSkills?: boolean;
 };
 
+// Difficulty bands match intermediate-start → mastery: most session work stays
+// in 1–6; stretch 7–8 is reserved for test slots, not routine primary work.
 const STANDARD_SLOTS: TemplateSlotDef[] = [
   { slotType: "warmup", weight: 2, minDifficulty: 1, maxDifficulty: 4 },
-  { slotType: "primary", weight: 4, minDifficulty: 2, maxDifficulty: 7 },
-  { slotType: "secondary", weight: 3, minDifficulty: 2, maxDifficulty: 6 },
-  { slotType: "accessory", weight: 2, minDifficulty: 2, maxDifficulty: 5, useSupportSkills: true },
-  { slotType: "isolation", weight: 2, minDifficulty: 2, maxDifficulty: 6 },
+  { slotType: "primary", weight: 4, minDifficulty: 2, maxDifficulty: 6 },
+  { slotType: "secondary", weight: 3, minDifficulty: 2, maxDifficulty: 5 },
+  { slotType: "accessory", weight: 2, minDifficulty: 1, maxDifficulty: 4, useSupportSkills: true },
+  { slotType: "isolation", weight: 2, minDifficulty: 2, maxDifficulty: 5 },
 ];
 
 const LIGHT_SLOTS: TemplateSlotDef[] = [
   { slotType: "warmup", weight: 3, minDifficulty: 1, maxDifficulty: 3 },
   { slotType: "maintenance", weight: 4, minDifficulty: 1, maxDifficulty: 4, useSupportSkills: true },
-  { slotType: "accessory", weight: 3, minDifficulty: 1, maxDifficulty: 4 },
+  { slotType: "accessory", weight: 3, minDifficulty: 1, maxDifficulty: 3 },
 ];
 
 const TEST_SLOTS: TemplateSlotDef[] = [
   { slotType: "warmup", weight: 2, minDifficulty: 1, maxDifficulty: 3 },
   { slotType: "test", weight: 5, minDifficulty: 3, maxDifficulty: 8 },
-  { slotType: "test", weight: 4, minDifficulty: 3, maxDifficulty: 7 },
+  { slotType: "test", weight: 4, minDifficulty: 3, maxDifficulty: 6 },
 ];
 
 function buildSlotsFromDefs(

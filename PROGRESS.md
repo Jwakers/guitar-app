@@ -108,6 +108,19 @@ Track what is built and what remains. Update this file as features land.
 
 ---
 
+## Phase 8: Practice UX & Authoring Polish
+
+Work these one at a time. Shared tab/exercise surfaces live in `src/components/exercises/exercise-detail-sections.tsx` (practice + drills).
+
+- [x] **Tab MIDI / audio player** — Wire AlphaTab’s built-in player (default soundfont) into `TabRenderer` / `src/lib/tabs/render-config.ts`. Ship play/pause with tempo tied to exercise/target BPM wherever tabs render (practice, drill detail, admin preview). Coexist with the existing metronome; do not replace it.
+- [x] **Super-user inline metadata editor** — When `users.isSuperUser`, show an editable panel under every tab. Editable: all useful exercise fields except `tabData` and immutable/system fields (`_id`, `_creationTime`, `slug`, etc.). Includes title, description, purpose, coachingNotes, targetWeaknesses, minimumCleanStandard, measurementInstructions, difficultyLevel, exerciseType, skills/attributes, progress metric + BPM fields, successCriteria, commonMistakes, progression/regression rules, patternType, microDrillJustification, estimatedMinutes, isMvp, feedbackSchema, status/replacedBySlug, and admin notes. Persist via a super-user-only Convex mutation (bump `version`/`updatedAt`). Tab note editing is out of scope.
+- [x] **Redefine difficulty 1–10 (intermediate start → mastery)** — 1–3 starting band; 4 solid intermediate; 5–6 advanced; 7–8 stretch; 9–10 basic mastery (rare). Updated prompts, inference, session bands, docs; remapped existing catalog; removed `devReset`.
+- [ ] **Coaching notes + purpose layout** — Move purpose (and short description if needed) above the tab. Make coaching notes sticky on desktop (side panel); stacked but prominent on mobile. Keep practice and `/drills/[id]` consistent via shared detail sections.
+- [x] **Admin notes on exercises** — Add `adminNotes` (or equivalent) to `exercises` schema; super-user-only read/write. UI under the tab (same panel as metadata editor) so future tab/content edits can use prior review context. Hidden from normal users.
+- [x] **Session progress “Exercise x of y”** — Already shown in `practice-player.tsx` as `EXERCISE {n} OF {total}`. Revisit only if visibility/placement still feels weak in use.
+
+---
+
 ## Screens status
 
 | Screen | Route | Status |

@@ -304,6 +304,7 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
           playerMode={playerMode}
           loggedResult={loggedResult}
           metronomeKey={`${currentItem.order}-${playerMode}`}
+          currentBpm={currentBpm}
           onBpmChange={handleBpmChange}
           onBack={handleExerciseBack}
           onReturnToCurrent={handleReturnToCurrent}

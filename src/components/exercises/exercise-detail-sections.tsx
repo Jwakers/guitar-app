@@ -1,41 +1,56 @@
 import { TabRenderer } from "@/components/tab-renderer/tab-renderer";
-import type { TabData } from "@/lib/tabs/internal-schema";
+import { SuperUserAdminNotesPanel } from "@/components/exercises/super-user-admin-notes-panel";
+import {
+  SuperUserExerciseMetadataEditor,
+  type EditableExercise,
+} from "@/components/exercises/super-user-exercise-metadata-editor";
 
 type ExerciseDetailSectionsProps = {
-  tabData: TabData;
+  exercise: EditableExercise;
   purpose: string;
   minimumCleanStandard: string;
   measurementInstructions: string;
   coachingNotes: string[];
   successCriteria?: string[];
   showSuccessCriteria?: boolean;
+  /** Live playback tempo for the tab MIDI player (e.g. metronome BPM). */
+  playbackBpm?: number;
 };
 
-export function ExerciseTabSection({ tabData }: { tabData: TabData }) {
+export function ExerciseTabSection({
+  exercise,
+  playbackBpm,
+}: {
+  exercise: EditableExercise;
+  playbackBpm?: number;
+}) {
   return (
     <section className="mb-8 px-4">
       <div className="mx-auto w-full max-w-6xl">
         <h2 className="mb-3 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           TAB
         </h2>
-        <TabRenderer tabData={tabData} />
+        <TabRenderer tabData={exercise.tabData} playbackBpm={playbackBpm} />
+        <SuperUserAdminNotesPanel exerciseId={exercise._id} />
+        <SuperUserExerciseMetadataEditor exercise={exercise} />
       </div>
     </section>
   );
 }
 
 export function ExerciseDetailSections({
-  tabData,
+  exercise,
   purpose,
   minimumCleanStandard,
   measurementInstructions,
   coachingNotes,
   successCriteria,
   showSuccessCriteria = false,
+  playbackBpm,
 }: ExerciseDetailSectionsProps) {
   return (
     <>
-      <ExerciseTabSection tabData={tabData} />
+      <ExerciseTabSection exercise={exercise} playbackBpm={playbackBpm} />
 
       <div className="mx-auto w-full max-w-2xl px-4">
         <section className="mb-6">

@@ -181,4 +181,50 @@ export const exerciseSeedValidator = v.object({
   version: v.number(),
   status: exerciseStatusValidator,
   replacedBySlug: v.optional(v.string()),
+  adminNotes: v.optional(
+    v.union(
+      v.string(),
+      v.array(v.string()),
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+        }),
+      ),
+    ),
+  ),
+});
+
+/**
+ * Full metadata snapshot for super-user edits.
+ * Excludes slug, tabData, and adminNotes (admin notes use dedicated mutations).
+ * `version` is bumped server-side — not accepted from the client.
+ */
+export const exerciseMetadataPatchValidator = v.object({
+  title: v.string(),
+  description: v.string(),
+  purpose: v.string(),
+  targetWeaknesses: v.array(v.string()),
+  minimumCleanStandard: v.string(),
+  measurementInstructions: v.string(),
+  coachingNotes: v.array(v.string()),
+  coreSkillId: coreSkillValidator,
+  subSkillIds: v.array(subSkillValidator),
+  trainingAttributes: v.array(trainingAttributeValidator),
+  difficultyLevel: v.number(),
+  exerciseType: exerciseTypeValidator,
+  primaryProgressMetric: primaryProgressMetricValidator,
+  supportsBpm: v.boolean(),
+  defaultTargetBpm: v.optional(v.number()),
+  successCriteria: v.array(v.string()),
+  commonMistakes: v.array(v.string()),
+  progressionRule: v.string(),
+  regressionRule: v.string(),
+  patternType: patternTypeValidator,
+  microDrillJustification: v.optional(v.string()),
+  feedbackSchema: feedbackSchemaValidator,
+  estimatedMinutes: v.number(),
+  isMvp: v.boolean(),
+  status: exerciseStatusValidator,
+  replacedBySlug: v.optional(v.string()),
 });
