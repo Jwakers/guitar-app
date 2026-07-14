@@ -4,7 +4,6 @@ import {
   SuperUserExerciseMetadataEditor,
   type EditableExercise,
 } from "@/components/exercises/super-user-exercise-metadata-editor";
-import { cn } from "@/lib/utils";
 
 type ExerciseDetailSectionsProps = {
   exercise: EditableExercise;
@@ -63,48 +62,6 @@ export function ExerciseTabSection({
   );
 }
 
-function CoachingNotesSection({ coachingNotes }: { coachingNotes: string[] }) {
-  return (
-    <section className="mb-6">
-      <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-        COACHING NOTES
-      </h2>
-      <ul className="flex flex-col gap-1.5">
-        {coachingNotes.map((note, i) => (
-          <li key={i} className="flex gap-2 text-sm text-foreground">
-            <span className="shrink-0 font-mono text-muted-foreground">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            {note}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function SuccessCriteriaSection({
-  successCriteria,
-}: {
-  successCriteria: string[];
-}) {
-  return (
-    <section className="mb-6">
-      <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-        SUCCESS CRITERIA
-      </h2>
-      <ul className="flex flex-col gap-1.5">
-        {successCriteria.map((criterion, i) => (
-          <li key={i} className="flex gap-2 text-sm text-foreground">
-            <span className="shrink-0 text-primary">✓</span>
-            {criterion}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 export function ExerciseDetailSections({
   exercise,
   purpose,
@@ -115,35 +72,6 @@ export function ExerciseDetailSections({
   showSuccessCriteria = false,
   playbackBpm,
 }: ExerciseDetailSectionsProps) {
-  const hasCoachingNotes = coachingNotes.length > 0;
-  const showSuccess =
-    showSuccessCriteria && successCriteria !== undefined && successCriteria.length > 0;
-
-  const primarySections = (
-    <>
-      <section className="mb-6">
-        <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-          PURPOSE
-        </h2>
-        <p className="text-sm text-foreground">{purpose}</p>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-          MINIMUM CLEAN STANDARD
-        </h2>
-        <p className="text-sm text-foreground">{minimumCleanStandard}</p>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-          HOW TO MEASURE
-        </h2>
-        <p className="text-sm text-foreground">{measurementInstructions}</p>
-      </section>
-    </>
-  );
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-8">
       <section className="mb-8 max-w-2xl">
@@ -151,7 +79,6 @@ export function ExerciseDetailSections({
         <p className="text-sm text-foreground">{purpose}</p>
       </section>
 
-<<<<<<< Updated upstream
       {/*
         Mobile DOM/flex order: tab → coaching → standards.
         Desktop grid: tab | sticky coaching; standards under tab.
@@ -165,34 +92,6 @@ export function ExerciseDetailSections({
           <aside className="order-2 border-l border-border/60 pl-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
             <CoachingNotesPanel notes={coachingNotes} />
           </aside>
-=======
-      <div
-        className={cn(
-          "mx-auto w-full px-4",
-          hasCoachingNotes
-            ? "max-w-6xl lg:grid lg:grid-cols-2 lg:gap-8 lg:items-start"
-            : "max-w-2xl",
-        )}
-      >
-        {hasCoachingNotes ? (
-          <>
-            <div>{primarySections}</div>
-            <div>
-              <CoachingNotesSection coachingNotes={coachingNotes} />
-              {showSuccess && (
-                <SuccessCriteriaSection successCriteria={successCriteria} />
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            {primarySections}
-            <CoachingNotesSection coachingNotes={coachingNotes} />
-            {showSuccess && (
-              <SuccessCriteriaSection successCriteria={successCriteria} />
-            )}
-          </>
->>>>>>> Stashed changes
         )}
 
         <div className="order-3 max-w-2xl space-y-6 lg:col-start-1 lg:row-start-2">
