@@ -1,5 +1,8 @@
 import type { TrainingVerdict } from "./reliable-performance";
 
+/**
+ * Skill rating algorithm — see knowledge/whitepapers/rating-and-progression.md
+ */
 export const SKILL_RATING_WINDOW = 10;
 export const MAX_RATING_DELTA = 6;
 export const CONFIDENCE_BASELINE = 0.5;

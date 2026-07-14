@@ -41,8 +41,9 @@ export function SkillAssessmentStep({
           Rate your skills
         </h2>
         <p className="text-sm text-muted-foreground">
-          Be honest — these drive your initial programming. You can update them
-          any time.
+          Be honest — these drive your initial programming. They&apos;ll update
+          automatically as you practice, rising or falling based on your logged
+          results.
         </p>
         <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
           {ratedCount} / {coreSkills.length} RATED

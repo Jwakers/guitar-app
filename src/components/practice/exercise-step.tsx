@@ -29,6 +29,8 @@ type LoggedResult = {
 type ExerciseStepProps = {
   exercise: Doc<"exercises">;
   sessionItem: SessionItem;
+  exerciseIndex: number;
+  exerciseTotal: number;
   isReviewingPast: boolean;
   canGoBack: boolean;
   playerMode: PlayerMode;
@@ -44,6 +46,8 @@ type ExerciseStepProps = {
 export function ExerciseStep({
   exercise,
   sessionItem,
+  exerciseIndex,
+  exerciseTotal,
   isReviewingPast,
   canGoBack,
   playerMode,
@@ -58,15 +62,17 @@ export function ExerciseStep({
   const initialBpm = resolveInitialBpm(sessionItem, exercise);
   const completeLabel =
     playerMode === "replay" ? "Next exercise" : "Complete exercise";
+  const slotLabel =
+    SLOT_LABEL[sessionItem.slotType]?.toUpperCase() ??
+    sessionItem.slotType.toUpperCase();
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-2xl px-4 pt-6">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto isolate">
+        <div className="mx-auto w-full max-w-6xl px-4 pb-6 pt-6">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold tracking-widest text-primary">
-              {SLOT_LABEL[sessionItem.slotType]?.toUpperCase() ??
-                sessionItem.slotType.toUpperCase()}
+              {slotLabel}
             </span>
             <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
               {sessionItem.durationMinutes} MIN
@@ -78,10 +84,10 @@ export function ExerciseStep({
             )}
           </div>
 
-          <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
+          <h1 className="max-w-2xl font-mono text-xl font-bold tracking-tight text-foreground">
             {exercise.title}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
             {exercise.description}
           </p>
 
@@ -147,8 +153,25 @@ export function ExerciseStep({
         />
       </div>
 
-      <div className="sticky bottom-16 z-40 shrink-0 border-t border-border bg-background/95 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.45)] backdrop-blur supports-[backdrop-filter]:bg-background/90">
-        <div className="mx-auto w-full max-w-2xl px-4 py-3">
+      <div className="relative z-[100] sticky bottom-16 shrink-0 border-t border-border bg-background shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.45)]">
+        <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-2.5">
+          <p className="font-mono text-[10px] font-bold tracking-widest text-foreground">
+            EXERCISE {exerciseIndex} OF {exerciseTotal}
+          </p>
+          <span className="font-mono text-[10px] tracking-widest text-muted-foreground">
+            {slotLabel}
+          </span>
+          {playerMode === "replay" && (
+            <span
+              className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-widest text-muted-foreground"
+              title="Replay mode — your logged results won't change"
+            >
+              REPLAY
+            </span>
+          )}
+        </div>
+
+        <div className="mx-auto w-full max-w-2xl px-4 py-2">
           <MetronomePanel
             key={metronomeKey}
             docked

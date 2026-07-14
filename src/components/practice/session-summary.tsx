@@ -9,6 +9,12 @@ import {
   TRAINING_VERDICT_LABEL,
 } from "@/lib/practice/labels";
 import {
+  formatSkillRatingDelta,
+  sortSkillRatingChanges,
+  type SkillRatingChangeSummary,
+} from "@/lib/practice/skill-rating-display";
+import { skillTargetLabel } from "@/lib/skills/taxonomy";
+import {
   countVerdicts,
   formatObjectiveMetric,
   formatSubjectiveHighlights,
@@ -33,12 +39,14 @@ type SessionSummaryProps = {
   };
   exerciseTitleById: Map<Id<"exercises">, string>;
   logsByOrder?: Map<number, SessionLogSummary>;
+  skillRatingChanges?: SkillRatingChangeSummary[];
 };
 
 export function SessionSummary({
   session,
   exerciseTitleById,
   logsByOrder,
+  skillRatingChanges = [],
 }: SessionSummaryProps) {
   const items = [...session.exerciseItems].sort((a, b) => a.order - b.order);
   const completedCount = items.filter(
@@ -50,6 +58,7 @@ export function SessionSummary({
     .filter((log): log is SessionLogSummary => log !== undefined);
   const verdictCounts = countVerdicts(logs);
   const bestBpm = sessionBestBpm(logs);
+  const sortedSkillChanges = sortSkillRatingChanges(skillRatingChanges);
 
   return (
     <main className="flex flex-1 flex-col px-4 py-8">
@@ -89,6 +98,45 @@ export function SessionSummary({
                 Best clean BPM this session: {bestBpm}
               </p>
             )}
+          </div>
+        )}
+
+        {sortedSkillChanges.length > 0 && (
+          <div className="mt-4 rounded-lg border border-border bg-card p-4">
+            <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+              SKILL UPDATES
+            </p>
+            <ul className="mt-3 space-y-2">
+              {sortedSkillChanges.map((change) => {
+                const delta = change.newRating - change.oldRating;
+                const deltaLabel = formatSkillRatingDelta(
+                  change.oldRating,
+                  change.newRating,
+                );
+
+                return (
+                  <li
+                    key={`${change.skillTarget.kind}:${change.skillTarget.id}`}
+                    className="flex items-center justify-between gap-4 text-sm"
+                  >
+                    <span className="text-foreground">
+                      {skillTargetLabel(change.skillTarget)}
+                    </span>
+                    <span
+                      className={
+                        delta > 0
+                          ? "font-mono text-primary"
+                          : delta < 0
+                            ? "font-mono text-destructive"
+                            : "font-mono text-muted-foreground"
+                      }
+                    >
+                      {change.oldRating} → {change.newRating} ({deltaLabel})
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
 

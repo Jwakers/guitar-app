@@ -251,7 +251,7 @@ export function TabRenderer({
       </div>
       <div
         ref={viewportRef}
-        className="w-full overflow-x-auto rounded bg-white"
+        className="w-full overflow-x-auto overflow-y-hidden rounded bg-white"
       >
         <div ref={containerRef} className="relative min-h-40 w-full" />
       </div>
