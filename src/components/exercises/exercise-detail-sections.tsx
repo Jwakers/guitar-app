@@ -1,8 +1,12 @@
 import { TabRenderer } from "@/components/tab-renderer/tab-renderer";
-import type { TabData } from "@/lib/tabs/internal-schema";
+import { SuperUserAdminNotesPanel } from "@/components/exercises/super-user-admin-notes-panel";
+import {
+  SuperUserExerciseMetadataEditor,
+  type EditableExercise,
+} from "@/components/exercises/super-user-exercise-metadata-editor";
 
 type ExerciseDetailSectionsProps = {
-  tabData: TabData;
+  exercise: EditableExercise;
   purpose: string;
   minimumCleanStandard: string;
   measurementInstructions: string;
@@ -14,10 +18,10 @@ type ExerciseDetailSectionsProps = {
 };
 
 export function ExerciseTabSection({
-  tabData,
+  exercise,
   playbackBpm,
 }: {
-  tabData: TabData;
+  exercise: EditableExercise;
   playbackBpm?: number;
 }) {
   return (
@@ -26,14 +30,16 @@ export function ExerciseTabSection({
         <h2 className="mb-3 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
           TAB
         </h2>
-        <TabRenderer tabData={tabData} playbackBpm={playbackBpm} />
+        <TabRenderer tabData={exercise.tabData} playbackBpm={playbackBpm} />
+        <SuperUserAdminNotesPanel exerciseId={exercise._id} />
+        <SuperUserExerciseMetadataEditor exercise={exercise} />
       </div>
     </section>
   );
 }
 
 export function ExerciseDetailSections({
-  tabData,
+  exercise,
   purpose,
   minimumCleanStandard,
   measurementInstructions,
@@ -44,7 +50,7 @@ export function ExerciseDetailSections({
 }: ExerciseDetailSectionsProps) {
   return (
     <>
-      <ExerciseTabSection tabData={tabData} playbackBpm={playbackBpm} />
+      <ExerciseTabSection exercise={exercise} playbackBpm={playbackBpm} />
 
       <div className="mx-auto w-full max-w-2xl px-4">
         <section className="mb-6">

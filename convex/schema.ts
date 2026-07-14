@@ -256,6 +256,10 @@ export default defineSchema({
     ),
     replacedBySlug: v.optional(v.string()),
     updatedAt: v.number(),
+
+    // Super-user review notes (never exposed via public getExercise).
+    // Union allows a brief migration from the earlier single-string shape.
+    adminNotes: v.optional(v.union(v.string(), v.array(v.string()))),
   }).index("by_slug", ["slug"]),
 
   exerciseProgressions: defineTable({

@@ -136,7 +136,7 @@ export function ExerciseStep({
         </div>
 
         <ExerciseDetailSections
-          tabData={exercise.tabData}
+          exercise={exercise}
           purpose={exercise.purpose}
           minimumCleanStandard={exercise.minimumCleanStandard}
           measurementInstructions={exercise.measurementInstructions}

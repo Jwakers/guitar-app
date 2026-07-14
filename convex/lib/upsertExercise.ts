@@ -36,6 +36,7 @@ export function buildExerciseDocument(exercise: ExerciseSeed, updatedAt: number)
     version: exercise.version,
     status: exercise.status,
     replacedBySlug: exercise.replacedBySlug,
+    adminNotes: exercise.adminNotes,
     updatedAt,
   };
 }

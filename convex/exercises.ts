@@ -8,6 +8,7 @@ import {
 import { requireSuperUser } from "./lib/auth";
 import {
   coreSkillValidator,
+  exerciseMetadataPatchValidator,
   exerciseSeedValidator,
   exerciseStatusValidator,
   exerciseTypeValidator,
@@ -137,7 +138,136 @@ export const getExercise = query({
     v.null(),
   ),
   handler: async (ctx, args) => {
-    return await ctx.db.get("exercises", args.id);
+    const exercise = await ctx.db.get("exercises", args.id);
+    if (!exercise) {
+      return null;
+    }
+    const { adminNotes: _adminNotes, ...publicExercise } = exercise;
+    return publicExercise;
+  },
+});
+
+function normalizeAdminNotes(
+  value: string | string[] | undefined,
+): string[] {
+  if (value === undefined) return [];
+  if (Array.isArray(value)) return value;
+  const trimmed = value.trim();
+  return trimmed === "" ? [] : [trimmed];
+}
+
+/**
+ * Super-user only: load admin review notes for an exercise.
+ */
+export const getExerciseAdminNotes = query({
+  args: { id: v.id("exercises") },
+  returns: v.array(v.string()),
+  handler: async (ctx, args) => {
+    await requireSuperUser(ctx);
+    const exercise = await ctx.db.get("exercises", args.id);
+    if (!exercise) {
+      return [];
+    }
+    // Legacy single-string notes (pre-array) are normalized here.
+    return normalizeAdminNotes(
+      exercise.adminNotes as string | string[] | undefined,
+    );
+  },
+});
+
+/**
+ * Super-user only: append an admin review note.
+ */
+export const addExerciseAdminNote = mutation({
+  args: {
+    id: v.id("exercises"),
+    note: v.string(),
+  },
+  returns: v.object({
+    id: v.id("exercises"),
+    count: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requireSuperUser(ctx);
+
+    const trimmed = args.note.trim();
+    if (trimmed === "") {
+      throw new Error("Admin note cannot be empty");
+    }
+
+    const exercise = await ctx.db.get("exercises", args.id);
+    if (!exercise) {
+      throw new Error("Exercise not found");
+    }
+
+    const nextNotes = [
+      ...normalizeAdminNotes(
+        exercise.adminNotes as string | string[] | undefined,
+      ),
+      trimmed,
+    ];
+    await ctx.db.patch("exercises", args.id, {
+      adminNotes: nextNotes,
+      updatedAt: Date.now(),
+    });
+
+    return { id: args.id, count: nextNotes.length };
+  },
+});
+
+/**
+ * Super-user only: remove an admin review note by index.
+ */
+export const removeExerciseAdminNote = mutation({
+  args: {
+    id: v.id("exercises"),
+    index: v.number(),
+  },
+  returns: v.object({
+    id: v.id("exercises"),
+    count: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requireSuperUser(ctx);
+
+    const exercise = await ctx.db.get("exercises", args.id);
+    if (!exercise) {
+      throw new Error("Exercise not found");
+    }
+
+    const current = normalizeAdminNotes(
+      exercise.adminNotes as string | string[] | undefined,
+    );
+    if (
+      !Number.isInteger(args.index) ||
+      args.index < 0 ||
+      args.index >= current.length
+    ) {
+      throw new Error("Invalid admin note index");
+    }
+
+    const nextNotes = current.filter((_, i) => i !== args.index);
+    const {
+      _id: _docId,
+      _creationTime: _created,
+      adminNotes: _removed,
+      ...withoutNotes
+    } = exercise;
+
+    if (nextNotes.length === 0) {
+      await ctx.db.replace("exercises", args.id, {
+        ...withoutNotes,
+        updatedAt: Date.now(),
+      });
+      return { id: args.id, count: 0 };
+    }
+
+    await ctx.db.patch("exercises", args.id, {
+      adminNotes: nextNotes,
+      updatedAt: Date.now(),
+    });
+
+    return { id: args.id, count: nextNotes.length };
   },
 });
 
@@ -311,6 +441,85 @@ export const saveGeneratedExercise = mutation({
     return {
       id: result.id,
       action,
+    };
+  },
+});
+
+/**
+ * Super-user only: patch exercise metadata without touching slug or tabData.
+ */
+export const updateExerciseMetadata = mutation({
+  args: {
+    id: v.id("exercises"),
+    patch: exerciseMetadataPatchValidator,
+  },
+  returns: v.object({
+    id: v.id("exercises"),
+    version: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    await requireSuperUser(ctx);
+
+    const exercise = await ctx.db.get("exercises", args.id);
+    if (!exercise) {
+      throw new Error("Exercise not found");
+    }
+
+    const nextVersion = exercise.version + 1;
+    const {
+      defaultTargetBpm,
+      microDrillJustification,
+      replacedBySlug,
+      ...required
+    } = args.patch;
+
+    const nextDoc = {
+      title: required.title,
+      slug: exercise.slug,
+      description: required.description,
+      purpose: required.purpose,
+      targetWeaknesses: required.targetWeaknesses,
+      minimumCleanStandard: required.minimumCleanStandard,
+      measurementInstructions: required.measurementInstructions,
+      coachingNotes: required.coachingNotes,
+      coreSkillId: required.coreSkillId,
+      subSkillIds: required.subSkillIds,
+      trainingAttributes: required.trainingAttributes,
+      difficultyLevel: required.difficultyLevel,
+      exerciseType: required.exerciseType,
+      primaryProgressMetric: required.primaryProgressMetric,
+      supportsBpm: required.supportsBpm,
+      ...(defaultTargetBpm !== undefined ? { defaultTargetBpm } : {}),
+      successCriteria: required.successCriteria,
+      commonMistakes: required.commonMistakes,
+      progressionRule: required.progressionRule,
+      regressionRule: required.regressionRule,
+      tabData: exercise.tabData,
+      patternType: required.patternType,
+      ...(microDrillJustification !== undefined
+        ? { microDrillJustification }
+        : {}),
+      feedbackSchema: required.feedbackSchema,
+      estimatedMinutes: required.estimatedMinutes,
+      isMvp: required.isMvp,
+      version: nextVersion,
+      status: required.status,
+      ...(replacedBySlug !== undefined ? { replacedBySlug } : {}),
+      updatedAt: Date.now(),
+      ...(exercise.adminNotes !== undefined
+        ? {
+            adminNotes: normalizeAdminNotes(
+              exercise.adminNotes as string | string[] | undefined,
+            ),
+          }
+        : {}),
+    };
+
+    await ctx.db.replace("exercises", args.id, nextDoc);
+
+    return {
+      id: args.id,
+      version: nextVersion,
     };
   },
 });
