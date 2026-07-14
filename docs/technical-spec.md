@@ -1195,7 +1195,7 @@ type ExerciseSeed = {
   subSkillIds: SubSkill[];
   trainingAttributes: TrainingAttribute[];
   targetWeaknesses: string[];
-  difficultyLevel: number; // 1-10 (1–3 start, 4 solid intermediate, 5–6 advanced, 7–8 stretch, 9–10 mastery; see drill-generation-and-validation.md)
+  difficultyLevel: number; // 1-10 — 1–3 start · 4 solid intermediate · 5–6 advanced · 7–8 stretch · 9–10 basic mastery; see knowledge/drills/drill-generation-and-validation.md
   exerciseType: "warmup" | "primary" | "secondary" | "accessory" | "isolation" | "test";
   primaryProgressMetric:
     | "clean_bpm"
