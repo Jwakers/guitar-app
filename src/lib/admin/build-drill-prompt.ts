@@ -318,7 +318,7 @@ export function buildDrillPrompt(input: BuildDrillPromptInput): {
   } else {
     parts.push(
       `Difficulty level: ${input.difficultyLevel} (explicitly requested)`,
-      "Justify the tab against the intermediate-start → mastery scale: 1–3 start, 5–6 advanced, 7–8 stretch, 9–10 mastery-rare.",
+      "Justify the tab against the intermediate-start → mastery scale: 1–3 start, 4 solid intermediate, 5–6 advanced, 7–8 stretch, 9–10 mastery-rare.",
     );
   }
 

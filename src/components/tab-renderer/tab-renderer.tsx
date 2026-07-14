@@ -47,6 +47,7 @@ type AlphaTabInstance = {
   playerReady: EventEmitter;
   playerStateChanged: EventEmitterOfT<PlayerStateChangedArgs>;
   playerPositionChanged: EventEmitterOfT<PositionChangedArgs>;
+  error: EventEmitterOfT<Error>;
 };
 
 function formatDuration(ms: number): string {
@@ -135,6 +136,14 @@ export function TabRenderer({
             setPositionLabel(
               `${formatDuration(args.currentTime)} / ${formatDuration(args.endTime)}`,
             );
+          }),
+        );
+
+        unsubscribers.push(
+          api.error.on((err) => {
+            if (!mounted) return;
+            console.error("TabRenderer: AlphaTab error", err);
+            setLoadError(true);
           }),
         );
 

@@ -29,7 +29,6 @@ import type * as lib_subscriptions from "../lib/subscriptions.js";
 import type * as lib_upsertExercise from "../lib/upsertExercise.js";
 import type * as lib_verifyClerkWebhook from "../lib/verifyClerkWebhook.js";
 import type * as lib_weeklyPlanLookup from "../lib/weeklyPlanLookup.js";
-import type * as migrateDifficultyScale from "../migrateDifficultyScale.js";
 import type * as onboarding from "../onboarding.js";
 import type * as progress from "../progress.js";
 import type * as progression from "../progression.js";
@@ -71,7 +70,6 @@ declare const fullApi: ApiFromModules<{
   "lib/upsertExercise": typeof lib_upsertExercise;
   "lib/verifyClerkWebhook": typeof lib_verifyClerkWebhook;
   "lib/weeklyPlanLookup": typeof lib_weeklyPlanLookup;
-  migrateDifficultyScale: typeof migrateDifficultyScale;
   onboarding: typeof onboarding;
   progress: typeof progress;
   progression: typeof progression;

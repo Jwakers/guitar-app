@@ -181,7 +181,18 @@ export const exerciseSeedValidator = v.object({
   version: v.number(),
   status: exerciseStatusValidator,
   replacedBySlug: v.optional(v.string()),
-  adminNotes: v.optional(v.union(v.string(), v.array(v.string()))),
+  adminNotes: v.optional(
+    v.union(
+      v.string(),
+      v.array(v.string()),
+      v.array(
+        v.object({
+          id: v.string(),
+          text: v.string(),
+        }),
+      ),
+    ),
+  ),
 });
 
 /**

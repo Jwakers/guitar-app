@@ -83,5 +83,5 @@ export type ExerciseSeed = {
   version: number;
   status: ExerciseStatus;
   replacedBySlug?: string;
-  adminNotes?: string | string[];
+  adminNotes?: string | string[] | Array<{ id: string; text: string }>;
 };

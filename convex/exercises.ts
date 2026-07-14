@@ -147,13 +147,70 @@ export const getExercise = query({
   },
 });
 
+export type AdminNote = { id: string; text: string };
+
+type LegacyAdminNotes = string | string[] | AdminNote[] | undefined;
+
+function newAdminNoteId(): string {
+  return `note_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function isAdminNoteObject(value: unknown): value is AdminNote {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "text" in value &&
+    typeof (value as AdminNote).text === "string"
+  );
+}
+
+/**
+ * Normalize stored admin notes to { id, text }[].
+ * Trims each note and drops blanks. Legacy string / string[] get stable
+ * `legacy:N` ids for display until the next write upgrades them to real ids.
+ */
 function normalizeAdminNotes(
-  value: string | string[] | undefined,
-): string[] {
+  value: LegacyAdminNotes,
+  options: { assignStableLegacyIds?: boolean } = {},
+): AdminNote[] {
+  const { assignStableLegacyIds = false } = options;
+
   if (value === undefined) return [];
-  if (Array.isArray(value)) return value;
-  const trimmed = value.trim();
-  return trimmed === "" ? [] : [trimmed];
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return [];
+    return [
+      {
+        id: assignStableLegacyIds ? "legacy:0" : newAdminNoteId(),
+        text: trimmed,
+      },
+    ];
+  }
+
+  if (!Array.isArray(value)) return [];
+
+  if (value.length > 0 && isAdminNoteObject(value[0])) {
+    return (value as AdminNote[])
+      .map((note) => {
+        const text = note.text.trim();
+        const id =
+          typeof note.id === "string" && note.id.trim() !== ""
+            ? note.id
+            : newAdminNoteId();
+        return { id, text };
+      })
+      .filter((note) => note.text !== "");
+  }
+
+  const texts = (value as string[])
+    .map((note) => (typeof note === "string" ? note.trim() : ""))
+    .filter((note) => note !== "");
+
+  return texts.map((text, index) => ({
+    id: assignStableLegacyIds ? `legacy:${index}` : newAdminNoteId(),
+    text,
+  }));
 }
 
 /**
@@ -161,16 +218,22 @@ function normalizeAdminNotes(
  */
 export const getExerciseAdminNotes = query({
   args: { id: v.id("exercises") },
-  returns: v.array(v.string()),
+  returns: v.array(
+    v.object({
+      id: v.string(),
+      text: v.string(),
+    }),
+  ),
   handler: async (ctx, args) => {
     await requireSuperUser(ctx);
     const exercise = await ctx.db.get("exercises", args.id);
     if (!exercise) {
       return [];
     }
-    // Legacy single-string notes (pre-array) are normalized here.
+    // Legacy shapes get deterministic legacy:N ids for this read; writes upgrade.
     return normalizeAdminNotes(
-      exercise.adminNotes as string | string[] | undefined,
+      exercise.adminNotes as LegacyAdminNotes,
+      { assignStableLegacyIds: true },
     );
   },
 });
@@ -200,11 +263,12 @@ export const addExerciseAdminNote = mutation({
       throw new Error("Exercise not found");
     }
 
-    const nextNotes = [
-      ...normalizeAdminNotes(
-        exercise.adminNotes as string | string[] | undefined,
-      ),
-      trimmed,
+    const current = normalizeAdminNotes(
+      exercise.adminNotes as LegacyAdminNotes,
+    );
+    const nextNotes: AdminNote[] = [
+      ...current,
+      { id: newAdminNoteId(), text: trimmed },
     ];
     await ctx.db.patch("exercises", args.id, {
       adminNotes: nextNotes,
@@ -216,12 +280,12 @@ export const addExerciseAdminNote = mutation({
 });
 
 /**
- * Super-user only: remove an admin review note by index.
+ * Super-user only: remove an admin review note by stable note id.
  */
 export const removeExerciseAdminNote = mutation({
   args: {
     id: v.id("exercises"),
-    index: v.number(),
+    noteId: v.string(),
   },
   returns: v.object({
     id: v.id("exercises"),
@@ -235,18 +299,21 @@ export const removeExerciseAdminNote = mutation({
       throw new Error("Exercise not found");
     }
 
-    const current = normalizeAdminNotes(
-      exercise.adminNotes as string | string[] | undefined,
-    );
-    if (
-      !Number.isInteger(args.index) ||
-      args.index < 0 ||
-      args.index >= current.length
-    ) {
-      throw new Error("Invalid admin note index");
+    const raw = exercise.adminNotes as LegacyAdminNotes;
+    // Match ids from getExerciseAdminNotes (legacy:N) before upgrading.
+    const current = normalizeAdminNotes(raw, { assignStableLegacyIds: true });
+    const nextNotes = current
+      .filter((note) => note.id !== args.noteId)
+      .map((note) =>
+        note.id.startsWith("legacy:")
+          ? { id: newAdminNoteId(), text: note.text }
+          : note,
+      );
+
+    if (nextNotes.length === current.length) {
+      throw new Error("Admin note not found");
     }
 
-    const nextNotes = current.filter((_, i) => i !== args.index);
     const {
       _id: _docId,
       _creationTime: _created,
@@ -509,7 +576,7 @@ export const updateExerciseMetadata = mutation({
       ...(exercise.adminNotes !== undefined
         ? {
             adminNotes: normalizeAdminNotes(
-              exercise.adminNotes as string | string[] | undefined,
+              exercise.adminNotes as LegacyAdminNotes,
             ),
           }
         : {}),

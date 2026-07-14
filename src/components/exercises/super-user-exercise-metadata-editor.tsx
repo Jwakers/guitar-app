@@ -152,9 +152,18 @@ function exerciseToForm(exercise: EditableExercise): FormState {
   };
 }
 
-function FieldLabel({ children }: { children: ReactNode }) {
+function FieldLabel({
+  htmlFor,
+  children,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+}) {
   return (
-    <label className="mb-1 block font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+    <label
+      htmlFor={htmlFor}
+      className="mb-1 block font-mono text-[10px] font-bold tracking-widest text-muted-foreground"
+    >
       {children}
     </label>
   );
@@ -380,40 +389,49 @@ function SuperUserExerciseMetadataEditorForm({
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <FieldLabel>Title</FieldLabel>
+              <FieldLabel htmlFor="su-meta-title">Title</FieldLabel>
               <input
+                id="su-meta-title"
                 className={inputClassName}
                 value={form.title}
                 onChange={(e) => setField("title", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Description</FieldLabel>
+              <FieldLabel htmlFor="su-meta-description">Description</FieldLabel>
               <textarea
+                id="su-meta-description"
                 className={textareaClassName}
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Purpose</FieldLabel>
+              <FieldLabel htmlFor="su-meta-purpose">Purpose</FieldLabel>
               <textarea
+                id="su-meta-purpose"
                 className={textareaClassName}
                 value={form.purpose}
                 onChange={(e) => setField("purpose", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Coaching notes (one per line)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-coaching-notes">
+                Coaching notes (one per line)
+              </FieldLabel>
               <textarea
+                id="su-meta-coaching-notes"
                 className={textareaClassName}
                 value={form.coachingNotesText}
                 onChange={(e) => setField("coachingNotesText", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Target weaknesses (one per line)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-target-weaknesses">
+                Target weaknesses (one per line)
+              </FieldLabel>
               <textarea
+                id="su-meta-target-weaknesses"
                 className={textareaClassName}
                 value={form.targetWeaknessesText}
                 onChange={(e) =>
@@ -422,8 +440,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Minimum clean standard</FieldLabel>
+              <FieldLabel htmlFor="su-meta-min-clean">
+                Minimum clean standard
+              </FieldLabel>
               <textarea
+                id="su-meta-min-clean"
                 className={textareaClassName}
                 value={form.minimumCleanStandard}
                 onChange={(e) =>
@@ -432,8 +453,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Measurement instructions</FieldLabel>
+              <FieldLabel htmlFor="su-meta-measurement">
+                Measurement instructions
+              </FieldLabel>
               <textarea
+                id="su-meta-measurement"
                 className={textareaClassName}
                 value={form.measurementInstructions}
                 onChange={(e) =>
@@ -442,8 +466,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Success criteria (one per line)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-success-criteria">
+                Success criteria (one per line)
+              </FieldLabel>
               <textarea
+                id="su-meta-success-criteria"
                 className={textareaClassName}
                 value={form.successCriteriaText}
                 onChange={(e) =>
@@ -452,8 +479,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Common mistakes (one per line)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-common-mistakes">
+                Common mistakes (one per line)
+              </FieldLabel>
               <textarea
+                id="su-meta-common-mistakes"
                 className={textareaClassName}
                 value={form.commonMistakesText}
                 onChange={(e) =>
@@ -462,24 +492,33 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Progression rule</FieldLabel>
+              <FieldLabel htmlFor="su-meta-progression">
+                Progression rule
+              </FieldLabel>
               <textarea
+                id="su-meta-progression"
                 className={textareaClassName}
                 value={form.progressionRule}
                 onChange={(e) => setField("progressionRule", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Regression rule</FieldLabel>
+              <FieldLabel htmlFor="su-meta-regression">
+                Regression rule
+              </FieldLabel>
               <textarea
+                id="su-meta-regression"
                 className={textareaClassName}
                 value={form.regressionRule}
                 onChange={(e) => setField("regressionRule", e.target.value)}
               />
             </div>
             <div>
-              <FieldLabel>Difficulty (1–10)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-difficulty">
+                Difficulty (1–10)
+              </FieldLabel>
               <input
+                id="su-meta-difficulty"
                 type="number"
                 min={1}
                 max={10}
@@ -494,8 +533,11 @@ function SuperUserExerciseMetadataEditorForm({
               </p>
             </div>
             <div>
-              <FieldLabel>Estimated minutes</FieldLabel>
+              <FieldLabel htmlFor="su-meta-estimated-minutes">
+                Estimated minutes
+              </FieldLabel>
               <input
+                id="su-meta-estimated-minutes"
                 type="number"
                 min={1}
                 className={inputClassName}
@@ -506,8 +548,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div>
-              <FieldLabel>Exercise type</FieldLabel>
+              <FieldLabel htmlFor="su-meta-exercise-type">
+                Exercise type
+              </FieldLabel>
               <select
+                id="su-meta-exercise-type"
                 className={inputClassName}
                 value={form.exerciseType}
                 onChange={(e) =>
@@ -522,8 +567,11 @@ function SuperUserExerciseMetadataEditorForm({
               </select>
             </div>
             <div>
-              <FieldLabel>Pattern type</FieldLabel>
+              <FieldLabel htmlFor="su-meta-pattern-type">
+                Pattern type
+              </FieldLabel>
               <select
+                id="su-meta-pattern-type"
                 className={inputClassName}
                 value={form.patternType}
                 onChange={(e) =>
@@ -538,8 +586,11 @@ function SuperUserExerciseMetadataEditorForm({
               </select>
             </div>
             <div>
-              <FieldLabel>Primary progress metric</FieldLabel>
+              <FieldLabel htmlFor="su-meta-progress-metric">
+                Primary progress metric
+              </FieldLabel>
               <select
+                id="su-meta-progress-metric"
                 className={inputClassName}
                 value={form.primaryProgressMetric}
                 onChange={(e) =>
@@ -557,8 +608,9 @@ function SuperUserExerciseMetadataEditorForm({
               </select>
             </div>
             <div>
-              <FieldLabel>Status</FieldLabel>
+              <FieldLabel htmlFor="su-meta-status">Status</FieldLabel>
               <select
+                id="su-meta-status"
                 className={inputClassName}
                 value={form.status}
                 onChange={(e) =>
@@ -573,8 +625,11 @@ function SuperUserExerciseMetadataEditorForm({
               </select>
             </div>
             <div>
-              <FieldLabel>Default target BPM</FieldLabel>
+              <FieldLabel htmlFor="su-meta-default-bpm">
+                Default target BPM
+              </FieldLabel>
               <input
+                id="su-meta-default-bpm"
                 type="number"
                 min={1}
                 className={inputClassName}
@@ -583,8 +638,11 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Micro-drill justification</FieldLabel>
+              <FieldLabel htmlFor="su-meta-micro-justification">
+                Micro-drill justification
+              </FieldLabel>
               <textarea
+                id="su-meta-micro-justification"
                 className={textareaClassName}
                 value={form.microDrillJustification}
                 onChange={(e) =>
@@ -593,9 +651,15 @@ function SuperUserExerciseMetadataEditorForm({
               />
             </div>
             <div>
-              <FieldLabel>Supports BPM</FieldLabel>
-              <label className="flex items-center gap-2 font-mono text-sm">
+              <FieldLabel htmlFor="su-meta-supports-bpm">
+                Supports BPM
+              </FieldLabel>
+              <label
+                htmlFor="su-meta-supports-bpm"
+                className="flex items-center gap-2 font-mono text-sm"
+              >
                 <input
+                  id="su-meta-supports-bpm"
                   type="checkbox"
                   checked={form.supportsBpm}
                   onChange={(e) => setField("supportsBpm", e.target.checked)}
@@ -604,9 +668,13 @@ function SuperUserExerciseMetadataEditorForm({
               </label>
             </div>
             <div>
-              <FieldLabel>MVP</FieldLabel>
-              <label className="flex items-center gap-2 font-mono text-sm">
+              <FieldLabel htmlFor="su-meta-is-mvp">MVP</FieldLabel>
+              <label
+                htmlFor="su-meta-is-mvp"
+                className="flex items-center gap-2 font-mono text-sm"
+              >
                 <input
+                  id="su-meta-is-mvp"
                   type="checkbox"
                   checked={form.isMvp}
                   onChange={(e) => setField("isMvp", e.target.checked)}
@@ -615,8 +683,9 @@ function SuperUserExerciseMetadataEditorForm({
               </label>
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Core skill</FieldLabel>
+              <FieldLabel htmlFor="su-meta-core-skill">Core skill</FieldLabel>
               <select
+                id="su-meta-core-skill"
                 className={inputClassName}
                 value={form.coreSkillId}
                 onChange={(e) => {
@@ -641,7 +710,7 @@ function SuperUserExerciseMetadataEditorForm({
             </div>
             <div className="sm:col-span-2">
               <FieldLabel>Sub-skills</FieldLabel>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label="Sub-skills">
                 {filteredSubSkills.map((skill) => (
                   <ToggleChip
                     key={skill.id}
@@ -655,7 +724,11 @@ function SuperUserExerciseMetadataEditorForm({
             </div>
             <div className="sm:col-span-2">
               <FieldLabel>Training attributes</FieldLabel>
-              <div className="flex flex-wrap gap-2">
+              <div
+                className="flex flex-wrap gap-2"
+                role="group"
+                aria-label="Training attributes"
+              >
                 {(trainingAttributes ?? []).map((attr) => (
                   <ToggleChip
                     key={attr.id}
@@ -668,8 +741,11 @@ function SuperUserExerciseMetadataEditorForm({
               </div>
             </div>
             <div className="sm:col-span-2">
-              <FieldLabel>Feedback schema (JSON)</FieldLabel>
+              <FieldLabel htmlFor="su-meta-feedback-schema">
+                Feedback schema (JSON)
+              </FieldLabel>
               <textarea
+                id="su-meta-feedback-schema"
                 className={`${textareaClassName} min-h-40 font-mono text-xs`}
                 value={form.feedbackSchemaJson}
                 onChange={(e) =>

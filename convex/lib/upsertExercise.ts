@@ -6,7 +6,7 @@ import type { ExerciseSeed } from "../../src/lib/exercises/exercise-schema";
 export type UpsertAction = "inserted" | "updated" | "skipped";
 
 export function buildExerciseDocument(exercise: ExerciseSeed, updatedAt: number) {
-  return {
+  const doc = {
     title: exercise.title,
     slug: exercise.slug,
     description: exercise.description,
@@ -36,9 +36,14 @@ export function buildExerciseDocument(exercise: ExerciseSeed, updatedAt: number)
     version: exercise.version,
     status: exercise.status,
     replacedBySlug: exercise.replacedBySlug,
-    adminNotes: exercise.adminNotes,
     updatedAt,
   };
+
+  // Omit adminNotes when undefined so seed/save updates preserve stored notes.
+  if (exercise.adminNotes !== undefined) {
+    return { ...doc, adminNotes: exercise.adminNotes };
+  }
+  return doc;
 }
 
 type UpsertOptions = {
@@ -82,6 +87,7 @@ export async function upsertExerciseBySlug(
     return { action: "updated", id: existing._id };
   }
 
+  // Patch only defined fields from payload — never clear adminNotes unless set.
   await ctx.db.patch(existing._id, payload);
   return { action: "updated", id: existing._id };
 }

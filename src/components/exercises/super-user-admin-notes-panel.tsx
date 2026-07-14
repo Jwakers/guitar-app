@@ -58,10 +58,10 @@ export function SuperUserAdminNotesPanel({
     }
   };
 
-  const handleRemove = async (index: number) => {
+  const handleRemove = async (noteId: string) => {
     setError(null);
     try {
-      await removeNote({ id: exerciseId, index });
+      await removeNote({ id: exerciseId, noteId });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove note");
     }
@@ -111,21 +111,21 @@ export function SuperUserAdminNotesPanel({
             <ul className="flex flex-col gap-2">
               {notes.map((note, index) => (
                 <li
-                  key={`${index}-${note.slice(0, 24)}`}
+                  key={note.id}
                   className="flex gap-3 rounded-md border border-amber-500/20 bg-background/60 px-3 py-2"
                 >
                   <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-foreground">
-                    {note}
+                    {note.text}
                   </p>
                   <Button
                     type="button"
                     variant="ghost"
                     size="xs"
                     className="shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => void handleRemove(index)}
+                    onClick={() => void handleRemove(note.id)}
                   >
                     Remove
                   </Button>
