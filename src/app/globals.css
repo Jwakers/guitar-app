@@ -131,18 +131,22 @@
 }
 
 /* AlphaTab playback cursors — do NOT set width/height here; AlphaTab scales
-   them via transform from a large base size. Overriding width makes them invisible. */
+   them via transform from a large base size. Overriding width makes them invisible.
+   Keep z-index low so sticky practice chrome (metronome dock) stays on top. */
 .tab-renderer .at-cursors {
   pointer-events: none;
+  z-index: 0;
 }
 .tab-renderer .at-cursor-bar {
   background: rgba(0, 122, 255, 0.22);
+  z-index: 0;
 }
 .tab-renderer .at-selection div {
   background: rgba(0, 122, 255, 0.1);
 }
 .tab-renderer .at-cursor-beat {
   background: #007aff;
+  z-index: 0;
 }
 .tab-renderer .at-highlight * {
   fill: #007aff;

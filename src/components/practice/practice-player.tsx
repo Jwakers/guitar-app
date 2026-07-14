@@ -7,7 +7,6 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { resolveInitialBpm } from "@/lib/metronome/defaults";
-import { SLOT_LABEL, TRAINING_VERDICT_LABEL } from "@/lib/practice/labels";
 import {
   deriveCurrentIndex,
   initialPracticePhase,
@@ -273,22 +272,15 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
 
   return (
     <main className="flex min-h-0 flex-1 flex-col">
-      <div className="border-b border-border px-4 py-4">
+      <div className="border-b border-border px-4 py-3">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-4">
-          <div>
-            <p className="font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              EXERCISE {currentIndex + 1} OF {sortedItems.length}
+          {playerMode === "replay" ? (
+            <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
+              Replay — logged results won&apos;t change
             </p>
-            <p className="font-mono text-xs text-primary">
-              {SLOT_LABEL[currentItem.slotType]?.toUpperCase() ??
-                currentItem.slotType.toUpperCase()}
-            </p>
-            {playerMode === "replay" && (
-              <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                Replay mode — your logged results won&apos;t change
-              </p>
-            )}
-          </div>
+          ) : (
+            <span aria-hidden className="min-w-0" />
+          )}
           <Button asChild variant="ghost" size="sm">
             <Link href="/today">Exit</Link>
           </Button>
@@ -299,6 +291,8 @@ export function PracticePlayer({ sessionId, replay = false }: PracticePlayerProp
         <ExerciseStep
           exercise={currentExercise}
           sessionItem={currentItem}
+          exerciseIndex={currentIndex + 1}
+          exerciseTotal={sortedItems.length}
           isReviewingPast={isReviewingPast}
           canGoBack={currentIndex > 0}
           playerMode={playerMode}

@@ -27,7 +27,7 @@ export function DrillView({ id }: DrillViewProps) {
   if (exercise === null) {
     return (
       <main className="py-8">
-        <div className="mx-auto w-full max-w-2xl px-4">
+        <div className="mx-auto w-full max-w-6xl px-4">
           <p className="font-mono text-sm text-muted-foreground">
             Exercise not found.
           </p>
@@ -44,7 +44,7 @@ export function DrillView({ id }: DrillViewProps) {
 
   return (
     <main className="py-8">
-      <div className="mx-auto w-full max-w-2xl px-4">
+      <div className="mx-auto w-full max-w-6xl px-4">
         <Link
           href="/drills"
           className="mb-6 inline-block font-mono text-xs text-muted-foreground hover:text-foreground"
@@ -90,12 +90,14 @@ export function DrillView({ id }: DrillViewProps) {
               </span>
             ))}
           </div>
-          <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
-            {exercise.title}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {exercise.description}
-          </p>
+          <div className="max-w-2xl">
+            <h1 className="font-mono text-xl font-bold tracking-tight text-foreground">
+              {exercise.title}
+            </h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {exercise.description}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -109,39 +111,41 @@ export function DrillView({ id }: DrillViewProps) {
         showSuccessCriteria
       />
 
-      <div className="mx-auto w-full max-w-2xl px-4">
-        <section className="mb-6">
-          <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-            COMMON MISTAKES
-          </h2>
-          <ul className="flex flex-col gap-1.5">
-            {exercise.commonMistakes.map((mistake, i) => (
-              <li key={i} className="flex gap-2 text-sm text-foreground">
-                <span className="shrink-0 text-destructive">×</span>
-                {mistake}
-              </li>
-            ))}
-          </ul>
-        </section>
+      <div className="mx-auto w-full max-w-6xl px-4">
+        <div className="max-w-2xl">
+          <section className="mb-6">
+            <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+              COMMON MISTAKES
+            </h2>
+            <ul className="flex flex-col gap-1.5">
+              {exercise.commonMistakes.map((mistake, i) => (
+                <li key={i} className="flex gap-2 text-sm text-foreground">
+                  <span className="shrink-0 text-destructive">×</span>
+                  {mistake}
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              PROGRESSION
-            </h2>
-            <p className="text-sm text-foreground">{exercise.progressionRule}</p>
-          </section>
-          <section className="rounded-lg border border-border bg-card p-4">
-            <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
-              REGRESSION
-            </h2>
-            <p className="text-sm text-foreground">{exercise.regressionRule}</p>
-          </section>
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <section className="rounded-lg border border-border bg-card p-4">
+              <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+                PROGRESSION
+              </h2>
+              <p className="text-sm text-foreground">{exercise.progressionRule}</p>
+            </section>
+            <section className="rounded-lg border border-border bg-card p-4">
+              <h2 className="mb-2 font-mono text-[10px] font-bold tracking-widest text-muted-foreground">
+                REGRESSION
+              </h2>
+              <p className="text-sm text-foreground">{exercise.regressionRule}</p>
+            </section>
+          </div>
+
+          <p className="font-mono text-[10px] text-muted-foreground/40">
+            id: {exercise._id}
+          </p>
         </div>
-
-        <p className="font-mono text-[10px] text-muted-foreground/40">
-          id: {exercise._id}
-        </p>
       </div>
     </main>
   );
@@ -150,16 +154,14 @@ export function DrillView({ id }: DrillViewProps) {
 function DrillViewSkeleton() {
   return (
     <main className="py-8">
-      <div className="mx-auto w-full max-w-2xl px-4">
+      <div className="mx-auto w-full max-w-6xl px-4">
         <div className="mb-6 h-4 w-16 animate-pulse rounded bg-muted" />
         <div className="mb-6 space-y-2">
           <div className="h-4 w-32 animate-pulse rounded bg-muted" />
           <div className="h-7 w-3/4 animate-pulse rounded bg-muted" />
           <div className="h-4 w-full animate-pulse rounded bg-muted" />
         </div>
-      </div>
-      <div className="mb-8 px-4">
-        <div className="mx-auto h-40 w-full max-w-6xl animate-pulse rounded-lg bg-muted" />
+        <div className="h-40 w-full animate-pulse rounded-lg bg-muted" />
       </div>
     </main>
   );
